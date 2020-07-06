@@ -1,7 +1,7 @@
 from typing import Optional
 
-import ../specs
-import ../validatorlib as vlib
+import beaconrunner.specs
+import beaconrunner.validatorlib as vlib
 
 class ASAPValidator(vlib.BRValidator):
     # Always $lash and prosper!

@@ -1,2 +1,6 @@
 .DS_Store
 spec-changes.md
+*.egg-info
+build
+__pycache__
+Pipfile

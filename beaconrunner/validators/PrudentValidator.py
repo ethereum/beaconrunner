@@ -1,7 +1,7 @@
 from typing import Optional
 
-import ../specs
-import ../validatorlib as vlib
+import beaconrunner.specs
+import beaconrunner.validatorlib as vlib
 
 class PrudentValidator(vlib.BRValidator):
     # I believe in you
