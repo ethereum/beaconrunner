@@ -1,0 +1,2 @@
+name = "beaconrunner"
+configs = []
