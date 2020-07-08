@@ -1,0 +1,2 @@
+from beaconrunner.validators.ASAPValidator import ASAPValidator
+from beaconrunner.validators.PrudentValidator import PrudentValidator

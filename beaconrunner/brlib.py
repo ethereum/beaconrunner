@@ -1,13 +1,13 @@
 import secrets
-import specs
-import network as nt
+import beaconrunner.specs as specs
+import beaconrunner.network as nt
 import time
 import random
 
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
 from eth2spec.utils.ssz.ssz_typing import Bitlist
 from eth2spec.utils.hash_function import hash
-from eth2 import eth_to_gwei
+from beaconrunner.eth2 import eth_to_gwei
     
 ## Initialisation
 

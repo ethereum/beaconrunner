@@ -1,7 +1,8 @@
 import time
 from typing import Set, Optional, Sequence, Tuple, Dict, Text
 from dataclasses import dataclass, field
-import specs
+
+import beaconrunner.specs as specs
 
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
 from eth2spec.utils.ssz.ssz_typing import Container, List, uint64, Bitlist, Bytes32

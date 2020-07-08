@@ -4,3 +4,5 @@ spec-changes.md
 build
 __pycache__
 Pipfile
+Pipfile.lock
+.ipynb_checkpoints

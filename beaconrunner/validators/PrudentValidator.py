@@ -1,6 +1,6 @@
 from typing import Optional
 
-import beaconrunner.specs
+import beaconrunner.specs as specs
 import beaconrunner.validatorlib as vlib
 
 class PrudentValidator(vlib.BRValidator):

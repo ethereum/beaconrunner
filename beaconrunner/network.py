@@ -1,13 +1,14 @@
 import time
 from typing import Set, Optional, Sequence, Tuple, Dict
 from dataclasses import dataclass, field
-from specs import (
+
+from beaconrunner.specs import (
     VALIDATOR_REGISTRY_LIMIT,
     ValidatorIndex, Slot,
     BeaconState, Attestation, SignedBeaconBlock,
     Store, get_forkchoice_store, on_block, on_attestation
 )
-from validatorlib import BRValidator
+from beaconrunner.validatorlib import BRValidator
 
 from eth2spec.utils.ssz.ssz_typing import Container, List, uint64
 
