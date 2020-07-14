@@ -1,2 +1,4 @@
-from beaconrunner.validators.ASAPValidator import ASAPValidator
-from beaconrunner.validators.PrudentValidator import PrudentValidator
+__all__ = ['ASAPValidator', 'PrudentValidator']
+
+from .ASAPValidator import ASAPValidator
+from .PrudentValidator import PrudentValidator

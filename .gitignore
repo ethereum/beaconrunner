@@ -1,8 +1,9 @@
 .DS_Store
 spec-changes.md
 *.egg-info
-build
+/build
 __pycache__
 Pipfile
 Pipfile.lock
 .ipynb_checkpoints
+*.pyc
