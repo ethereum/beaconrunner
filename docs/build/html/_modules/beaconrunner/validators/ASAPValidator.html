@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>beaconrunner.validators.ASAPValidator &#8212; beaconrunner 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.validators.ASAPValidator</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for beaconrunner.validators.ASAPValidator</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">..specs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Attestation</span><span class="p">,</span> <span class="n">SignedBeaconBlock</span><span class="p">,</span>
+    <span class="n">SECONDS_PER_SLOT</span><span class="p">,</span> <span class="n">SLOTS_PER_EPOCH</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..validatorlib</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BRValidator</span><span class="p">,</span>
+    <span class="n">honest_attest</span><span class="p">,</span> <span class="n">honest_propose</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="ASAPValidator"><a class="viewcode-back" href="../../../validators.html#beaconrunner.validators.ASAPValidator">[docs]</a><span class="k">class</span> <span class="nc">ASAPValidator</span><span class="p">(</span><span class="n">BRValidator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validator behaviour attesting and proposing honestly, following the honest validator</span>
+<span class="sd">    specs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Always $lash and prosper!</span>
+
+    <span class="n">validator_behaviour</span> <span class="o">=</span> <span class="s2">&quot;asap&quot;</span>
+
+<div class="viewcode-block" id="ASAPValidator.attest"><a class="viewcode-back" href="../../../validators.html#beaconrunner.validators.ASAPValidator.attest">[docs]</a>    <span class="k">def</span> <span class="nf">attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Attestation</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an honest `Attestation` as soon as at least four seconds (`SECONDS_PER_SLOT / 3`)</span>
+<span class="sd">        have elapsed into the slot where the validator is supposed to attest.</span>
+<span class="sd">        Checks whether an attestation was produced for the same slot to avoid slashing.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (ASAPValidator): Validator</span>
+<span class="sd">            known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[Attestation]: Either `None` if the validator decides not to attest,</span>
+<span class="sd">            otherwise an honest `Attestation`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Not the moment to attest</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Too early in the slot</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">SECONDS_PER_SLOT</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Already attested for this slot</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_attested</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># honest attest</span>
+        <span class="k">return</span> <span class="n">honest_attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ASAPValidator.propose"><a class="viewcode-back" href="../../../validators.html#beaconrunner.validators.ASAPValidator.propose">[docs]</a>    <span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SignedBeaconBlock</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an honest `SignedBeaconBlock` as soon as the slot where</span>
+<span class="sd">        the validator is supposed to propose starts.</span>
+<span class="sd">        Checks whether a block was proposed for the same slot to avoid slashing.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (ASAPValidator): Validator</span>
+<span class="sd">            known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[SignedBeaconBlock]: Either `None` if the validator decides not to propose,</span>
+<span class="sd">            otherwise a `SignedBeaconBlock` containing attestations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Not supposed to propose for current slot</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_proposer_duties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="n">SLOTS_PER_EPOCH</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Already proposed for this slot</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_proposed</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># honest propose</span>
+        <span class="k">return</span> <span class="n">honest_propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.validators.ASAPValidator</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Barnabé Monnot.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

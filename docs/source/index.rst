@@ -11,6 +11,7 @@ Welcome to beaconrunner's documentation!
 
    brlib
    validatorlib
+   validators
 
 Indices and tables
 ==================

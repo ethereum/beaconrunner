@@ -159,7 +159,7 @@ class BRValidator:
     `process_slots(current_state, to_slot)`.
     """
 
-    def __init__(self, state, validator_index):
+    def __init__(self, state: BeaconState, validator_index: ValidatorIndex):
         """
         Validator constructor
         We preload a bunch of things, to be updated later on as needed
@@ -189,7 +189,13 @@ class BRValidator:
 
     def get_hashable_store(self) -> HashableSpecStore:
         """
-        Returns a hash of the current store state
+        Returns a hash of the current store state.
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            HashableSpecStore: A hashable representation of the current `self.store`
         """
 
         return HashableSpecStore(
@@ -200,6 +206,12 @@ class BRValidator:
     def get_head(self) -> Root:
         """
         Our cached reimplementation of specs-defined `get_head`.
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            Root: Current head according to the validator `self.store`
         """
 
         store_root = hash_tree_root(self.get_hashable_store())
@@ -214,9 +226,17 @@ class BRValidator:
             BRValidator.head_store[store_root] = head_root
             return head_root
 
-    def process_to_slot(self, current_state_root, slot) -> BeaconState:
+    def process_to_slot(self, current_state_root: Root, slot: Slot) -> BeaconState:
         """
         Our cached `process_slots` operation.
+
+        Args:
+            self (BRValidator): Validator
+            current_state_root (Root): Process to slot from this state root
+            slot (Slot): Slot to process to
+
+        Returns:
+            BeaconState: Post-state after transition to `slot`
         """
 
         # If we want to fast-forward a state root to some slot, we check if we have already recorded the
@@ -232,10 +252,17 @@ class BRValidator:
             BRValidator.state_store[(current_state_root, slot)] = current_state
             return current_state.copy()
 
-    def update_time(self, frequency = frequency) -> None:
+    def update_time(self, frequency: uint64 = frequency) -> None:
         """
         Moving validators' clocks by one step.
         To keep it simple, we assume frequency is a power of ten.
+
+        Args:
+            self (BRValidator): Validator
+            frequency (uint64): Simulation update rate
+
+        Returns:
+            None
         """
 
         self.data.time_ms = self.data.time_ms + int(1000 / frequency)
@@ -247,22 +274,38 @@ class BRValidator:
             if get_current_slot(self.store) != self.data.slot:
                 self.update_data()
 
-    def forward_by(self, seconds, frequency = frequency) -> None:
+    def forward_by(self, seconds: uint64, frequency: uint64 = frequency) -> None:
         """
         A utility method to forward the clock by a given number of seconds.
         Useful for exposition!
+
+        Args:
+            self (BRValidator): Validator
+            seconds (uint64): Number of seconds to fast-forward by
+            frequency (uint64): Simulation update rate
+
+        Returns:
+            None
         """
 
         number_ticks = seconds * frequency
         for i in range(number_ticks):
             self.update_time(frequency)
 
-    def update_attester(self, current_state, epoch) -> None:
+    def update_attester(self, current_state: BeaconState, epoch: Epoch) -> None:
         """
         This is a fairly expensive operation, so we try not to call it when we don't have to.
         Update attester duties for the `epoch`.
         This can be queried no earlier than two epochs before
         (e.g., learn about epoch e + 2 duties at epoch t).
+
+        Args:
+            self (BRValidator): Validator
+            current_state (BeaconState): The state from which proposer duties are computed
+            epoch (Epoch): Either `current_epoch` or `current_epoch + 1`
+
+        Returns:
+            None
         """
 
         current_epoch = get_current_epoch(current_state)
@@ -281,11 +324,18 @@ class BRValidator:
             self.data.next_committee_index = committee_index
             self.data.next_committee = committee
 
-    def update_proposer(self, current_state) -> None:
+    def update_proposer(self, current_state: BeaconState) -> None:
         """
         This is a fairly expensive operation, so we try not to call it when we don't have to.
         Update proposer duties for the current epoch.
         We need to check for each slot of the epoch whether the validator is a proposer or not.
+
+        Args:
+            self (BRValidator): Validator
+            current_state (BeaconState): The state from which proposer duties are computed
+
+        Returns:
+            None
         """
 
         current_epoch = get_current_epoch(current_state)
@@ -311,6 +361,13 @@ class BRValidator:
     def update_attest_move(self) -> None:
         """
         When was the last attestation by the validator?
+        Updates `self.data.last_slot_attested`.
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            None
         """
 
         slots_attested = sorted([log.slot for log in self.history if log.move == "attest"], reverse = True)
@@ -319,6 +376,13 @@ class BRValidator:
     def update_propose_move(self) -> None:
         """
         When was the last block proposal by the validator?
+        Updates `self.data.last_slot_proposed`.
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            None
         """
 
         slots_proposed = sorted([log.slot for log in self.history if log.move == "propose"], reverse = True)
@@ -326,7 +390,7 @@ class BRValidator:
 
     def update_data(self) -> None:
         """
-        The head may change if we recorded a new block/new attestation
+        The head may change if we recorded a new block/new attestation in the `store`.
         Attester/proposer responsibilities may change if head changes *and*
         canonical chain changes to further back from start current epoch.
 
@@ -349,6 +413,12 @@ class BRValidator:
               proposer changes but not attester
             - If x before start of previous epoch
               (--x--||-----|----) both proposer and attester change
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            None
         """
 
         slot = get_current_slot(self.store)

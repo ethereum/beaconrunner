@@ -15,6 +15,21 @@ class PrudentValidator(BRValidator):
     validator_behaviour = "prudent"
 
     def attest(self, known_items) -> Optional[Attestation]:
+        """
+        Returns an honest `Attestation` as soon as at least four seconds (`SECONDS_PER_SLOT / 3`)
+        have elapsed into the slot where the validator is supposed to attest *and* a block
+        was received for the slot *or* at least 8 seconds (`2 * SECONDS_PER_SLOT / 3`) have elapsed.
+        Checks whether an attestation was produced for the same slot to avoid slashing.
+
+        Args:
+            self (PrudentValidator): Validator
+            known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+        Returns:
+            Optional[Attestation]: Either `None` if the validator decides not to attest,
+            otherwise an honest `Attestation`
+        """
+
         # Not the moment to attest
         if self.data.current_attest_slot != self.data.slot:
             return None
@@ -37,6 +52,20 @@ class PrudentValidator(BRValidator):
         return honest_attest(self, known_items)
 
     def propose(self, known_items) -> Optional[SignedBeaconBlock]:
+        """
+        Returns an honest `SignedBeaconBlock` as soon as the slot where
+        the validator is supposed to propose starts.
+        Checks whether a block was proposed for the same slot to avoid slashing.
+
+        Args:
+            self (PrudentValidator): Validator
+            known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+        Returns:
+            Optional[SignedBeaconBlock]: Either `None` if the validator decides not to propose,
+            otherwise a `SignedBeaconBlock` containing attestations
+        """
+
         # Not supposed to propose for current slot
         if not self.data.current_proposer_duties[self.data.slot % SLOTS_PER_EPOCH]:
             return None
