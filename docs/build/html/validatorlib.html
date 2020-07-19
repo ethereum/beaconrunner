@@ -43,8 +43,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-beaconrunner.validatorlib">
-<span id="validatorlib"></span><h1>validatorlib<a class="headerlink" href="#module-beaconrunner.validatorlib" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="validatorlib">
+<h1>validatorlib<a class="headerlink" href="#validatorlib" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt id="beaconrunner.validatorlib.BRValidator">
 <em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">BRValidator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">beaconrunner.specs.BeaconState</span></em>, <em class="sig-param"><span class="n">validator_index</span><span class="p">:</span> <span class="n">beaconrunner.specs.ValidatorIndex</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#BRValidator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.BRValidator" title="Permalink to this definition">¶</a></dt>
@@ -95,7 +95,7 @@ Useful for exposition!</p>
 
 <dl class="py method">
 <dt id="beaconrunner.validatorlib.BRValidator.get_hashable_store">
-<code class="sig-name descname">get_hashable_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#beaconrunner.validatorlib.HashableSpecStore" title="beaconrunner.validatorlib.HashableSpecStore">beaconrunner.validatorlib.HashableSpecStore</a><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#BRValidator.get_hashable_store"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.BRValidator.get_hashable_store" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_hashable_store</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; beaconrunner.validatorlib.HashableSpecStore<a class="reference internal" href="_modules/beaconrunner/validatorlib.html#BRValidator.get_hashable_store"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.BRValidator.get_hashable_store" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a hash of the current store state.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -105,7 +105,7 @@ Useful for exposition!</p>
 <dd class="field-even"><p>A hashable representation of the current <cite>self.store</cite></p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#beaconrunner.validatorlib.HashableSpecStore" title="beaconrunner.validatorlib.HashableSpecStore">HashableSpecStore</a></p>
+<dd class="field-odd"><p>HashableSpecStore</p>
 </dd>
 </dl>
 </dd></dl>
@@ -330,211 +330,6 @@ To keep it simple, we assume frequency is a power of ten.</p>
 <dd><p>Validator index in the simulation.</p>
 </dd></dl>
 
-</dd></dl>
-
-<dl class="py class">
-<dt id="beaconrunner.validatorlib.HashableSpecStore">
-<em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">HashableSpecStore</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="n">backing</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>remerkleable.tree.Node<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hook</span><span class="p">:</span> <span class="n">Optional[Callable[[HV], None]]</span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#HashableSpecStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.HashableSpecStore" title="Permalink to this definition">¶</a></dt>
-<dd><p>We cache a map from current state of the <cite>Store</cite> to <cite>head</cite>, since <cite>get_head</cite>
-is computationally intensive. But <cite>Store</cite> is not hashable right off the bat.
-<cite>get_head</cite> only depends on stored blocks and latest messages, so we use that here.</p>
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.HashableSpecStore.recorded_attestations">
-<code class="sig-name descname">recorded_attestations</code><em class="property">: List<span class="p">[</span>Root<span class="p">, </span>VALIDATOR_REGISTRY_LIMIT<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.HashableSpecStore.recorded_attestations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recorded attestations in the <cite>Store</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.HashableSpecStore.recorded_blocks">
-<code class="sig-name descname">recorded_blocks</code><em class="property">: List<span class="p">[</span>Root<span class="p">, </span>VALIDATOR_REGISTRY_LIMIT<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.HashableSpecStore.recorded_blocks" title="Permalink to this definition">¶</a></dt>
-<dd><p>Recorded blocks in the <cite>Store</cite></p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="beaconrunner.validatorlib.ValidatorData">
-<em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">ValidatorData</code><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#ValidatorData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Holds current validator data, to be consumed by BRValidator subclasses.</p>
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.current_attest_slot">
-<code class="sig-name descname">current_attest_slot</code><em class="property">: Slot</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.current_attest_slot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed slot to attest in the current epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.current_committee">
-<code class="sig-name descname">current_committee</code><em class="property">: List<span class="p">[</span>ValidatorIndex<span class="p">, </span>MAX_VALIDATORS_PER_COMMITTEE<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.current_committee" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed committee to attest in the current epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.current_committee_index">
-<code class="sig-name descname">current_committee_index</code><em class="property">: CommitteeIndex</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.current_committee_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed committee index to attest in the current epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.current_epoch">
-<code class="sig-name descname">current_epoch</code><em class="property">: Epoch</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.current_epoch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Current epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.current_proposer_duties">
-<code class="sig-name descname">current_proposer_duties</code><em class="property">: Sequence<span class="p">[</span>bool<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.current_proposer_duties" title="Permalink to this definition">¶</a></dt>
-<dd><p>For the next SLOTS_PER_EPOCH, up to the beginning of a new epoch,
-is the validator a block proposer?</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.head_root">
-<code class="sig-name descname">head_root</code><em class="property">: Root</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.head_root" title="Permalink to this definition">¶</a></dt>
-<dd><p>Current head root, returned by <cite>get_head</cite> on validator’s <cite>Store</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.last_slot_attested">
-<code class="sig-name descname">last_slot_attested</code><em class="property">: Optional<span class="p">[</span>Slot<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.last_slot_attested" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last slot where validator attested. Possibly we have
-<cite>self.slot == self.last_slot_attested</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.last_slot_proposed">
-<code class="sig-name descname">last_slot_proposed</code><em class="property">: Optional<span class="p">[</span>Slot<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.last_slot_proposed" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last slot where validator proposed a block. Possibly we have
-<cite>self.slot == self.last_slot_proposed</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.next_attest_slot">
-<code class="sig-name descname">next_attest_slot</code><em class="property">: Slot</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.next_attest_slot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed slot to attest in the next epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.next_committee">
-<code class="sig-name descname">next_committee</code><em class="property">: List<span class="p">[</span>ValidatorIndex<span class="p">, </span>MAX_VALIDATORS_PER_COMMITTEE<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.next_committee" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed committee to attest in the next epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.next_committee_index">
-<code class="sig-name descname">next_committee_index</code><em class="property">: CommitteeIndex</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.next_committee_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>Last computed committee index to attest in the next epoch</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.received_block">
-<code class="sig-name descname">received_block</code><em class="property">: bool</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.received_block" title="Permalink to this definition">¶</a></dt>
-<dd><p>Has the validator received a block for <cite>self.slot</cite>?</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.recorded_attestations">
-<code class="sig-name descname">recorded_attestations</code><em class="property">: List<span class="p">[</span>Root<span class="p">, </span>VALIDATOR_REGISTRY_LIMIT<span class="p">]</span></em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.recorded_attestations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Hash roots of <cite>Store</cite> recorded attestations. Used for internal cache.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.slot">
-<code class="sig-name descname">slot</code><em class="property">: Slot</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.slot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Current slot</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorData.time_ms">
-<code class="sig-name descname">time_ms</code><em class="property">: uint64</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorData.time_ms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Current simulation time in milliseconds</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="beaconrunner.validatorlib.ValidatorMove">
-<em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">ValidatorMove</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">time</span></em>, <em class="sig-param"><span class="n">slot</span></em>, <em class="sig-param"><span class="n">move</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#ValidatorMove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorMove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Internal class recording validator moves: messages sent over the wire by the validator.
-Useful e.g. to avoid double-sending an attestation.</p>
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorMove.move">
-<code class="sig-name descname">move</code><em class="property">: str</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorMove.move" title="Permalink to this definition">¶</a></dt>
-<dd><p>Type of move. Currently either ‘attest’ or ‘propose’</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorMove.slot">
-<code class="sig-name descname">slot</code><em class="property">: Slot</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorMove.slot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Slot where move was made.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="beaconrunner.validatorlib.ValidatorMove.time">
-<code class="sig-name descname">time</code><em class="property">: uint64</em><a class="headerlink" href="#beaconrunner.validatorlib.ValidatorMove.time" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simulation time (in ms) when move was made.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="beaconrunner.validatorlib.aggregate_attestations">
-<code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">aggregate_attestations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">attestations</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#aggregate_attestations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.aggregate_attestations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Take in a set of attestations. Output aggregated attestations.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="beaconrunner.validatorlib.build_aggregate">
-<code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">build_aggregate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">attestations</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#build_aggregate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.build_aggregate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Given a set of attestations from the same slot, committee index and vote for
-same source, target and beacon block, return an aggregated attestation.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="beaconrunner.validatorlib.honest_attest">
-<code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">honest_attest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validator</span></em>, <em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#honest_attest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.honest_attest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest attestation from <cite>validator</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>validator</strong> (<a class="reference internal" href="#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><em>BRValidator</em></a>) – The attesting validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The honest attestation</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Attestation</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="beaconrunner.validatorlib.honest_propose">
-<code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">honest_propose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validator</span></em>, <em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#honest_propose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.honest_propose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>validator</strong> (<a class="reference internal" href="#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><em>BRValidator</em></a>) – The proposing validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The honest proposed block.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>SignedBeaconBlock</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="beaconrunner.validatorlib.lowest_common_ancestor">
-<code class="sig-prename descclassname">beaconrunner.validatorlib.</code><code class="sig-name descname">lowest_common_ancestor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">store</span></em>, <em class="sig-param"><span class="n">old_head</span></em>, <em class="sig-param"><span class="n">new_head</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>beaconrunner.specs.BeaconBlock<span class="p">]</span><a class="reference internal" href="_modules/beaconrunner/validatorlib.html#lowest_common_ancestor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validatorlib.lowest_common_ancestor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find the lowest common ancestor to <cite>old_head</cite> and <cite>new_head</cite> in <cite>store</cite>.
-In most cases, <cite>old_head</cite> is an ancestor to <cite>new_head</cite>.
-We sort of (loosely) optimise for this.</p>
 </dd></dl>
 
 </div>

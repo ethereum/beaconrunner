@@ -6,18 +6,27 @@ from dataclasses import dataclass, field
 from .specs import (
     Slot, Root, Epoch, CommitteeIndex, ValidatorIndex, Store,
     BeaconState, BeaconBlock, BeaconBlockBody, SignedBeaconBlock,
-    Attestation, AttestationData, Checkpoint,
+    Attestation, AttestationData, Checkpoint, BLSSignature,
     MAX_VALIDATORS_PER_COMMITTEE, VALIDATOR_REGISTRY_LIMIT,
-    SLOTS_PER_EPOCH,
+    SLOTS_PER_EPOCH, DOMAIN_RANDAO, DOMAIN_BEACON_PROPOSER,
+    DOMAIN_BEACON_ATTESTER,
     get_forkchoice_store, get_current_slot, compute_epoch_at_slot,
     get_head, process_slots, on_tick, get_current_epoch,
     get_committee_assignment, compute_start_slot_at_epoch,
     get_block_root, process_block, process_attestation,
-    get_block_root_at_slot,
+    get_block_root_at_slot, get_beacon_proposer_index,
+    get_domain, compute_signing_root, state_transition,
+    on_block,
 )
 
+# from .specs import (
+#     on_block
+# )
+
+import milagro_bls_binding as bls
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
 from eth2spec.utils.ssz.ssz_typing import Container, List, uint64, Bitlist, Bytes32
+from eth2spec.test.helpers.keys import pubkeys, pubkey_to_privkey
 
 frequency = 1
 assert frequency in [1, 10, 100, 1000]
@@ -137,6 +146,12 @@ class BRValidator:
     validator_index: ValidatorIndex
     """Validator index in the simulation."""
 
+    pubkey: int
+    """Validator public key."""
+
+    privkey: int
+    """Validator private key."""
+
     store: Store
     """`Store` objects are defined in the specs."""
 
@@ -159,7 +174,7 @@ class BRValidator:
     `process_slots(current_state, to_slot)`.
     """
 
-    def __init__(self, state: BeaconState, validator_index: ValidatorIndex):
+    def __init__(self, validator_index: ValidatorIndex):
         """
         Validator constructor
         We preload a bunch of things, to be updated later on as needed
@@ -167,18 +182,28 @@ class BRValidator:
         """
 
         self.validator_index = validator_index
+        self.pubkey = pubkeys[validator_index]
+        self.privkey = pubkey_to_privkey[self.pubkey].to_bytes(32, 'big')
 
-        self.store = get_forkchoice_store(state)
         self.history = []
 
         self.data = ValidatorData()
+
+    def load_state(self, state: BeaconState) -> None:
+        """
+        """
+
+        self.store = get_forkchoice_store(state)
+        print("initial state")
+        print("  state lbh", state.latest_block_header)
+        print("  block store", self.store.block_states.keys())
+
         self.data.time_ms = self.store.time * 1000
         self.data.recorded_attestations = []
-
         self.data.slot = get_current_slot(self.store)
         self.data.current_epoch = compute_epoch_at_slot(self.data.slot)
-
         self.data.head_root = self.get_head()
+
         current_state = state.copy()
         if current_state.slot < self.data.slot:
             process_slots(current_state, self.data.slot)
@@ -224,15 +249,16 @@ class BRValidator:
         else:
             head_root = get_head(self.store)
             BRValidator.head_store[store_root] = head_root
+            print("head_store", BRValidator.head_store.values())
             return head_root
 
-    def process_to_slot(self, current_state_root: Root, slot: Slot) -> BeaconState:
+    def process_to_slot(self, current_head_root: Root, slot: Slot) -> BeaconState:
         """
         Our cached `process_slots` operation.
 
         Args:
             self (BRValidator): Validator
-            current_state_root (Root): Process to slot from this state root
+            current_head_root (Root): Process to slot from this state root
             slot (Slot): Slot to process to
 
         Returns:
@@ -241,15 +267,21 @@ class BRValidator:
 
         # If we want to fast-forward a state root to some slot, we check if we have already recorded the
         # resulting state.
-        if (current_state_root, slot) in BRValidator.state_store:
-            return BRValidator.state_store[(current_state_root, slot)].copy()
+        if (current_head_root, slot) in BRValidator.state_store:
+            return BRValidator.state_store[(current_head_root, slot)].copy()
 
         # If we haven't, we need to process it.
         else:
-            current_state = self.store.block_states[current_state_root].copy()
+            current_state = self.store.block_states[current_head_root].copy()
+            print("  current state slot", current_state.slot)
+            print("  current state lbh root", hash_tree_root(current_state.latest_block_header))
+            print("  current state lbh", current_state.latest_block_header)
+
             if current_state.slot < slot:
                 process_slots(current_state, slot)
-            BRValidator.state_store[(current_state_root, slot)] = current_state
+
+            BRValidator.state_store[(current_head_root, slot)] = current_state
+            print(BRValidator.state_store.keys())
             return current_state.copy()
 
     def update_time(self, frequency: uint64 = frequency) -> None:
@@ -606,6 +638,11 @@ def lowest_common_ancestor(store, old_head, new_head) -> Optional[BeaconBlock]:
 
 ### Attestation strategies
 
+def get_attestation_signature(state: BeaconState, attestation_data: AttestationData, privkey: int) -> BLSSignature:
+    domain = get_domain(state, DOMAIN_BEACON_ATTESTER, attestation_data.target.epoch)
+    signing_root = compute_signing_root(attestation_data, domain)
+    return bls.Sign(privkey, signing_root)
+
 def honest_attest(validator, known_items):
     """
     Returns an honest attestation from `validator`.
@@ -651,10 +688,16 @@ def honest_attest(validator, known_items):
         aggregation_bits=aggregation_bits,
         data=att_data
     )
+    attestation_signature = get_attestation_signature(head_state, att_data, validator.privkey)
+    attestation.signature = attestation_signature
 
     return attestation
 
 ### Aggregation helpers
+
+def get_aggregate_signature(attestations: Sequence[Attestation]) -> BLSSignature:
+    signatures = [attestation.signature for attestation in attestations]
+    return bls.Aggregate(signatures)
 
 def build_aggregate(attestations):
     """
@@ -670,10 +713,14 @@ def build_aggregate(attestations):
         validator_index_in_committee = attestation.aggregation_bits.index(1)
         aggregation_bits[validator_index_in_committee] = True
 
-    return Attestation(
+    aggregate_attestation = Attestation(
         aggregation_bits=aggregation_bits,
         data=attestations[0].data
     )
+    aggregate_signature = get_aggregate_signature(attestations)
+    aggregate_attestation.signature = aggregate_signature
+
+    return aggregate_attestation
 
 def aggregate_attestations(attestations):
     """
@@ -687,13 +734,22 @@ def aggregate_attestations(attestations):
 
 ### Proposal strategies
 
+def get_block_signature(state: BeaconState, block: BeaconBlock, privkey: int) -> BLSSignature:
+    domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_at_slot(block.slot))
+    signing_root = compute_signing_root(block, domain)
+    return bls.Sign(privkey, signing_root)
+
+def get_epoch_signature(state: BeaconState, block: BeaconBlock, privkey: int) -> BLSSignature:
+    domain = get_domain(state, DOMAIN_RANDAO, compute_epoch_at_slot(block.slot))
+    signing_root = compute_signing_root(compute_epoch_at_slot(block.slot), domain)
+    return bls.Sign(privkey, signing_root)
+
 def should_process_attestation(state: BeaconState, attestation: Attestation) -> bool:
     try:
         process_attestation(state.copy(), attestation)
         return True
     except:
         return False
-
 
 def honest_propose(validator, known_items):
     """
@@ -707,29 +763,37 @@ def honest_propose(validator, known_items):
         SignedBeaconBlock: The honest proposed block.
     """
 
+    print(validator.validator_index, "proposing block for slot", validator.data.slot)
+
     slot = validator.data.slot
     head = validator.data.head_root
+    print("head", head)
 
+    print("state" + str(slot-1) + "+")
     processed_state = validator.process_to_slot(head, slot)
 
     attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
     attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
 
-    beacon_block_body = BeaconBlockBody(
-        attestations=attestations
-    )
-
     beacon_block = BeaconBlock(
         slot=slot,
         parent_root=head,
-        body=beacon_block_body,
-        proposer_index = validator.validator_index
+        proposer_index = validator.validator_index,
     )
+
+    beacon_block_body = BeaconBlockBody(
+        attestations=attestations
+    )
+    epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
+    beacon_block_body.randao_reveal = epoch_signature
+
+    beacon_block.body = beacon_block_body
 
     process_block(processed_state, beacon_block)
     state_root = hash_tree_root(processed_state)
     beacon_block.state_root = state_root
 
-    signed_beacon_block = SignedBeaconBlock(message=beacon_block)
+    block_signature = get_block_signature(processed_state, beacon_block, validator.privkey)
+    signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
 
-    return signed_beacon_block
+    return signed_block

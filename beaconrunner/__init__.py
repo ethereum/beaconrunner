@@ -1,11 +1,10 @@
-__all__ = ['brlib', 'cadCADsupSUP', 'eth2', 'network', 'specs', 'validatorlib', 'validators']
+__all__ = ['network', 'simulator', 'specs', 'utils', 'validatorlib', 'validators']
 
 from . import (
-    brlib,
-    cadCADsupSUP,
-    eth2,
     network,
+    simulator,
     specs,
+    utils,
     validatorlib,
     validators,
 )

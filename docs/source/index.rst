@@ -10,7 +10,7 @@ Welcome to beaconrunner's documentation!
    :caption: Contents:
 
    brlib
-   validatorlib
+   BRValidator
    validators
 
 Indices and tables
