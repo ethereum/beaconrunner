@@ -16,9 +16,8 @@ class PrudentValidator(BRValidator):
 
     def attest(self, known_items) -> Optional[Attestation]:
         """
-        Returns an honest `Attestation` as soon as at least four seconds (`SECONDS_PER_SLOT / 3`)
-        have elapsed into the slot where the validator is supposed to attest *and* a block
-        was received for the slot *or* at least 8 seconds (`2 * SECONDS_PER_SLOT / 3`) have elapsed.
+        Returns an honest `Attestation` as soon as a block was received for the
+        attesting slot *or* at least 8 seconds (`2 * SECONDS_PER_SLOT / 3`) have elapsed.
         Checks whether an attestation was produced for the same slot to avoid slashing.
 
         Args:
@@ -35,13 +34,9 @@ class PrudentValidator(BRValidator):
             return None
 
         time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
-        # Too early in the slot
-        if time_in_slot < 4:
-            return None
 
-        # Did not receive a block for this slot yet
-        # Not too late to attest
-        if not self.data.received_block and time_in_slot <= 8:
+        # Too early in the slot / didn't receive block
+        if not self.data.received_block and time_in_slot < 8:
             return None
 
         # Already attested for this slot

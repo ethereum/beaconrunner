@@ -21,7 +21,8 @@ class ASAPValidator(BRValidator):
     def attest(self, known_items) -> Optional[Attestation]:
         """
         Returns an honest `Attestation` as soon as at least four seconds (`SECONDS_PER_SLOT / 3`)
-        have elapsed into the slot where the validator is supposed to attest.
+        have elapsed into the slot where the validator is supposed to attest or the validator
+        has received a valid block for the attesting slot.
         Checks whether an attestation was produced for the same slot to avoid slashing.
 
         Args:
@@ -37,8 +38,10 @@ class ASAPValidator(BRValidator):
         if self.data.current_attest_slot != self.data.slot:
             return None
 
-        # Too early in the slot
-        if (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT < 4:
+        time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
+
+        # Too early in the slot / didn't receive block
+        if not self.data.received_block and time_in_slot < 4:
             return None
 
         # Already attested for this slot

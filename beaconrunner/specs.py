@@ -25,7 +25,6 @@ SSZObject = TypeVar('SSZObject', bound=View)
 
 fork = 'phase0'
 
-
 class Slot(uint64):
     pass
 
@@ -144,7 +143,6 @@ ATTESTATION_SUBNET_COUNT = 64
 
 
 apply_constants_config(globals())
-
 
 class Fork(Container):
     previous_version: Version

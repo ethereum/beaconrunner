@@ -14,7 +14,8 @@ def get_observed_psubs(psubs, observers):
     return psubs
 
 def loop_time(params, step, sL, s, _input):
-    print(s["timestep"], ">> loop_duration =", s["loop_duration"], ", total time =", s["loop_cum"])
+    if s["timestep"] % 100 == 0:
+        print(s["timestep"], ">> loop_duration =", s["loop_duration"], ", total time =", s["loop_cum"])
     return ("loop_time", time.time())
 
 def loop_duration(params, step, sL, s, _input):

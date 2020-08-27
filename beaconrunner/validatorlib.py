@@ -16,12 +16,8 @@ from .specs import (
     get_block_root, process_block, process_attestation,
     get_block_root_at_slot, get_beacon_proposer_index,
     get_domain, compute_signing_root, state_transition,
-    on_block,
+    on_block, on_attestation,
 )
-
-# from .specs import (
-#     on_block
-# )
 
 import milagro_bls_binding as bls
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
@@ -193,10 +189,7 @@ class BRValidator:
         """
         """
 
-        self.store = get_forkchoice_store(state)
-        print("initial state")
-        print("  state lbh", state.latest_block_header)
-        print("  block store", self.store.block_states.keys())
+        self.store = get_forkchoice_store(state.copy())
 
         self.data.time_ms = self.store.time * 1000
         self.data.recorded_attestations = []
@@ -249,7 +242,6 @@ class BRValidator:
         else:
             head_root = get_head(self.store)
             BRValidator.head_store[store_root] = head_root
-            print("head_store", BRValidator.head_store.values())
             return head_root
 
     def process_to_slot(self, current_head_root: Root, slot: Slot) -> BeaconState:
@@ -273,15 +265,11 @@ class BRValidator:
         # If we haven't, we need to process it.
         else:
             current_state = self.store.block_states[current_head_root].copy()
-            print("  current state slot", current_state.slot)
-            print("  current state lbh root", hash_tree_root(current_state.latest_block_header))
-            print("  current state lbh", current_state.latest_block_header)
 
             if current_state.slot < slot:
                 process_slots(current_state, slot)
 
             BRValidator.state_store[(current_head_root, slot)] = current_state
-            print(BRValidator.state_store.keys())
             return current_state.copy()
 
     def update_time(self, frequency: uint64 = frequency) -> None:
@@ -632,6 +620,7 @@ def lowest_common_ancestor(store, old_head, new_head) -> Optional[BeaconBlock]:
         if parent_root in new_head_ancestors:
             return parent_block
         elif parent_block.slot == 0:
+            print("return none")
             return None
         else:
             current_block = parent_block
@@ -767,9 +756,7 @@ def honest_propose(validator, known_items):
 
     slot = validator.data.slot
     head = validator.data.head_root
-    print("head", head)
 
-    print("state" + str(slot-1) + "+")
     processed_state = validator.process_to_slot(head, slot)
 
     attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
