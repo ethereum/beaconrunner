@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>beaconrunner.simulator &#8212; beaconrunner 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.simulator</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for beaconrunner.simulator</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">secrets</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">from</span> <span class="nn">cadCAD.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<span class="kn">from</span> <span class="nn">cadCAD.configuration.utils</span> <span class="kn">import</span> <span class="n">config_sim</span>
+<span class="kn">from</span> <span class="nn">cadCAD.engine</span> <span class="kn">import</span> <span class="n">ExecutionMode</span><span class="p">,</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">Executor</span>
+
+<span class="kn">from</span> <span class="nn">.specs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Deposit</span><span class="p">,</span> <span class="n">DepositData</span><span class="p">,</span> <span class="n">BeaconState</span><span class="p">,</span>
+    <span class="n">SECONDS_PER_SLOT</span><span class="p">,</span> <span class="n">SLOTS_PER_EPOCH</span><span class="p">,</span>
+    <span class="n">initialize_beacon_state_from_eth1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.network</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Network</span><span class="p">,</span>
+    <span class="n">update_network</span><span class="p">,</span> <span class="n">disseminate_attestations</span><span class="p">,</span>
+    <span class="n">disseminate_block</span><span class="p">,</span> <span class="n">knowledge_set</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.utils.cadCADsupSUP</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_observed_psubs</span><span class="p">,</span>
+    <span class="n">get_observed_initial_conditions</span><span class="p">,</span>
+    <span class="n">add_loop_ic</span><span class="p">,</span>
+    <span class="n">add_loop_psubs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_typing</span> <span class="kn">import</span> <span class="n">Bitlist</span><span class="p">,</span> <span class="n">uint64</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.hash_function</span> <span class="kn">import</span> <span class="nb">hash</span>
+<span class="kn">from</span> <span class="nn">.utils.eth2</span> <span class="kn">import</span> <span class="n">eth_to_gwei</span>
+
+<span class="c1">## Initialisation</span>
+
+<div class="viewcode-block" id="get_initial_deposits"><a class="viewcode-back" href="../../simulator.html#beaconrunner.simulator.get_initial_deposits">[docs]</a><span class="k">def</span> <span class="nf">get_initial_deposits</span><span class="p">(</span><span class="n">validators</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Produce deposits</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        validators (Sequence[BRValidator]): Validators of the simulation</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List[Deposit]: The list of deposits</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">Deposit</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">DepositData</span><span class="p">(</span>
+        <span class="n">amount</span><span class="o">=</span><span class="n">eth_to_gwei</span><span class="p">(</span><span class="mi">32</span><span class="p">),</span>
+        <span class="n">pubkey</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">pubkey</span><span class="p">)</span>
+    <span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span></div>
+
+<span class="k">def</span> <span class="nf">get_genesis_state</span><span class="p">(</span><span class="n">validators</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">):</span>
+    <span class="n">block_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">seed</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+    <span class="n">eth1_timestamp</span> <span class="o">=</span> <span class="mi">1578009600</span>
+    <span class="k">return</span> <span class="n">initialize_beacon_state_from_eth1</span><span class="p">(</span>
+        <span class="n">block_hash</span><span class="p">,</span> <span class="n">eth1_timestamp</span><span class="p">,</span> <span class="n">get_initial_deposits</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+    <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">:</span>
+        <span class="n">validator</span><span class="o">.</span><span class="n">forward_by</span><span class="p">(</span><span class="n">SECONDS_PER_SLOT</span><span class="p">)</span>
+
+<span class="c1">## State transitions</span>
+
+<span class="k">def</span> <span class="nf">tick</span><span class="p">(</span><span class="n">_params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="c1"># Move the simulation by one step</span>
+    <span class="n">frequency</span> <span class="o">=</span> <span class="n">_params</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span>
+    <span class="n">network_update_rate</span> <span class="o">=</span> <span class="n">_params</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;network_update_rate&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Probably overkill</span>
+    <span class="k">assert</span> <span class="n">frequency</span> <span class="o">&gt;=</span> <span class="n">network_update_rate</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
+
+    <span class="n">update_prob</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">network_update_rate</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+
+    <span class="c1"># If we draw a success, based on `update_prob`, update the network</span>
+    <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">update_prob</span><span class="p">:</span>
+        <span class="n">update_network</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+
+    <span class="c1"># Push validators&#39; clocks by one step</span>
+    <span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">validators</span><span class="p">:</span>
+        <span class="n">validator</span><span class="o">.</span><span class="n">update_time</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;timestep&quot;</span><span class="p">]</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;timestep&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;timestep&quot;</span><span class="p">],</span> <span class="s2">&quot;of run&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;network&quot;</span><span class="p">,</span> <span class="n">network</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">update_attestations</span><span class="p">(</span><span class="n">_params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="c1"># Get the attestations and disseminate them on-the-wire</span>
+    <span class="n">network</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
+    <span class="n">disseminate_attestations</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">_input</span><span class="p">[</span><span class="s2">&quot;attestations&quot;</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="n">network</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">update_blocks</span><span class="p">(</span><span class="n">_params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="c1"># Get the blocks proposed and disseminate them on-the-wire</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">_input</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]:</span>
+        <span class="n">disseminate_block</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">proposer_index</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="n">network</span><span class="p">)</span>
+
+<span class="c1">## Policies</span>
+
+<span class="c1">### Attestations</span>
+
+<span class="k">def</span> <span class="nf">attest_policy</span><span class="p">(</span><span class="n">_params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="c1"># Pinging validators to check if anyone wants to attest</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">]</span>
+    <span class="n">produced_attestations</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">validator_index</span><span class="p">,</span> <span class="n">validator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">validators</span><span class="p">):</span>
+        <span class="n">known_items</span> <span class="o">=</span> <span class="n">knowledge_set</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">)</span>
+        <span class="n">attestation</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">attest</span><span class="p">(</span><span class="n">known_items</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">attestation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">produced_attestations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">validator_index</span><span class="p">,</span> <span class="n">attestation</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">({</span> <span class="s1">&#39;attestations&#39;</span><span class="p">:</span> <span class="n">produced_attestations</span> <span class="p">})</span>
+
+<span class="c1">### Block proposal</span>
+
+<span class="k">def</span> <span class="nf">propose_policy</span><span class="p">(</span><span class="n">_params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="c1"># Pinging validators to check if anyone wants to propose a block</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">]</span>
+    <span class="n">produced_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">validator_index</span><span class="p">,</span> <span class="n">validator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">validators</span><span class="p">):</span>
+        <span class="n">known_items</span> <span class="o">=</span> <span class="n">knowledge_set</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">)</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">propose</span><span class="p">(</span><span class="n">known_items</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">produced_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">({</span> <span class="s1">&#39;blocks&#39;</span><span class="p">:</span> <span class="n">produced_blocks</span> <span class="p">})</span>
+
+<span class="c1">### Simulator shell</span>
+
+<span class="k">class</span> <span class="nc">SimulationParameters</span><span class="p">:</span>
+
+    <span class="n">num_epochs</span><span class="p">:</span> <span class="n">uint64</span>
+    <span class="n">num_run</span><span class="p">:</span> <span class="n">uint64</span>
+    <span class="n">frequency</span><span class="p">:</span> <span class="n">uint64</span>
+    <span class="n">network_update_rate</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">&quot;num_epochs&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_run</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">&quot;num_run&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">network_update_rate</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s2">&quot;network_update_rate&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="simulate"><a class="viewcode-back" href="../../simulator.html#beaconrunner.simulator.simulate">[docs]</a><span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span><span class="n">network</span><span class="p">:</span> <span class="n">Network</span><span class="p">,</span> <span class="n">parameters</span><span class="p">:</span> <span class="n">SimulationParameters</span><span class="p">,</span> <span class="n">observers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">BeaconState</span><span class="p">],</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        network (Network): Network of :py:class:`beaconrunner.validatorlib.BRValidator`</span>
+<span class="sd">        parameters (BRSimulationParameters): Simulation parameters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pandas.DataFrame: Results of the simulation contained in a pandas data frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">network</span>
+    <span class="p">}</span>
+
+    <span class="n">psubs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">attest_policy</span> <span class="c1"># step 1</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">update_attestations</span> <span class="c1"># step 2</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">propose_policy</span> <span class="c1"># step 3</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">update_blocks</span> <span class="c1"># step 4</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">tick</span> <span class="c1"># step 5</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Determine how many steps the simulation is running for</span>
+    <span class="n">num_slots</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">num_epochs</span> <span class="o">*</span> <span class="n">SLOTS_PER_EPOCH</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">num_slots</span> <span class="o">*</span> <span class="n">SECONDS_PER_SLOT</span> <span class="o">*</span> <span class="n">parameters</span><span class="o">.</span><span class="n">frequency</span>
+
+    <span class="n">simulation_parameters</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;T&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span>
+        <span class="s1">&#39;N&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;M&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">parameters</span><span class="o">.</span><span class="n">frequency</span><span class="p">],</span>
+            <span class="s2">&quot;network_update_rate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">parameters</span><span class="o">.</span><span class="n">network_update_rate</span><span class="p">],</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;will simulate&quot;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">.</span><span class="n">num_epochs</span><span class="p">,</span> <span class="s2">&quot;epochs (&quot;</span><span class="p">,</span> <span class="n">num_slots</span><span class="p">,</span> <span class="s2">&quot;slots ) at frequency&quot;</span><span class="p">,</span> <span class="n">parameters</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="s2">&quot;moves/second&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="s2">&quot;simulation steps&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Add our observers to the simulation</span>
+    <span class="n">observed_ic</span> <span class="o">=</span> <span class="n">add_loop_ic</span><span class="p">(</span><span class="n">get_observed_initial_conditions</span><span class="p">(</span><span class="n">initial_conditions</span><span class="p">,</span> <span class="n">observers</span><span class="p">))</span>
+    <span class="n">observed_psubs</span> <span class="o">=</span> <span class="n">add_loop_psubs</span><span class="p">(</span><span class="n">get_observed_psubs</span><span class="p">(</span><span class="n">psubs</span><span class="p">,</span> <span class="n">observers</span><span class="p">))</span>
+
+    <span class="c1"># Final simulation parameters and execution</span>
+    <span class="n">configs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sim_param</span> <span class="ow">in</span> <span class="n">config_sim</span><span class="p">(</span><span class="n">simulation_parameters</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">sim_param</span><span class="p">,</span>
+                               <span class="n">initial_state</span><span class="o">=</span><span class="n">observed_ic</span><span class="p">,</span>
+                               <span class="n">partial_state_update_blocks</span><span class="o">=</span><span class="n">observed_psubs</span><span class="p">)</span>
+        <span class="n">configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="n">exec_mode</span> <span class="o">=</span> <span class="n">ExecutionMode</span><span class="p">()</span>
+    <span class="n">single_proc_ctx</span> <span class="o">=</span> <span class="n">ExecutionContext</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">exec_mode</span><span class="o">.</span><span class="n">single_proc</span><span class="p">)</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">Executor</span><span class="p">(</span><span class="n">exec_context</span><span class="o">=</span><span class="n">single_proc_ctx</span><span class="p">,</span> <span class="n">configs</span><span class="o">=</span><span class="n">configs</span><span class="p">)</span>
+    <span class="n">raw_result</span><span class="p">,</span> <span class="n">tensor_field</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">raw_result</span><span class="p">)</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">run</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">num_run</span><span class="p">)</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.simulator</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Barnabé Monnot.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

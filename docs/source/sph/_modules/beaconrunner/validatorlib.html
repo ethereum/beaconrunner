@@ -1,0 +1,867 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>beaconrunner.validatorlib &#8212; beaconrunner 0.1.2 documentation</title>
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.validatorlib</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for beaconrunner.validatorlib</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Text</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+
+<span class="kn">from</span> <span class="nn">.specs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Slot</span><span class="p">,</span> <span class="n">Root</span><span class="p">,</span> <span class="n">Epoch</span><span class="p">,</span> <span class="n">CommitteeIndex</span><span class="p">,</span> <span class="n">ValidatorIndex</span><span class="p">,</span> <span class="n">Store</span><span class="p">,</span>
+    <span class="n">BeaconState</span><span class="p">,</span> <span class="n">BeaconBlock</span><span class="p">,</span> <span class="n">BeaconBlockBody</span><span class="p">,</span> <span class="n">SignedBeaconBlock</span><span class="p">,</span>
+    <span class="n">Attestation</span><span class="p">,</span> <span class="n">AttestationData</span><span class="p">,</span> <span class="n">Checkpoint</span><span class="p">,</span> <span class="n">BLSSignature</span><span class="p">,</span>
+    <span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">,</span> <span class="n">VALIDATOR_REGISTRY_LIMIT</span><span class="p">,</span>
+    <span class="n">SLOTS_PER_EPOCH</span><span class="p">,</span> <span class="n">DOMAIN_RANDAO</span><span class="p">,</span> <span class="n">DOMAIN_BEACON_PROPOSER</span><span class="p">,</span>
+    <span class="n">DOMAIN_BEACON_ATTESTER</span><span class="p">,</span>
+    <span class="n">get_forkchoice_store</span><span class="p">,</span> <span class="n">get_current_slot</span><span class="p">,</span> <span class="n">compute_epoch_at_slot</span><span class="p">,</span>
+    <span class="n">get_head</span><span class="p">,</span> <span class="n">process_slots</span><span class="p">,</span> <span class="n">on_tick</span><span class="p">,</span> <span class="n">get_current_epoch</span><span class="p">,</span>
+    <span class="n">get_committee_assignment</span><span class="p">,</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">,</span>
+    <span class="n">get_block_root</span><span class="p">,</span> <span class="n">process_block</span><span class="p">,</span> <span class="n">process_attestation</span><span class="p">,</span>
+    <span class="n">get_block_root_at_slot</span><span class="p">,</span> <span class="n">get_beacon_proposer_index</span><span class="p">,</span>
+    <span class="n">get_domain</span><span class="p">,</span> <span class="n">compute_signing_root</span><span class="p">,</span> <span class="n">state_transition</span><span class="p">,</span>
+    <span class="n">on_block</span><span class="p">,</span> <span class="n">on_attestation</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">milagro_bls_binding</span> <span class="k">as</span> <span class="nn">bls</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_typing</span> <span class="kn">import</span> <span class="n">Container</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">uint64</span><span class="p">,</span> <span class="n">Bitlist</span><span class="p">,</span> <span class="n">Bytes32</span>
+<span class="kn">from</span> <span class="nn">eth2spec.test.helpers.keys</span> <span class="kn">import</span> <span class="n">pubkeys</span><span class="p">,</span> <span class="n">pubkey_to_privkey</span>
+
+<span class="n">frequency</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">assert</span> <span class="n">frequency</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">ValidatorMove</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Internal class recording validator moves: messages sent over the wire by the validator.</span>
+<span class="sd">    Useful e.g. to avoid double-sending an attestation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">time</span><span class="p">:</span> <span class="n">uint64</span>
+    <span class="sd">&quot;&quot;&quot;Simulation time (in ms) when move was made.&quot;&quot;&quot;</span>
+
+    <span class="n">slot</span><span class="p">:</span> <span class="n">Slot</span>
+    <span class="sd">&quot;&quot;&quot;Slot where move was made.&quot;&quot;&quot;</span>
+
+    <span class="n">move</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="sd">&quot;&quot;&quot;Type of move. Currently either &#39;attest&#39; or &#39;propose&#39;&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">slot</span><span class="p">,</span> <span class="n">move</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialise ValidatorMove&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slot</span> <span class="o">=</span> <span class="n">slot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">move</span> <span class="o">=</span> <span class="n">move</span>
+
+<span class="k">class</span> <span class="nc">ValidatorData</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds current validator data, to be consumed by BRValidator subclasses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">slot</span><span class="p">:</span> <span class="n">Slot</span>
+    <span class="sd">&quot;&quot;&quot;Current slot&quot;&quot;&quot;</span>
+
+    <span class="n">time_ms</span><span class="p">:</span> <span class="n">uint64</span>
+    <span class="sd">&quot;&quot;&quot;Current simulation time in milliseconds&quot;&quot;&quot;</span>
+
+    <span class="n">head_root</span><span class="p">:</span> <span class="n">Root</span>
+    <span class="sd">&quot;&quot;&quot;Current head root, returned by `get_head` on validator&#39;s `Store`&quot;&quot;&quot;</span>
+
+    <span class="n">current_epoch</span><span class="p">:</span> <span class="n">Epoch</span>
+    <span class="sd">&quot;&quot;&quot;Current epoch&quot;&quot;&quot;</span>
+
+    <span class="n">current_attest_slot</span><span class="p">:</span> <span class="n">Slot</span>
+    <span class="sd">&quot;&quot;&quot;Last computed slot to attest in the current epoch&quot;&quot;&quot;</span>
+
+    <span class="n">current_committee_index</span><span class="p">:</span> <span class="n">CommitteeIndex</span>
+    <span class="sd">&quot;&quot;&quot;Last computed committee index to attest in the current epoch&quot;&quot;&quot;</span>
+
+    <span class="n">current_committee</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ValidatorIndex</span><span class="p">,</span> <span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;Last computed committee to attest in the current epoch&quot;&quot;&quot;</span>
+
+    <span class="n">next_attest_slot</span><span class="p">:</span> <span class="n">Slot</span>
+    <span class="sd">&quot;&quot;&quot;Last computed slot to attest in the next epoch&quot;&quot;&quot;</span>
+
+    <span class="n">next_committee_index</span><span class="p">:</span> <span class="n">CommitteeIndex</span>
+    <span class="sd">&quot;&quot;&quot;Last computed committee index to attest in the next epoch&quot;&quot;&quot;</span>
+
+    <span class="n">next_committee</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ValidatorIndex</span><span class="p">,</span> <span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;Last computed committee to attest in the next epoch&quot;&quot;&quot;</span>
+
+    <span class="n">last_slot_attested</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Slot</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Last slot where validator attested. Possibly we have</span>
+<span class="sd">    `self.slot == self.last_slot_attested`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">current_proposer_duties</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For the next SLOTS_PER_EPOCH, up to the beginning of a new epoch,</span>
+<span class="sd">    is the validator a block proposer?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">last_slot_proposed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Slot</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Last slot where validator proposed a block. Possibly we have</span>
+<span class="sd">    `self.slot == self.last_slot_proposed`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">recorded_attestations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Root</span><span class="p">,</span> <span class="n">VALIDATOR_REGISTRY_LIMIT</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Hash roots of `Store` recorded attestations. Used for internal cache.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">received_block</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Has the validator received a block for `self.slot`?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">HashableSpecStore</span><span class="p">(</span><span class="n">Container</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; We cache a map from current state of the `Store` to `head`, since `get_head`</span>
+<span class="sd">    is computationally intensive. But `Store` is not hashable right off the bat.</span>
+<span class="sd">    `get_head` only depends on stored blocks and latest messages, so we use that here.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">recorded_attestations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Root</span><span class="p">,</span> <span class="n">VALIDATOR_REGISTRY_LIMIT</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;Recorded attestations in the `Store`&quot;&quot;&quot;</span>
+
+    <span class="n">recorded_blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Root</span><span class="p">,</span> <span class="n">VALIDATOR_REGISTRY_LIMIT</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;Recorded blocks in the `Store`&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BRValidator"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator">[docs]</a><span class="k">class</span> <span class="nc">BRValidator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract superclass from which validator behaviours inherit.</span>
+<span class="sd">    Defines and maintains environment accessor functions (is the validator an attester? proposer?)</span>
+<span class="sd">    Performs caching to avoid recomputing expensive operations.</span>
+
+<span class="sd">    In general, you are not expected to use any of the methods or attributes defined here, _except_</span>
+<span class="sd">    for `validator.data`, which exposes current simulation environment properties, up-to-date with</span>
+<span class="sd">    respect to the validator (e.g., proposer and attester duties).</span>
+
+<span class="sd">    Subclasses of `BRValidator` must define at least two methods:</span>
+
+<span class="sd">    - `attest(self, known_items) -&gt; Optional[Attestation]`</span>
+<span class="sd">    - `propose(self, known_items) -&gt; Optional[Attestation]`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">validator_index</span><span class="p">:</span> <span class="n">ValidatorIndex</span>
+    <span class="sd">&quot;&quot;&quot;Validator index in the simulation.&quot;&quot;&quot;</span>
+
+    <span class="n">pubkey</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="sd">&quot;&quot;&quot;Validator public key.&quot;&quot;&quot;</span>
+
+    <span class="n">privkey</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="sd">&quot;&quot;&quot;Validator private key.&quot;&quot;&quot;</span>
+
+    <span class="n">store</span><span class="p">:</span> <span class="n">Store</span>
+    <span class="sd">&quot;&quot;&quot;`Store` objects are defined in the specs.&quot;&quot;&quot;</span>
+
+    <span class="n">history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ValidatorMove</span><span class="p">,</span> <span class="n">VALIDATOR_REGISTRY_LIMIT</span><span class="p">]</span>
+    <span class="sd">&quot;&quot;&quot;History of `ValidatorMove` by the validator.&quot;&quot;&quot;</span>
+
+    <span class="n">data</span><span class="p">:</span> <span class="n">ValidatorData</span>
+    <span class="sd">&quot;&quot;&quot;Current validator data. Maintained by the `BRValidator` methods.&quot;&quot;&quot;</span>
+
+    <span class="n">head_store</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Root</span><span class="p">,</span> <span class="n">Root</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Static cache for expensive operations.</span>
+<span class="sd">    `head_store` stores a map from store hash to head root.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">state_store</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Root</span><span class="p">,</span> <span class="n">Slot</span><span class="p">],</span> <span class="n">BeaconState</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Static cache for expensive operations.</span>
+<span class="sd">    `state_store` stores a map from `(current_state_hash, to_slot)` calling</span>
+<span class="sd">    `process_slots(current_state, to_slot)`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">:</span> <span class="n">ValidatorIndex</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validator constructor</span>
+<span class="sd">        We preload a bunch of things, to be updated later on as needed</span>
+<span class="sd">        The validator is initialised from some base state, and given a `validator_index`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">validator_index</span> <span class="o">=</span> <span class="n">validator_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pubkey</span> <span class="o">=</span> <span class="n">pubkeys</span><span class="p">[</span><span class="n">validator_index</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">privkey</span> <span class="o">=</span> <span class="n">pubkey_to_privkey</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pubkey</span><span class="p">]</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="s1">&#39;big&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ValidatorData</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BRValidator.load_state"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.load_state">[docs]</a>    <span class="k">def</span> <span class="nf">load_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">get_forkchoice_store</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="mi">1000</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">recorded_attestations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">=</span> <span class="n">get_current_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_head</span><span class="p">()</span>
+
+        <span class="n">current_state</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">current_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="n">process_slots</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_attester</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_proposer</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_data</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BRValidator.get_hashable_store"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.get_hashable_store">[docs]</a>    <span class="k">def</span> <span class="nf">get_hashable_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HashableSpecStore</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a hash of the current store state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            HashableSpecStore: A hashable representation of the current `self.store`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">HashableSpecStore</span><span class="p">(</span>
+            <span class="n">recorded_attestations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">recorded_attestations</span><span class="p">,</span>
+            <span class="n">recorded_blocks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="BRValidator.get_head"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.get_head">[docs]</a>    <span class="k">def</span> <span class="nf">get_head</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Root</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Our cached reimplementation of specs-defined `get_head`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Root: Current head according to the validator `self.store`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">store_root</span> <span class="o">=</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_hashable_store</span><span class="p">())</span>
+
+        <span class="c1"># If we can get the head from the cache, great!</span>
+        <span class="k">if</span> <span class="n">store_root</span> <span class="ow">in</span> <span class="n">BRValidator</span><span class="o">.</span><span class="n">head_store</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">BRValidator</span><span class="o">.</span><span class="n">head_store</span><span class="p">[</span><span class="n">store_root</span><span class="p">]</span>
+
+        <span class="c1"># Otherwise we must compute it again :(</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">head_root</span> <span class="o">=</span> <span class="n">get_head</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+            <span class="n">BRValidator</span><span class="o">.</span><span class="n">head_store</span><span class="p">[</span><span class="n">store_root</span><span class="p">]</span> <span class="o">=</span> <span class="n">head_root</span>
+            <span class="k">return</span> <span class="n">head_root</span></div>
+
+<div class="viewcode-block" id="BRValidator.process_to_slot"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.process_to_slot">[docs]</a>    <span class="k">def</span> <span class="nf">process_to_slot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_head_root</span><span class="p">:</span> <span class="n">Root</span><span class="p">,</span> <span class="n">slot</span><span class="p">:</span> <span class="n">Slot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BeaconState</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Our cached `process_slots` operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+<span class="sd">            current_head_root (Root): Process to slot from this state root</span>
+<span class="sd">            slot (Slot): Slot to process to</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            BeaconState: Post-state after transition to `slot`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If we want to fast-forward a state root to some slot, we check if we have already recorded the</span>
+        <span class="c1"># resulting state.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">current_head_root</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span> <span class="ow">in</span> <span class="n">BRValidator</span><span class="o">.</span><span class="n">state_store</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">BRValidator</span><span class="o">.</span><span class="n">state_store</span><span class="p">[(</span><span class="n">current_head_root</span><span class="p">,</span> <span class="n">slot</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># If we haven&#39;t, we need to process it.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">current_head_root</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">current_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="n">slot</span><span class="p">:</span>
+                <span class="n">process_slots</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+
+            <span class="n">BRValidator</span><span class="o">.</span><span class="n">state_store</span><span class="p">[(</span><span class="n">current_head_root</span><span class="p">,</span> <span class="n">slot</span><span class="p">)]</span> <span class="o">=</span> <span class="n">current_state</span>
+            <span class="k">return</span> <span class="n">current_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_time"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_time">[docs]</a>    <span class="k">def</span> <span class="nf">update_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="p">:</span> <span class="n">uint64</span> <span class="o">=</span> <span class="n">frequency</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Moving validators&#39; clocks by one step.</span>
+<span class="sd">        To keep it simple, we assume frequency is a power of ten.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+<span class="sd">            frequency (uint64): Simulation update rate</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1000</span> <span class="o">/</span> <span class="n">frequency</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span> <span class="o">%</span> <span class="mi">1000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># The store is updated each second in the specs</span>
+            <span class="n">on_tick</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># If a new slot starts, we update</span>
+            <span class="k">if</span> <span class="n">get_current_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_data</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BRValidator.forward_by"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.forward_by">[docs]</a>    <span class="k">def</span> <span class="nf">forward_by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="p">:</span> <span class="n">uint64</span><span class="p">,</span> <span class="n">frequency</span><span class="p">:</span> <span class="n">uint64</span> <span class="o">=</span> <span class="n">frequency</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A utility method to forward the clock by a given number of seconds.</span>
+<span class="sd">        Useful for exposition!</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+<span class="sd">            seconds (uint64): Number of seconds to fast-forward by</span>
+<span class="sd">            frequency (uint64): Simulation update rate</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">number_ticks</span> <span class="o">=</span> <span class="n">seconds</span> <span class="o">*</span> <span class="n">frequency</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_ticks</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_time</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_attester"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_attester">[docs]</a>    <span class="k">def</span> <span class="nf">update_attester</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="n">Epoch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is a fairly expensive operation, so we try not to call it when we don&#39;t have to.</span>
+<span class="sd">        Update attester duties for the `epoch`.</span>
+<span class="sd">        This can be queried no earlier than two epochs before</span>
+<span class="sd">        (e.g., learn about epoch e + 2 duties at epoch t).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+<span class="sd">            current_state (BeaconState): The state from which proposer duties are computed</span>
+<span class="sd">            epoch (Epoch): Either `current_epoch` or `current_epoch + 1`</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+
+        <span class="c1"># When is the validator scheduled to attest in `epoch`?</span>
+        <span class="p">(</span><span class="n">committee</span><span class="p">,</span> <span class="n">committee_index</span><span class="p">,</span> <span class="n">attest_slot</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_committee_assignment</span><span class="p">(</span>
+            <span class="n">current_state</span><span class="p">,</span>
+            <span class="n">epoch</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">validator_index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">epoch</span> <span class="o">==</span> <span class="n">current_epoch</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">=</span> <span class="n">attest_slot</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_committee_index</span> <span class="o">=</span> <span class="n">committee_index</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_committee</span> <span class="o">=</span> <span class="n">committee</span>
+        <span class="k">elif</span> <span class="n">epoch</span> <span class="o">==</span> <span class="n">current_epoch</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">next_attest_slot</span> <span class="o">=</span> <span class="n">attest_slot</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">next_committee_index</span> <span class="o">=</span> <span class="n">committee_index</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">next_committee</span> <span class="o">=</span> <span class="n">committee</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_proposer"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_proposer">[docs]</a>    <span class="k">def</span> <span class="nf">update_proposer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is a fairly expensive operation, so we try not to call it when we don&#39;t have to.</span>
+<span class="sd">        Update proposer duties for the current epoch.</span>
+<span class="sd">        We need to check for each slot of the epoch whether the validator is a proposer or not.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+<span class="sd">            current_state (BeaconState): The state from which proposer duties are computed</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+
+        <span class="n">start_slot</span> <span class="o">=</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">current_epoch</span><span class="p">)</span>
+
+        <span class="n">start_state</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">start_slot</span> <span class="o">==</span> <span class="n">current_state</span><span class="o">.</span><span class="n">slot</span> <span class="k">else</span> \
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">get_block_root</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">current_proposer_duties</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_slot</span><span class="p">,</span> <span class="n">start_slot</span> <span class="o">+</span> <span class="n">SLOTS_PER_EPOCH</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">slot</span> <span class="o">&lt;</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+                <span class="n">current_proposer_duties</span> <span class="o">+=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="n">slot</span><span class="p">:</span>
+                <span class="n">process_slots</span><span class="p">(</span><span class="n">start_state</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+
+            <span class="n">current_proposer_duties</span> <span class="o">+=</span> <span class="p">[</span><span class="n">get_beacon_proposer_index</span><span class="p">(</span><span class="n">start_state</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">validator_index</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_proposer_duties</span> <span class="o">=</span> <span class="n">current_proposer_duties</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_attest_move"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_attest_move">[docs]</a>    <span class="k">def</span> <span class="nf">update_attest_move</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        When was the last attestation by the validator?</span>
+<span class="sd">        Updates `self.data.last_slot_attested`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">slots_attested</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">log</span><span class="o">.</span><span class="n">slot</span> <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">move</span> <span class="o">==</span> <span class="s2">&quot;attest&quot;</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_attested</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slots_attested</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">slots_attested</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_propose_move"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_propose_move">[docs]</a>    <span class="k">def</span> <span class="nf">update_propose_move</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        When was the last block proposal by the validator?</span>
+<span class="sd">        Updates `self.data.last_slot_proposed`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">slots_proposed</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">log</span><span class="o">.</span><span class="n">slot</span> <span class="k">for</span> <span class="n">log</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">history</span> <span class="k">if</span> <span class="n">log</span><span class="o">.</span><span class="n">move</span> <span class="o">==</span> <span class="s2">&quot;propose&quot;</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_proposed</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">slots_proposed</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">slots_proposed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BRValidator.update_data"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.update_data">[docs]</a>    <span class="k">def</span> <span class="nf">update_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The head may change if we recorded a new block/new attestation in the `store`.</span>
+<span class="sd">        Attester/proposer responsibilities may change if head changes *and*</span>
+<span class="sd">        canonical chain changes to further back from start current epoch.</span>
+
+<span class="sd">        .. code-block:: txt</span>
+
+<span class="sd">            ---x------</span>
+<span class="sd">                \           x is fork point</span>
+<span class="sd">                 -----</span>
+
+<span class="sd">            In the following</span>
+<span class="sd">              attester = attester responsibilities for current epoch</span>
+<span class="sd">              proposer = proposer responsibilities for current epoch</span>
+
+<span class="sd">            - If x after current epoch change</span>
+<span class="sd">              (---|--x , | = start current epoch),</span>
+<span class="sd">              proposer and attester don&#39;t change</span>
+<span class="sd">            - If x between start of previous epoch and</span>
+<span class="sd">              start of current epoch</span>
+<span class="sd">              (--||--x---|-- , || = start previous epoch)</span>
+<span class="sd">              proposer changes but not attester</span>
+<span class="sd">            - If x before start of previous epoch</span>
+<span class="sd">              (--x--||-----|----) both proposer and attester change</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            self (BRValidator): Validator</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">slot</span> <span class="o">=</span> <span class="n">get_current_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+        <span class="n">new_slot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">!=</span> <span class="n">slot</span>
+
+        <span class="c1"># Current epoch in validator view</span>
+        <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_attest_move</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_propose_move</span><span class="p">()</span>
+
+        <span class="c1"># Did the validator record a block for this slot?</span>
+        <span class="n">received_block</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">block</span> <span class="k">for</span> <span class="n">block_root</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">slot</span> <span class="o">==</span> <span class="n">slot</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_slot</span><span class="p">:</span>
+            <span class="c1"># It&#39;s not a new slot, we are here because a new block/attestation was received</span>
+
+            <span class="c1"># Getting the current state, fast-forwarding from the head</span>
+            <span class="n">head_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_head</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span> <span class="o">!=</span> <span class="n">head_root</span><span class="p">:</span>
+                <span class="c1"># New head!</span>
+                <span class="n">lca</span> <span class="o">=</span> <span class="n">lowest_common_ancestor</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span><span class="p">,</span> <span class="n">head_root</span><span class="p">)</span>
+                <span class="n">lca_epoch</span> <span class="o">=</span> <span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="n">lca</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">lca_epoch</span> <span class="o">==</span> <span class="n">current_epoch</span><span class="p">:</span>
+                    <span class="c1"># do nothing</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">current_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_to_slot</span><span class="p">(</span><span class="n">head_root</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">lca_epoch</span> <span class="o">==</span> <span class="n">current_epoch</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">update_proposer</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">update_proposer</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">update_attester</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span> <span class="o">=</span> <span class="n">head_root</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># It&#39;s a new slot. We should update our proposer/attester duties</span>
+            <span class="c1"># if it&#39;s also a new epoch. If not we do nothing.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">!=</span> <span class="n">current_epoch</span><span class="p">:</span>
+                <span class="n">current_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_to_slot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+
+                <span class="c1"># We need to check our proposer role for this new epoch</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_proposer</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+
+                <span class="c1"># We need to check our attester role for this new epoch</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_attester</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">=</span> <span class="n">slot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">=</span> <span class="n">current_epoch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">received_block</span> <span class="o">=</span> <span class="n">received_block</span></div>
+
+<div class="viewcode-block" id="BRValidator.log_block"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.log_block">[docs]</a>    <span class="k">def</span> <span class="nf">log_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">SignedBeaconBlock</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recording &#39;block proposal&#39; move by the validator in its history.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ValidatorMove</span><span class="p">(</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span><span class="p">,</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">slot</span><span class="p">,</span>
+            <span class="n">move</span> <span class="o">=</span> <span class="s2">&quot;propose&quot;</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_propose_move</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BRValidator.log_attestation"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.log_attestation">[docs]</a>    <span class="k">def</span> <span class="nf">log_attestation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Attestation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recording &#39;attestation proposal&#39; move by the validator in its history.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ValidatorMove</span><span class="p">(</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">time_ms</span><span class="p">,</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">,</span>
+            <span class="n">move</span> <span class="o">=</span> <span class="s2">&quot;attest&quot;</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_attest_move</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BRValidator.record_block"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.record_block">[docs]</a>    <span class="k">def</span> <span class="nf">record_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">SignedBeaconBlock</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        When a validator receives a block from the network, they call `record_block` to see</span>
+<span class="sd">        whether they should record it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If we already know about the block, do nothing</span>
+        <span class="k">if</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Sometimes recording the block fails. Examples include:</span>
+        <span class="c1"># - The block slot is not the current slot (we keep it in memory for later, when we check backlog)</span>
+        <span class="c1"># - The block parent is not known</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_to_slot</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">parent_root</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+            <span class="n">on_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># If attestations are included in the block, we want to record them</span>
+        <span class="k">for</span> <span class="n">attestation</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">attestations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">record_attestation</span><span class="p">(</span><span class="n">attestation</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="BRValidator.record_attestation"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.record_attestation">[docs]</a>    <span class="k">def</span> <span class="nf">record_attestation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Attestation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        When a validator receives an attestation from the network,</span>
+<span class="sd">        they call `record_attestation` to see whether they should record it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">att_hash</span> <span class="o">=</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="c1"># If we have already seen this attestation, no need to go further</span>
+        <span class="k">if</span> <span class="n">att_hash</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">recorded_attestations</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Sometimes recording the attestation fails. Examples include:</span>
+        <span class="c1"># - The attestation is not for the current slot *PLUS ONE*</span>
+        <span class="c1">#   (we keep it in memory for later, when we check backlog)</span>
+        <span class="c1"># - The block root it is attesting for is not known</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">on_attestation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">recorded_attestations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">att_hash</span><span class="p">]</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="BRValidator.check_backlog"><a class="viewcode-back" href="../../BRValidator.html#beaconrunner.validatorlib.BRValidator.check_backlog">[docs]</a>    <span class="k">def</span> <span class="nf">check_backlog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Container</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called whenever a new event happens on the network that might make a validator update</span>
+<span class="sd">        their internals.</span>
+<span class="sd">        We loop over known blocks and attestations to check whether we should record any</span>
+<span class="sd">        that we might have discarded before, or just received.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">recorded_blocks</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]:</span>
+            <span class="n">recorded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_block</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">recorded</span><span class="p">:</span>
+                <span class="n">recorded_blocks</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">recorded_attestations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">attestation</span> <span class="ow">in</span> <span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;attestations&quot;</span><span class="p">]:</span>
+            <span class="n">recorded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record_attestation</span><span class="p">(</span><span class="n">attestation</span><span class="o">.</span><span class="n">item</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">recorded</span><span class="p">:</span>
+                <span class="n">recorded_attestations</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># If we do record anything, update the internals.</span>
+        <span class="k">if</span> <span class="n">recorded_blocks</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">recorded_attestations</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_data</span><span class="p">()</span></div></div>
+
+<span class="k">def</span> <span class="nf">lowest_common_ancestor</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">old_head</span><span class="p">,</span> <span class="n">new_head</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BeaconBlock</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the lowest common ancestor to `old_head` and `new_head` in `store`.</span>
+<span class="sd">    In most cases, `old_head` is an ancestor to `new_head`.</span>
+<span class="sd">    We sort of (loosely) optimise for this.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">new_head_ancestors</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_head</span><span class="p">]</span>
+    <span class="n">current_block</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">new_head</span><span class="p">]</span>
+    <span class="n">keep_searching</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">while</span> <span class="n">keep_searching</span><span class="p">:</span>
+        <span class="n">parent_root</span> <span class="o">=</span> <span class="n">current_block</span><span class="o">.</span><span class="n">parent_root</span>
+        <span class="n">parent_block</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">parent_root</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">parent_root</span> <span class="o">==</span> <span class="n">old_head</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">old_head</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">parent_block</span><span class="o">.</span><span class="n">slot</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">keep_searching</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_head_ancestors</span> <span class="o">+=</span> <span class="p">[</span><span class="n">parent_root</span><span class="p">]</span>
+            <span class="n">current_block</span> <span class="o">=</span> <span class="n">parent_block</span>
+
+    <span class="c1"># At this point, old_head wasn&#39;t an ancestor to new_head</span>
+    <span class="c1"># We need to find old_head&#39;s ancestors</span>
+    <span class="n">current_block</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">old_head</span><span class="p">]</span>
+    <span class="n">keep_searching</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">while</span> <span class="n">keep_searching</span><span class="p">:</span>
+        <span class="n">parent_root</span> <span class="o">=</span> <span class="n">current_block</span><span class="o">.</span><span class="n">parent_root</span>
+        <span class="n">parent_block</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">parent_root</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">parent_root</span> <span class="ow">in</span> <span class="n">new_head_ancestors</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">parent_block</span>
+        <span class="k">elif</span> <span class="n">parent_block</span><span class="o">.</span><span class="n">slot</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;return none&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_block</span> <span class="o">=</span> <span class="n">parent_block</span>
+
+<span class="c1">### Attestation strategies</span>
+
+<span class="k">def</span> <span class="nf">get_attestation_signature</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">attestation_data</span><span class="p">:</span> <span class="n">AttestationData</span><span class="p">,</span> <span class="n">privkey</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BLSSignature</span><span class="p">:</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">get_domain</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">DOMAIN_BEACON_ATTESTER</span><span class="p">,</span> <span class="n">attestation_data</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">epoch</span><span class="p">)</span>
+    <span class="n">signing_root</span> <span class="o">=</span> <span class="n">compute_signing_root</span><span class="p">(</span><span class="n">attestation_data</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bls</span><span class="o">.</span><span class="n">Sign</span><span class="p">(</span><span class="n">privkey</span><span class="p">,</span> <span class="n">signing_root</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">honest_attest</span><span class="p">(</span><span class="n">validator</span><span class="p">,</span> <span class="n">known_items</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns an honest attestation from `validator`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        validator (BRValidator): The attesting validator</span>
+<span class="sd">        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Attestation: The honest attestation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Unpacking</span>
+    <span class="n">validator_index</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">validator_index</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span>
+    <span class="n">committee_slot</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span>
+    <span class="n">committee_index</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_committee_index</span>
+    <span class="n">committee</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_committee</span>
+
+    <span class="c1"># What am I attesting for?</span>
+    <span class="n">block_root</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">get_head</span><span class="p">()</span>
+    <span class="n">head_state</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">block_root</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">head_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="n">committee_slot</span><span class="p">:</span>
+        <span class="n">process_slots</span><span class="p">(</span><span class="n">head_state</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span>
+    <span class="n">start_slot</span> <span class="o">=</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">head_state</span><span class="p">))</span>
+    <span class="n">epoch_boundary_block_root</span> <span class="o">=</span> <span class="n">block_root</span> <span class="k">if</span> <span class="n">start_slot</span> <span class="o">==</span> <span class="n">head_state</span><span class="o">.</span><span class="n">slot</span> <span class="k">else</span> <span class="n">get_block_root_at_slot</span><span class="p">(</span><span class="n">head_state</span><span class="p">,</span> <span class="n">start_slot</span><span class="p">)</span>
+    <span class="n">tgt_checkpoint</span> <span class="o">=</span> <span class="n">Checkpoint</span><span class="p">(</span><span class="n">epoch</span><span class="o">=</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">head_state</span><span class="p">),</span> <span class="n">root</span><span class="o">=</span><span class="n">epoch_boundary_block_root</span><span class="p">)</span>
+
+    <span class="n">att_data</span> <span class="o">=</span> <span class="n">AttestationData</span><span class="p">(</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">committee_index</span><span class="p">,</span>
+        <span class="n">slot</span> <span class="o">=</span> <span class="n">committee_slot</span><span class="p">,</span>
+        <span class="n">beacon_block_root</span> <span class="o">=</span> <span class="n">block_root</span><span class="p">,</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">head_state</span><span class="o">.</span><span class="n">current_justified_checkpoint</span><span class="p">,</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">tgt_checkpoint</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Set aggregation bits to myself only</span>
+    <span class="n">committee_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">committee</span><span class="p">)</span>
+    <span class="n">index_in_committee</span> <span class="o">=</span> <span class="n">committee</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">validator_index</span><span class="p">)</span>
+    <span class="n">aggregation_bits</span> <span class="o">=</span> <span class="n">Bitlist</span><span class="p">[</span><span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">](</span><span class="o">*</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">committee_size</span><span class="p">))</span>
+    <span class="n">aggregation_bits</span><span class="p">[</span><span class="n">index_in_committee</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># set the aggregation bit of the validator to True</span>
+    <span class="n">attestation</span> <span class="o">=</span> <span class="n">Attestation</span><span class="p">(</span>
+        <span class="n">aggregation_bits</span><span class="o">=</span><span class="n">aggregation_bits</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">att_data</span>
+    <span class="p">)</span>
+    <span class="n">attestation_signature</span> <span class="o">=</span> <span class="n">get_attestation_signature</span><span class="p">(</span><span class="n">head_state</span><span class="p">,</span> <span class="n">att_data</span><span class="p">,</span> <span class="n">validator</span><span class="o">.</span><span class="n">privkey</span><span class="p">)</span>
+    <span class="n">attestation</span><span class="o">.</span><span class="n">signature</span> <span class="o">=</span> <span class="n">attestation_signature</span>
+
+    <span class="k">return</span> <span class="n">attestation</span>
+
+<span class="c1">### Aggregation helpers</span>
+
+<span class="k">def</span> <span class="nf">get_aggregate_signature</span><span class="p">(</span><span class="n">attestations</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Attestation</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BLSSignature</span><span class="p">:</span>
+    <span class="n">signatures</span> <span class="o">=</span> <span class="p">[</span><span class="n">attestation</span><span class="o">.</span><span class="n">signature</span> <span class="k">for</span> <span class="n">attestation</span> <span class="ow">in</span> <span class="n">attestations</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">bls</span><span class="o">.</span><span class="n">Aggregate</span><span class="p">(</span><span class="n">signatures</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">build_aggregate</span><span class="p">(</span><span class="n">attestations</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of attestations from the same slot, committee index and vote for</span>
+<span class="sd">    same source, target and beacon block, return an aggregated attestation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attestations</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">aggregation_bits</span> <span class="o">=</span> <span class="n">Bitlist</span><span class="p">[</span><span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">](</span><span class="o">*</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">attestations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">aggregation_bits</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">attestation</span> <span class="ow">in</span> <span class="n">attestations</span><span class="p">:</span>
+        <span class="n">validator_index_in_committee</span> <span class="o">=</span> <span class="n">attestation</span><span class="o">.</span><span class="n">aggregation_bits</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">aggregation_bits</span><span class="p">[</span><span class="n">validator_index_in_committee</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">aggregate_attestation</span> <span class="o">=</span> <span class="n">Attestation</span><span class="p">(</span>
+        <span class="n">aggregation_bits</span><span class="o">=</span><span class="n">aggregation_bits</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">attestations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="p">)</span>
+    <span class="n">aggregate_signature</span> <span class="o">=</span> <span class="n">get_aggregate_signature</span><span class="p">(</span><span class="n">attestations</span><span class="p">)</span>
+    <span class="n">aggregate_attestation</span><span class="o">.</span><span class="n">signature</span> <span class="o">=</span> <span class="n">aggregate_signature</span>
+
+    <span class="k">return</span> <span class="n">aggregate_attestation</span>
+
+<span class="k">def</span> <span class="nf">aggregate_attestations</span><span class="p">(</span><span class="n">attestations</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take in a set of attestations. Output aggregated attestations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hashes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">hash_tree_root</span><span class="p">(</span><span class="n">att</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">attestations</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">build_aggregate</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">att</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">attestations</span> <span class="k">if</span> <span class="n">att_hash</span> <span class="o">==</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">att</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+    <span class="p">)</span> <span class="k">for</span> <span class="n">att_hash</span> <span class="ow">in</span> <span class="n">hashes</span><span class="p">]</span>
+
+<span class="c1">### Proposal strategies</span>
+
+<span class="k">def</span> <span class="nf">get_block_signature</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="n">BeaconBlock</span><span class="p">,</span> <span class="n">privkey</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BLSSignature</span><span class="p">:</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">get_domain</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">DOMAIN_BEACON_PROPOSER</span><span class="p">,</span> <span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">slot</span><span class="p">))</span>
+    <span class="n">signing_root</span> <span class="o">=</span> <span class="n">compute_signing_root</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bls</span><span class="o">.</span><span class="n">Sign</span><span class="p">(</span><span class="n">privkey</span><span class="p">,</span> <span class="n">signing_root</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_epoch_signature</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="n">BeaconBlock</span><span class="p">,</span> <span class="n">privkey</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BLSSignature</span><span class="p">:</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">get_domain</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">DOMAIN_RANDAO</span><span class="p">,</span> <span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">slot</span><span class="p">))</span>
+    <span class="n">signing_root</span> <span class="o">=</span> <span class="n">compute_signing_root</span><span class="p">(</span><span class="n">compute_epoch_at_slot</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">slot</span><span class="p">),</span> <span class="n">domain</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bls</span><span class="o">.</span><span class="n">Sign</span><span class="p">(</span><span class="n">privkey</span><span class="p">,</span> <span class="n">signing_root</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">should_process_attestation</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">attestation</span><span class="p">:</span> <span class="n">Attestation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process_attestation</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">attestation</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+<span class="k">def</span> <span class="nf">honest_propose</span><span class="p">(</span><span class="n">validator</span><span class="p">,</span> <span class="n">known_items</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        validator (BRValidator): The proposing validator</span>
+<span class="sd">        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        SignedBeaconBlock: The honest proposed block.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">validator_index</span><span class="p">,</span> <span class="s2">&quot;proposing block for slot&quot;</span><span class="p">,</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+    <span class="n">slot</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">head_root</span>
+
+    <span class="n">processed_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">process_to_slot</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+
+    <span class="n">attestations</span> <span class="o">=</span> <span class="p">[</span><span class="n">att</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;attestations&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">should_process_attestation</span><span class="p">(</span><span class="n">processed_state</span><span class="p">,</span> <span class="n">att</span><span class="o">.</span><span class="n">item</span><span class="p">)]</span>
+    <span class="n">attestations</span> <span class="o">=</span> <span class="n">aggregate_attestations</span><span class="p">([</span><span class="n">att</span><span class="o">.</span><span class="n">item</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">attestations</span> <span class="k">if</span> <span class="n">slot</span> <span class="o">&lt;=</span> <span class="n">att</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">+</span> <span class="n">SLOTS_PER_EPOCH</span><span class="p">])</span>
+
+    <span class="n">beacon_block</span> <span class="o">=</span> <span class="n">BeaconBlock</span><span class="p">(</span>
+        <span class="n">slot</span><span class="o">=</span><span class="n">slot</span><span class="p">,</span>
+        <span class="n">parent_root</span><span class="o">=</span><span class="n">head</span><span class="p">,</span>
+        <span class="n">proposer_index</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">validator_index</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">beacon_block_body</span> <span class="o">=</span> <span class="n">BeaconBlockBody</span><span class="p">(</span>
+        <span class="n">attestations</span><span class="o">=</span><span class="n">attestations</span>
+    <span class="p">)</span>
+    <span class="n">epoch_signature</span> <span class="o">=</span> <span class="n">get_epoch_signature</span><span class="p">(</span><span class="n">processed_state</span><span class="p">,</span> <span class="n">beacon_block</span><span class="p">,</span> <span class="n">validator</span><span class="o">.</span><span class="n">privkey</span><span class="p">)</span>
+    <span class="n">beacon_block_body</span><span class="o">.</span><span class="n">randao_reveal</span> <span class="o">=</span> <span class="n">epoch_signature</span>
+
+    <span class="n">beacon_block</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">beacon_block_body</span>
+
+    <span class="n">process_block</span><span class="p">(</span><span class="n">processed_state</span><span class="p">,</span> <span class="n">beacon_block</span><span class="p">)</span>
+    <span class="n">state_root</span> <span class="o">=</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">processed_state</span><span class="p">)</span>
+    <span class="n">beacon_block</span><span class="o">.</span><span class="n">state_root</span> <span class="o">=</span> <span class="n">state_root</span>
+
+    <span class="n">block_signature</span> <span class="o">=</span> <span class="n">get_block_signature</span><span class="p">(</span><span class="n">processed_state</span><span class="p">,</span> <span class="n">beacon_block</span><span class="p">,</span> <span class="n">validator</span><span class="o">.</span><span class="n">privkey</span><span class="p">)</span>
+    <span class="n">signed_block</span> <span class="o">=</span> <span class="n">SignedBeaconBlock</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">beacon_block</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="n">block_signature</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">signed_block</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">beaconrunner.validatorlib</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Barnabé Monnot.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>

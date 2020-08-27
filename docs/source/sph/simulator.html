@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>simulator &#8212; beaconrunner 0.1.2 documentation</title>
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="BRValidator" href="BRValidator.html" />
+    <link rel="prev" title="Welcome to beaconrunner’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BRValidator.html" title="BRValidator"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to beaconrunner’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">simulator</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-beaconrunner.simulator">
+<span id="simulator"></span><h1>simulator<a class="headerlink" href="#module-beaconrunner.simulator" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="beaconrunner.simulator.get_initial_deposits">
+<code class="sig-prename descclassname">beaconrunner.simulator.</code><code class="sig-name descname">get_initial_deposits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">validators</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/simulator.html#get_initial_deposits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.simulator.get_initial_deposits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce deposits</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>validators</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="BRValidator.html#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><em>BRValidator</em></a><em>]</em>) – Validators of the simulation</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The list of deposits</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List[Deposit]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="beaconrunner.simulator.simulate">
+<code class="sig-prename descclassname">beaconrunner.simulator.</code><code class="sig-name descname">simulate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">network</span><span class="p">:</span> <span class="n">beaconrunner.network.Network</span></em>, <em class="sig-param"><span class="n">parameters</span><span class="p">:</span> <span class="n">beaconrunner.simulator.SimulationParameters</span></em>, <em class="sig-param"><span class="n">observers</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>Callable<span class="p">[</span><span class="p">[</span>beaconrunner.specs.BeaconState<span class="p">]</span><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">{}</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="reference internal" href="_modules/beaconrunner/simulator.html#simulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.simulator.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>network</strong> (<em>Network</em>) – Network of <a class="reference internal" href="BRValidator.html#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><code class="xref py py-class docutils literal notranslate"><span class="pre">beaconrunner.validatorlib.BRValidator</span></code></a></p></li>
+<li><p><strong>parameters</strong> (<em>BRSimulationParameters</em>) – Simulation parameters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Results of the simulation contained in a pandas data frame</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to beaconrunner’s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="BRValidator.html"
+                        title="next chapter">BRValidator</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/simulator.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BRValidator.html" title="BRValidator"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to beaconrunner’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">simulator</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Barnabé Monnot.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+  </body>
+</html>
