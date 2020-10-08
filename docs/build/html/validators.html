@@ -15,7 +15,7 @@
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="validatorlib" href="validatorlib.html" /> 
+    <link rel="prev" title="BRValidator" href="BRValidator.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -27,7 +27,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="validatorlib.html" title="validatorlib"
+          <a href="BRValidator.html" title="BRValidator"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">validators</a></li> 
@@ -41,118 +41,13 @@
             
   <div class="section" id="validators">
 <h1>validators<a class="headerlink" href="#validators" title="Permalink to this headline">¶</a></h1>
-<p>Validator behaviours subclass <a class="reference internal" href="validatorlib.html#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><code class="xref py py-class docutils literal notranslate"><span class="pre">beaconrunner.validatorlib.BRValidator</span></code></a> and use attributes exposed in <cite>self.data</cite> (of type <a class="reference internal" href="validatorlib.html#beaconrunner.validatorlib.ValidatorData" title="beaconrunner.validatorlib.ValidatorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">beaconrunner.validatorlib.ValidatorData</span></code></a>) to make decisions.
+<p>Validator behaviours subclass <a class="reference internal" href="BRValidator.html#beaconrunner.validatorlib.BRValidator" title="beaconrunner.validatorlib.BRValidator"><code class="xref py py-class docutils literal notranslate"><span class="pre">beaconrunner.validatorlib.BRValidator</span></code></a> and use attributes exposed in <cite>self.data</cite> (of type <code class="xref py py-class docutils literal notranslate"><span class="pre">beaconrunner.validatorlib.ValidatorData</span></code>) to make decisions.
 Subclasses of <cite>BRValidator</cite> must define at least two methods:</p>
 <ul class="simple">
 <li><p><cite>attest(self, known_items) -&gt; Optional[Attestation]</cite></p></li>
 <li><p><cite>propose(self, known_items) -&gt; Optional[Attestation]</cite></p></li>
 </ul>
-<span class="target" id="module-beaconrunner.validators"></span><dl class="py class">
-<dt id="beaconrunner.validators.ASAPValidator">
-<em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validators.</code><code class="sig-name descname">ASAPValidator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">beaconrunner.specs.BeaconState</span></em>, <em class="sig-param"><span class="n">validator_index</span><span class="p">:</span> <span class="n">beaconrunner.specs.ValidatorIndex</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validators/ASAPValidator.html#ASAPValidator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.ASAPValidator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validator behaviour attesting and proposing honestly, following the honest validator
-specs.</p>
-<dl class="py method">
-<dt id="beaconrunner.validators.ASAPValidator.attest">
-<code class="sig-name descname">attest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>beaconrunner.specs.Attestation<span class="p">]</span><a class="reference internal" href="_modules/beaconrunner/validators/ASAPValidator.html#ASAPValidator.attest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.ASAPValidator.attest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest <cite>Attestation</cite> as soon as at least four seconds (<cite>SECONDS_PER_SLOT / 3</cite>)
-have elapsed into the slot where the validator is supposed to attest.
-Checks whether an attestation was produced for the same slot to avoid slashing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self</strong> (<a class="reference internal" href="#beaconrunner.validators.ASAPValidator" title="beaconrunner.validators.ASAPValidator"><em>ASAPValidator</em></a>) – Validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Either <cite>None</cite> if the validator decides not to attest,
-otherwise an honest <cite>Attestation</cite></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Optional[Attestation]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="beaconrunner.validators.ASAPValidator.propose">
-<code class="sig-name descname">propose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>beaconrunner.specs.SignedBeaconBlock<span class="p">]</span><a class="reference internal" href="_modules/beaconrunner/validators/ASAPValidator.html#ASAPValidator.propose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.ASAPValidator.propose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest <cite>SignedBeaconBlock</cite> as soon as the slot where
-the validator is supposed to propose starts.
-Checks whether a block was proposed for the same slot to avoid slashing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self</strong> (<a class="reference internal" href="#beaconrunner.validators.ASAPValidator" title="beaconrunner.validators.ASAPValidator"><em>ASAPValidator</em></a>) – Validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Either <cite>None</cite> if the validator decides not to propose,
-otherwise a <cite>SignedBeaconBlock</cite> containing attestations</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Optional[SignedBeaconBlock]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt id="beaconrunner.validators.PrudentValidator">
-<em class="property">class </em><code class="sig-prename descclassname">beaconrunner.validators.</code><code class="sig-name descname">PrudentValidator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">state</span><span class="p">:</span> <span class="n">beaconrunner.specs.BeaconState</span></em>, <em class="sig-param"><span class="n">validator_index</span><span class="p">:</span> <span class="n">beaconrunner.specs.ValidatorIndex</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/beaconrunner/validators/PrudentValidator.html#PrudentValidator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.PrudentValidator" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="beaconrunner.validators.PrudentValidator.attest">
-<code class="sig-name descname">attest</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>beaconrunner.specs.Attestation<span class="p">]</span><a class="reference internal" href="_modules/beaconrunner/validators/PrudentValidator.html#PrudentValidator.attest"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.PrudentValidator.attest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest <cite>Attestation</cite> as soon as at least four seconds (<cite>SECONDS_PER_SLOT / 3</cite>)
-have elapsed into the slot where the validator is supposed to attest <em>and</em> a block
-was received for the slot <em>or</em> at least 8 seconds (<cite>2 * SECONDS_PER_SLOT / 3</cite>) have elapsed.
-Checks whether an attestation was produced for the same slot to avoid slashing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self</strong> (<a class="reference internal" href="#beaconrunner.validators.PrudentValidator" title="beaconrunner.validators.PrudentValidator"><em>PrudentValidator</em></a>) – Validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Either <cite>None</cite> if the validator decides not to attest,
-otherwise an honest <cite>Attestation</cite></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Optional[Attestation]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="beaconrunner.validators.PrudentValidator.propose">
-<code class="sig-name descname">propose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">known_items</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>beaconrunner.specs.SignedBeaconBlock<span class="p">]</span><a class="reference internal" href="_modules/beaconrunner/validators/PrudentValidator.html#PrudentValidator.propose"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#beaconrunner.validators.PrudentValidator.propose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns an honest <cite>SignedBeaconBlock</cite> as soon as the slot where
-the validator is supposed to propose starts.
-Checks whether a block was proposed for the same slot to avoid slashing.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self</strong> (<a class="reference internal" href="#beaconrunner.validators.PrudentValidator" title="beaconrunner.validators.PrudentValidator"><em>PrudentValidator</em></a>) – Validator</p></li>
-<li><p><strong>known_items</strong> (<em>Dict</em>) – Known blocks and attestations received over-the-wire (but perhaps not included yet in <cite>validator.store</cite>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Either <cite>None</cite> if the validator decides not to propose,
-otherwise a <cite>SignedBeaconBlock</cite> containing attestations</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Optional[SignedBeaconBlock]</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
+<span class="target" id="module-beaconrunner.validators"></span></div>
 
 
             <div class="clearer"></div>
@@ -162,8 +57,8 @@ otherwise a <cite>SignedBeaconBlock</cite> containing attestations</p>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="validatorlib.html"
-                        title="previous chapter">validatorlib</a></p>
+  <p class="topless"><a href="BRValidator.html"
+                        title="previous chapter">BRValidator</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -195,7 +90,7 @@ otherwise a <cite>SignedBeaconBlock</cite> containing attestations</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="validatorlib.html" title="validatorlib"
+          <a href="BRValidator.html" title="BRValidator"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">beaconrunner 0.1.2 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">validators</a></li> 

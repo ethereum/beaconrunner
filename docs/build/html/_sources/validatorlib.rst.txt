@@ -1,5 +1,2 @@
 validatorlib
 ============
-
-.. autoclass:: beaconrunner.validatorlib.BRValidator
-   :members:

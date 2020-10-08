@@ -9,8 +9,8 @@ Welcome to beaconrunner's documentation!
 .. toctree::
    :caption: Contents:
 
-   brlib
-   validatorlib
+   simulator
+   BRValidator
    validators
 
 Indices and tables
