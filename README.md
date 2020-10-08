@@ -15,5 +15,14 @@ git checkout tweaks
 cd ..
 pipenv install
 pipenv shell
+```
+
+Once you enter the shell, you can type in
+
+```
 jupyter lab
 ```
+
+## Docs
+
+Some documentation is available [here](https://barnabemonnot.com/beaconrunner/build/html/).

@@ -6,10 +6,11 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-jupyterlab = "*"
 eth2spec = "*"
-cadcad = {editable = true,path = "./cadCAD"}
 matplotlib = "*"
+pandas = "*"
+jupyterlab = "*"
+cadcad = {editable = true, path = "./cadCAD"}
 
 [requires]
 python_version = "3.8"
