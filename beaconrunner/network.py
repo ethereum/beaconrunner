@@ -6,7 +6,6 @@ from .specs import (
     VALIDATOR_REGISTRY_LIMIT,
     ValidatorIndex, Slot,
     BeaconState, Attestation, SignedBeaconBlock,
-    Store, get_forkchoice_store, on_block, on_attestation
 )
 from .validatorlib import BRValidator
 
