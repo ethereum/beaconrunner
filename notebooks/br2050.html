@@ -17,9 +17,9 @@
 
 <style type="text/css">
     pre { line-height: 125%; }
-td.linenos pre { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-td.linenos pre.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 .highlight .hll { background-color: var(--jp-cell-editor-active-background) }
 .highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
@@ -14291,18 +14291,20 @@ a.anchor-link {
       </div>
       
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<blockquote><p>Note: All code used in this notebook is contained in the <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050">notebooks/beaconrunner2050</a> folder of the Beacon runner repo, and does not use current eth2.0 specs. Most of the content here remains applicable.</p>
+</blockquote>
 <h2 id="TL;DR">TL;DR<a class="anchor-link" href="#TL;DR">&#182;</a></h2><ul>
-<li>We improve upon our second <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb"><em>Beacon Runner 2049</em></a>, an economics-focused simulation environment for eth2.</li>
+<li>We improve upon our second <a href="br2049.html"><em>Beacon Runner 2049</em></a>, an economics-focused simulation environment for eth2.</li>
 <li>Validators are placed on an <a href="https://decentralizedthoughts.github.io/2019-06-01-2019-5-31-models/">asynchronous</a> P2P network, with each validator storing their current view of the chain, incoming blocks and attestations in a <code>Store</code> object, as defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/fork-choice.md#store">specs</a>.</li>
 <li>Validator behaviours are fully modular and can be plugged into the simulation as long as they follow a simple API, to produce rich agent-based models. Try it yourself!</li>
 </ul>
 <hr>
 <p>We want to understand how validator behaviours map to rewards, penalties and chain outcomes. Ideally, validators who are rational are also honest, i.e., they run the eth2 protocol the way it "should" be run. But apart from how incentives are designed, there is no guarantee that this will indeed the case. And as we will see, honesty may not always have a unique instantiation.</p>
-<p>In this notebook, we improve upon the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">first</a> and <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">second</a> Beacon Runners by introducing a more full-fledged simulation environment. If you haven't read the previous two, that's OK! Let's catch up now.</p>
-<h3 id="Previously,-on..."><em>Previously, on...</em><a class="anchor-link" href="#Previously,-on...">&#182;</a></h3><p>In the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">first notebook</a>, we introduced the possibility of "wrapping" the current specs in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> simulation environment. We defined simple <em>strategies</em> for validators that allowed them to produce blocks and attest too. The implementation was centralised in the sense that all validators shared a common view of the chain at all times -- a situation akin to being on a network with <em>perfect information</em> and <em>zero latency</em>.</p>
-<p>The natural next step was to relax this assumption, and allow different views of the chain to coexist. In the simplest case, these views have an empty intersection: this is the case when the network is perfectly <em>partitioned</em>, and each side of the partition works independently. <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">We explored in the second notebook</a> how the <em>inactivity leak</em>, which decreases the stake of inactive validators, eventually allows for finalisation to resume. But what if this intersection is not empty? In other words, what if some validators see both sides of the partition? More generally, what if each validator has their own view of the chain, governed by the messages they have received from other validators on the network?</p>
+<p>In this notebook, we improve upon the <a href="br.html">first</a> and <a href="br2049.html">second</a> Beacon Runners by introducing a more full-fledged simulation environment. If you haven't read the previous two, that's OK! Let's catch up now.</p>
+<h2 id="Previously,-on..."><em>Previously, on...</em><a class="anchor-link" href="#Previously,-on...">&#182;</a></h2><p>In the <a href="br.html">first notebook</a>, we introduced the possibility of "wrapping" the current specs in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> simulation environment. We defined simple <em>strategies</em> for validators that allowed them to produce blocks and attest too. The implementation was centralised in the sense that all validators shared a common view of the chain at all times -- a situation akin to being on a network with <em>perfect information</em> and <em>zero latency</em>.</p>
+<p>The natural next step was to relax this assumption, and allow different views of the chain to coexist. In the simplest case, these views have an empty intersection: this is the case when the network is perfectly <em>partitioned</em>, and each side of the partition works independently. <a href="br2049.html">We explored in the second notebook</a> how the <em>inactivity leak</em>, which decreases the stake of inactive validators, eventually allows for finalisation to resume. But what if this intersection is not empty? In other words, what if some validators see both sides of the partition? More generally, what if each validator has their own view of the chain, governed by the messages they have received from other validators on the network?</p>
 <p>These are the conditions we explore here. They are sufficient to represent a realistic p2p network, where validators receive updates from each other after some (random) delay. We'll reuse the network model introduced in the previous notebook, reintroduced in the next section with a brief introduction to the validator API.</p>
-<h3 id="Getting-started">Getting started<a class="anchor-link" href="#Getting-started">&#182;</a></h3><p><a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">Once again</a>, we import the specs loaded with a custom configuration file, <code>fast</code>, where epochs are only 4 slots long (for demonstration purposes).</p>
+<h2 id="Getting-started">Getting started<a class="anchor-link" href="#Getting-started">&#182;</a></h2><p><a href="br2049.html">Once again</a>, we import the specs loaded with a custom configuration file, <code>fast</code>, where epochs are only 4 slots long (for demonstration purposes).</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 1 (click to open)</summary>
@@ -14330,7 +14332,7 @@ a.anchor-link {
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>We import our network library, seen in <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/network.py">network.py</a>, as well as a library of helper functions for our Beacon Runners, <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/brlib.py">brlib.py</a>. Open them up! The code is not that scary.</p>
+<p>We import our network library, seen in <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050/network.py">network.py</a>, as well as a library of helper functions for our Beacon Runners, <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050/brlib.py">brlib.py</a>. Open them up! The code is not that scary.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 2 (click to open)</summary>
@@ -14352,8 +14354,8 @@ a.anchor-link {
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Now on to the new stuff. We've moved <code>honest_attest</code> and <code>honest_propose</code> to a new <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/validatorlib.py">validatorlib.py</a> file. This file also defines a very important class, the <code>BRValidator</code>, intended to be an abstract superclass to custom validator implementations. <code>BRValidator</code> comes packaged with a <code>Store</code>, a nifty little helper class defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/fork-choice.md#store">specs</a> and a bunch more logic to record past actions and current parameters. We'll get to them in a short while.</p>
-<p>We intend <code>BRValidator</code> to be an abstract superclass, meaning that though it is not supposed to be instantiated, it is friendly to inheritance. Subclasses of <code>BRValidator</code> inherit its attributes and methods, and are themselves intended to follow a simple API. Subclasses of <code>BRValidator</code> must expose a <code>propose()</code> and an <code>attest()</code> method which return, respectively, a block or an attestation when queried (or <code>None</code> when they are shy and don't want to return anything yet). We provide an example implementation in <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/ASAPValidator.py">ASAPValidator.py</a>, a very nice validator who always proposes and attests as soon as they can, and honestly too.</p>
+<p>Now on to the new stuff. We've moved <code>honest_attest</code> and <code>honest_propose</code> to a new <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050/validatorlib.py">validatorlib.py</a> file. This file also defines a very important class, the <code>BRValidator</code>, intended to be an abstract superclass to custom validator implementations. <code>BRValidator</code> comes packaged with a <code>Store</code>, a nifty little helper class defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/fork-choice.md#store">specs</a> and a bunch more logic to record past actions and current parameters. We'll get to them in a short while.</p>
+<p>We intend <code>BRValidator</code> to be an abstract superclass, meaning that though it is not supposed to be instantiated, it is friendly to inheritance. Subclasses of <code>BRValidator</code> inherit its attributes and methods, and are themselves intended to follow a simple API. Subclasses of <code>BRValidator</code> must expose a <code>propose()</code> and an <code>attest()</code> method which return, respectively, a block or an attestation when queried (or <code>None</code> when they are shy and don't want to return anything yet). We provide an example implementation in <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050/ASAPValidator.py">ASAPValidator.py</a>, a very nice validator who always proposes and attests as soon as they can, and honestly too.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 3 (click to open)</summary>
@@ -14375,14 +14377,7 @@ a.anchor-link {
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Let's talk about cadCAD once more. Our simulations are now stochastic, since the latency of the network means that some updates are random. cadCAD makes it easy to organise and run any number of instances as well as define the steps that take place in each instance. But our simulation state is pretty large: there are <em>n</em> validators and for each validator, a certain amount of data to keep track of, including chain states and current unincluded blocks and attestations. With advice from <a href="https://community.cadcad.org/t/mitigating-cadcad-overhead/140">the cadCAD community</a>, and a nice "tweak" by <a href="https://twitter.com/danilolessa">Danilo Lessa</a> to the source, the simulations are implemented following the pattern described <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/observers/observed-br2049.ipynb">in this notebook</a>.</p>
-<p>In short, make sure that you clone and checkout the <code>tweaks</code> branch of <a href="https://github.com/danlessa/cadCAD/tree/tweaks">Danilo's fork</a>. I use <code>pipenv</code> to manage my packages in this folder, and you should too! Here are a few commands to make it work for you too (on Unix systems, assuming you have cloned the <a href="https://github.com/ethereum/rig">RIG repo</a> and your terminal pointing to the <code>beaconrunner2050</code> folder)</p>
-<div class="highlight"><pre><span></span>git clone https://github.com/danlessa/cadCAD.git
-<span class="nb">cd</span> cadCAD
-git checkout tweaks
-<span class="nb">cd</span> ..
-pipenv install <span class="c1"># will run install for all packages in the Pipfile, including your local cadCAD</span>
-</pre></div>
+<p>Let's talk about cadCAD once more. Our simulations are now stochastic, since the latency of the network means that some updates are random. cadCAD makes it easy to organise and run any number of instances as well as define the steps that take place in each instance. But our simulation state is pretty large: there are <em>n</em> validators and for each validator, a certain amount of data to keep track of, including chain states and current unincluded blocks and attestations. In short, you can pull <a href="https://pypi.org/project/cadCAD-tweaked/">Danilo's fork of cadCAD, <code>cadCAD-tweaked</code></a> so that the simulation state isn't deep copied at every step.</p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
@@ -14481,7 +14476,7 @@ Current slot = 1
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Let's now reuse the network we had in <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">the second notebook</a>. The four validators are arranged along a chain, <code>0</code> peering with <code>1</code>, <code>1</code> peering with <code>2</code>, and <code>2</code> peering with <code>3</code>. We create information sets (who peers with who) to represent the chain.</p>
+<p>Let's now reuse the network we had in <a href="br2049.html">the second notebook</a>. The four validators are arranged along a chain, <code>0</code> peering with <code>1</code>, <code>1</code> peering with <code>2</code>, and <code>2</code> peering with <code>3</code>. We create information sets (who peers with who) to represent the chain.</p>
 <p><img src="img/infosets.jpeg" alt=""></p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
@@ -15060,7 +15055,7 @@ We are now 4 seconds into the slot
 <p><em>What are the dangers of attesting too early?</em> Simply put, validators are rewarded for attesting to the correct head of the chain from the perspective of their committee slot. Suppose a validator is expected to attest for slot 2. They send their attestation out before receiving the block for slot 2. In their attestation, they attested for the head of the chain they knew about, i.e., the block at slot 1. Later on, the block for slot 2 is included in the canonical chain. The head in the attestation is now incorrect!</p>
 <p><img src="img/earlyattest.jpeg" alt=""></p>
 <p><em>But shouldn't a validator attest as late as possible then?</em> We are dipping our toes in the waters of game theory here. I like it. Maybe! Though attesting too late means that the reward obtained for being included early decreases, and if you are <em>really</em> too late, like an epoch late, then you cannot be included at all. So pick your poison here.</p>
-<p>We'll define (or you can try it yourself!) a different validator behaviour, attesting <em>as soon as a block is received in the slot, or slightly before the end of the slot if no block comes in</em>. This is much unlike the current validator, who attests four seconds in no matter what. Let's look at this in <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/minibr_thunderdome.ipynb">a different notebook</a>!</p>
+<p>We'll define (or you can try it yourself!) a different validator behaviour, attesting <em>as soon as a block is received in the slot, or slightly before the end of the slot if no block comes in</em>. This is much unlike the current validator, who attests four seconds in no matter what. Let's look at this in <a href="thunderdome.html">a different notebook</a>!</p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
@@ -15305,7 +15300,7 @@ We are now 4 seconds into the slot
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Simulating-a-complete-chain">Simulating a complete chain<a class="anchor-link" href="#Simulating-a-complete-chain">&#182;</a></h2><p>First up, we need to reload our libraries as we'll be using a different specs configuration; the <code>medium</code> config now has 16 slots per epoch (see the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">second notebook</a> where we used the same configuration).</p>
+<h2 id="Simulating-a-complete-chain">Simulating a complete chain<a class="anchor-link" href="#Simulating-a-complete-chain">&#182;</a></h2><p>First up, we need to reload our libraries as we'll be using a different specs configuration; the <code>medium</code> config now has 16 slots per epoch (see the <a href="br2049.html">second notebook</a> where we used the same configuration).</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 25 (click to open)</summary>
@@ -15386,7 +15381,7 @@ Set B =  NetworkSet(validators=[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Notice that validators 50 to 65 belong to both sets. If the intersection was completely empty, we'd be back to the partition case we saw in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">previous notebook</a>.</p>
+<p>Notice that validators 50 to 65 belong to both sets. If the intersection was completely empty, we'd be back to the partition case we saw in the <a href="br2049.html">previous notebook</a>.</p>
 <p>Same as before, we set our <code>initial_conditions</code> to only contain the <code>network</code> object we just defined.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
@@ -15543,7 +15538,7 @@ total 1152 simulation steps
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>One last thing: we discussed before the use of a cadCAD fork that doesn't record a complete copy of the simulation state at each step. This is critical because when we set a very high <code>frequency</code>, during many steps nothing really happens: no one is proposing or attesting, but we still should ping validators to check if they want to do either. Recording the full state every step is quite wasteful! So instead, we'll define <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/observers/observed-br2049.ipynb"><em>observers</em></a>, or <em>metrics</em>: functions of the state that record a simple value at each step, such as the average balance of validators or the current slot. Let's write an observer for the current slot first:</p>
+<p>One last thing: we discussed before the use of a cadCAD fork that doesn't record a complete copy of the simulation state at each step. This is critical because when we set a very high <code>frequency</code>, during many steps nothing really happens: no one is proposing or attesting, but we still should ping validators to check if they want to do either. Recording the full state every step is quite wasteful! So instead, we'll define <em>observers</em>, or <em>metrics</em>: functions of the state that record a simple value at each step, such as the average balance of validators or the current slot. Let's write an observer for the current slot first:</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 31 (click to open)</summary>
@@ -15565,7 +15560,7 @@ total 1152 simulation steps
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>That was quite easy. Our state only includes the <code>network</code> object and since we assume all validators share a clock (or at least they are all synced to the same time) any validator's current slot will do.</p>
-<p>Now let's think about how to get the average balance. Of course, this depends on <em>which</em> beacon chain state we are looking at. Each validator maintains their own current state, which is made up of all the blocks and attestations they have seen until now. All validators may not agree on the current balances of everyone! In the extreme case of a partition, which we discussed in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">previous notebook</a>, the two sides of the partition had completely different accounts of the current distribution.</p>
+<p>Now let's think about how to get the average balance. Of course, this depends on <em>which</em> beacon chain state we are looking at. Each validator maintains their own current state, which is made up of all the blocks and attestations they have seen until now. All validators may not agree on the current balances of everyone! In the extreme case of a partition, which we discussed in the <a href="br2049.html">previous notebook</a>, the two sides of the partition had completely different accounts of the current distribution.</p>
 <p><img src="img/partitionspydey.png" alt="My Spydey sense is partitioned"></p>
 
 </div>

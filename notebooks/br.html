@@ -17,9 +17,9 @@
 
 <style type="text/css">
     pre { line-height: 125%; }
-td.linenos pre { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-td.linenos pre.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 .highlight .hll { background-color: var(--jp-cell-editor-active-background) }
 .highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
@@ -14291,6 +14291,8 @@ a.anchor-link {
       </div>
       
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<blockquote><p>Note: All code used in this notebook is contained in the <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner">notebooks/beaconrunner</a> folder of the Beacon runner repo, and does not use current eth2.0 specs. Most of the content here remains applicable.</p>
+</blockquote>
 <p>Our goal in this document is to get the specs running in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> simulation environment, using the <code>BeaconState</code> object defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">eth2 specs</a>. cadCAD is a cool new framework to simulate complex dynamics, in particular in stochastic environments. This makes it ideal to simulate the models of token economics and more generally any system that is controlled by state updates and user interactions. You can learn more about cadCAD by following <a href="https://twitter.com/markusbkoch">Markus Koch</a>'s <a href="https://github.com/BlockScience/cadCAD/tree/master/tutorials">tutorials</a>, especially <a href="https://github.com/BlockScience/cadCAD/blob/master/tutorials/robot-marbles-part-5/robot-marbles-part-5.ipynb">part 5</a> on using class objects as a state variable.</p>
 <p>In this notebook, we present the dynamics of block proposers on the beacon chain first, to get a feel of how the chain evolves over time. Then, we introduce validation proper, where validators cast votes to finalise the chain. If we think in game-theoretic terms, here we really just want to understand the basic space of decision-making of the several players in the protocol, as well as the information available to them when such decisions are made. We simplify the presentation by assuming there is no latency and all validators can always access the latest state. A more detailed model will relax these assumptions.</p>
 <p>We'll introduce basic building blocks of eth2 as we go along, but there is a ton of resources out there to learn more (<a href="https://hackmd.io/@benjaminion/By6gV_dXS">Ben Edgington's portal</a> is an excellent place to start for instance).</p>
@@ -14522,7 +14524,7 @@ a.anchor-link {
 <li><strong>(State update)</strong> Process block $b_s$, taking $\omega^-[s]$ to $\omega^+[s]$.</li>
 </ol>
 <p>Let's do this step by step:</p>
-<h3 id="1.-Process-slot">1. Process slot<a class="anchor-link" href="#1.-Process-slot">&#182;</a></h3><p>The arguments of this function are given to us by the cadCAD execution environment. <code>s</code> holds the current state of the simulation, where <code>s['beacon_state']</code> returns the current beacon state. Remember that we had set the initial state $\omega^+[0]$ as the <code>beacon_state</code> attribute of the <code>initial_conditions</code> dictionary.</p>
+<h3 id="Process-slot">Process slot<a class="anchor-link" href="#Process-slot">&#182;</a></h3><p>The arguments of this function are given to us by the cadCAD execution environment. <code>s</code> holds the current state of the simulation, where <code>s['beacon_state']</code> returns the current beacon state. Remember that we had set the initial state $\omega^+[0]$ as the <code>beacon_state</code> attribute of the <code>initial_conditions</code> dictionary.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 7 (click to open)</summary>
@@ -14551,7 +14553,7 @@ a.anchor-link {
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="2.-Propose-a-block">2. Propose a block<a class="anchor-link" href="#2.-Propose-a-block">&#182;</a></h3><p>We have more latitude to define what happens at this step. We can for instance make the difference between an honest validator who returns a block when they are the block proposer, given the most current state, and an offline validator who just does not produce anything. Given a state, each will return a different item.</p>
+<h3 id="Propose-a-block">Propose a block<a class="anchor-link" href="#Propose-a-block">&#182;</a></h3><p>We have more latitude to define what happens at this step. We can for instance make the difference between an honest validator who returns a block when they are the block proposer, given the most current state, and an offline validator who just does not produce anything. Given a state, each will return a different item.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 8 (click to open)</summary>
@@ -14638,7 +14640,7 @@ a.anchor-link {
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="3.-Process-the-block">3. Process the block<a class="anchor-link" href="#3.-Process-the-block">&#182;</a></h3><p>Given a block, we can run the state transition by calling <code>process_block</code>. We get the block proposed in step 2 as the <code>block</code> attribute of <code>_input</code>.</p>
+<h3 id="Process-the-block">Process the block<a class="anchor-link" href="#Process-the-block">&#182;</a></h3><p>Given a block, we can run the state transition by calling <code>process_block</code>. We get the block proposed in step 2 as the <code>block</code> attribute of <code>_input</code>.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 11 (click to open)</summary>
@@ -15169,11 +15171,11 @@ offline propose nothing for slot 15
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="1.-Process-slot">1. Process slot<a class="anchor-link" href="#1.-Process-slot">&#182;</a></h3><p>We already have a state transition function for that, our previously defined <code>state_update_slot</code>.</p>
+<h3 id="Process-slot">Process slot<a class="anchor-link" href="#Process-slot">&#182;</a></h3><p>We already have a state transition function for that, our previously defined <code>state_update_slot</code>.</p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="2.-Attestation-policy">2. Attestation policy<a class="anchor-link" href="#2.-Attestation-policy">&#182;</a></h3><p>Let's focus on the new step here, step #2. We first need to create honest attestations from validators.</p>
+<h3 id="Attestation-policy">Attestation policy<a class="anchor-link" href="#Attestation-policy">&#182;</a></h3><p>Let's focus on the new step here, step #2. We first need to create honest attestations from validators.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 18 (click to open)</summary>
@@ -15336,7 +15338,7 @@ offline propose nothing for slot 15
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="3.-Keep-attestations-in-state">3. Keep attestations in state<a class="anchor-link" href="#3.-Keep-attestations-in-state">&#182;</a></h3><p>Step #3 is easily handled with one single state update.</p>
+<h3 id="Keep-attestations-in-state">Keep attestations in state<a class="anchor-link" href="#Keep-attestations-in-state">&#182;</a></h3><p>Step #3 is easily handled with one single state update.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 20 (click to open)</summary>
@@ -15359,7 +15361,7 @@ offline propose nothing for slot 15
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="4.-Block-proposal-policy">4. Block proposal policy<a class="anchor-link" href="#4.-Block-proposal-policy">&#182;</a></h3><p>We must update our block proposal policy to include latest attestations. This time, we do not include offline block proposers.</p>
+<h3 id="Block-proposal-policy">Block proposal policy<a class="anchor-link" href="#Block-proposal-policy">&#182;</a></h3><p>We must update our block proposal policy to include latest attestations. This time, we do not include offline block proposers.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 21 (click to open)</summary>
@@ -15423,7 +15425,7 @@ offline propose nothing for slot 15
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="5.-Process-block">5. Process block<a class="anchor-link" href="#5.-Process-block">&#182;</a></h3><p>We also have a state update for this step, <code>state_update_block</code>, which we do not need to change.</p>
+<h3 id="Process-block">Process block<a class="anchor-link" href="#Process-block">&#182;</a></h3><p>We also have a state update for this step, <code>state_update_block</code>, which we do not need to change.</p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">

@@ -5,26 +5,37 @@ import pandas as pd
 
 from typing import Dict, Callable, Any
 
-from cadCAD.configuration import Configuration
+# cadCAD configuration modules
 from cadCAD.configuration.utils import config_sim
-from cadCAD.engine import ExecutionMode, ExecutionContext, Executor
+from cadCAD.configuration import Experiment
+
+# cadCAD simulation engine modules
+from cadCAD.engine import ExecutionMode, ExecutionContext
+from cadCAD.engine import Executor
+
+from cadCAD import configs
+del configs[:]
 
 from .specs import (
-    Deposit, DepositData, BeaconState,
-    SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
-    initialize_beacon_state_from_eth1,
+    Deposit, DepositData, BeaconState, BeaconBlock,
+    SECONDS_PER_SLOT, SLOTS_PER_EPOCH, MIN_GENESIS_TIME,
+    initialize_beacon_state_from_eth1, upgrade_to_altair,
 )
 from .network import (
     Network,
     update_network, disseminate_attestations,
+    disseminate_sync_committees,
     disseminate_block, knowledge_set,
 )
 
 from .utils.cadCADsupSUP import (
     get_observed_psubs,
     get_observed_initial_conditions,
+    get_observed_params,
     add_loop_ic,
     add_loop_psubs,
+    add_loop_params,
+    print_time,
 )
 
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
@@ -52,10 +63,10 @@ def get_initial_deposits(validators):
 
 def get_genesis_state(validators, seed="hello"):
     block_hash = hash(seed.encode("utf-8"))
-    eth1_timestamp = 1578009600
-    return initialize_beacon_state_from_eth1(
+    eth1_timestamp = MIN_GENESIS_TIME
+    return upgrade_to_altair(initialize_beacon_state_from_eth1(
         block_hash, eth1_timestamp, get_initial_deposits(validators)
-    )
+    ))
 
 def skip_genesis_block(validators):
     for validator in validators:
@@ -63,10 +74,11 @@ def skip_genesis_block(validators):
 
 ## State transitions
 
-def tick(_params, step, sL, s, _input):
+def tick(params, step, sL, s, _input):
     # Move the simulation by one step
-    frequency = _params[0]["frequency"]
-    network_update_rate = _params[0]["network_update_rate"]
+
+    frequency = params["frequency"]
+    network_update_rate = params["network_update_rate"]
 
     # Probably overkill
     assert frequency >= network_update_rate
@@ -88,14 +100,23 @@ def tick(_params, step, sL, s, _input):
 
     return ("network", network)
 
-def update_attestations(_params, step, sL, s, _input):
+def update_attestations(params, step, sL, s, _input):
     # Get the attestations and disseminate them on-the-wire
+
     network = s["network"]
     disseminate_attestations(network, _input["attestations"])
 
     return ('network', network)
 
-def update_blocks(_params, step, sL, s, _input):
+def update_sync_committees(params, step, sL, s, _input):
+    # Get the sync committees and disseminate them on-the-wire
+
+    network = s["network"]
+    disseminate_sync_committees(network, _input["sc_bundles"])
+
+    return ('network', network)
+
+def update_blocks(params, step, sL, s, _input):
     # Get the blocks proposed and disseminate them on-the-wire
 
     network = s["network"]
@@ -108,7 +129,7 @@ def update_blocks(_params, step, sL, s, _input):
 
 ### Attestations
 
-def attest_policy(_params, step, sL, s):
+def attest_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to attest
 
     network = s['network']
@@ -122,9 +143,26 @@ def attest_policy(_params, step, sL, s):
 
     return ({ 'attestations': produced_attestations })
 
+### Sync aggregates proposal
+
+def sync_committee_policy(params, step, sL, s):
+    # Pinging validators to check if anyone wants to produce a sync committee
+
+    network = s['network']
+    produced_sc_bundles = []
+
+    for validator_index, validator in enumerate(network.validators):
+        known_items = knowledge_set(network, validator_index)
+        sc_bundles = validator.sync_committees(known_items)
+        if sc_bundles is not None:
+            for sc_bundle in sc_bundles:
+                produced_sc_bundles.append([validator_index, sc_bundle])
+
+    return ({ 'sc_bundles': produced_sc_bundles })
+
 ### Block proposal
 
-def propose_policy(_params, step, sL, s):
+def propose_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to propose a block
 
     network = s['network']
@@ -143,13 +181,13 @@ def propose_policy(_params, step, sL, s):
 class SimulationParameters:
 
     num_epochs: uint64
-    num_run: uint64
+    run_index: uint64
     frequency: uint64
     network_update_rate: float
 
     def __init__(self, obj):
         self.num_epochs = obj["num_epochs"]
-        self.num_run = obj["num_run"]
+        self.run_index = obj["run_index"]
         self.frequency = obj["frequency"]
         self.network_update_rate = obj["network_update_rate"]
 
@@ -170,60 +208,76 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
     psubs = [
         {
             'policies': {
-                'action': attest_policy # step 1
+                'action': attest_policy
             },
             'variables': {
-                'network': update_attestations # step 2
+                'network': update_attestations
             }
         },
         {
             'policies': {
-                'action': propose_policy # step 3
+                'action': sync_committee_policy
             },
             'variables': {
-                'network': update_blocks # step 4
+                'network': update_sync_committees
+            }
+        },
+        {
+            'policies': {
+                'action': propose_policy
+            },
+            'variables': {
+                'network': update_blocks
             }
         },
         {
             'policies': {
             },
             'variables': {
-                'network': tick # step 5
+                'network': tick
             }
         },
     ]
 
     # Determine how many steps the simulation is running for
     num_slots = parameters.num_epochs * SLOTS_PER_EPOCH
-    steps = num_slots * SECONDS_PER_SLOT * parameters.frequency
+    steps = int(num_slots * SECONDS_PER_SLOT * parameters.frequency)
 
-    simulation_parameters = {
-        'T': range(steps),
-        'N': 1,
-        'M': {
-            "frequency": [parameters.frequency],
-            "network_update_rate": [parameters.network_update_rate],
-        }
+    params = {
+        "frequency": [parameters.frequency],
+        "network_update_rate": [parameters.network_update_rate],
     }
 
     print("will simulate", parameters.num_epochs, "epochs (", num_slots, "slots ) at frequency", parameters.frequency, "moves/second")
     print("total", steps, "simulation steps")
 
     # Add our observers to the simulation
-    observed_ic = add_loop_ic(get_observed_initial_conditions(initial_conditions, observers))
-    observed_psubs = add_loop_psubs(get_observed_psubs(psubs, observers))
+    observed_ic = get_observed_initial_conditions(initial_conditions, observers)
+    observed_psubs = get_observed_psubs(psubs, observers)
+    # observed_params = add_loop_params(get_observed_params(params, observers))
+
+    sim_config = config_sim({
+        'T': range(steps),
+        'N': 1,
+        'M': {
+            'frequency': [parameters.frequency],
+            'network_update_rate': [parameters.network_update_rate],
+        }
+    })
+
+    from cadCAD import configs
+    del configs[:]
 
     # Final simulation parameters and execution
-    configs = []
-    for sim_param in config_sim(simulation_parameters):
-        config = Configuration(sim_param,
-                               initial_state=observed_ic,
-                               partial_state_update_blocks=observed_psubs)
-        configs.append(config)
+    experiment = Experiment()
+    experiment.append_configs(
+        initial_state = observed_ic,
+        partial_state_update_blocks = observed_psubs,
+        sim_configs = sim_config
+    )
 
-    exec_mode = ExecutionMode()
-    single_proc_ctx = ExecutionContext(context=exec_mode.single_proc)
-    run = Executor(exec_context=single_proc_ctx, configs=configs)
-    raw_result, tensor_field = run.execute()
+    exec_context = ExecutionContext()
+    simulation = Executor(exec_context=exec_context, configs=configs)
+    raw_result, tensor, sessions = simulation.execute()
 
-    return pd.DataFrame(raw_result).assign(run = parameters.num_run)
+    return pd.DataFrame(raw_result)

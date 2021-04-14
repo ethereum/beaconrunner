@@ -17,9 +17,9 @@
 
 <style type="text/css">
     pre { line-height: 125%; }
-td.linenos pre { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-td.linenos pre.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 .highlight .hll { background-color: var(--jp-cell-editor-active-background) }
 .highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
@@ -14291,14 +14291,16 @@ a.anchor-link {
       </div>
       
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<blockquote><p>Note: All code used in this notebook is contained in the <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2049">notebooks/beaconrunner2049</a> folder of the Beacon runner repo, and does not use current eth2.0 specs. Most of the content here remains applicable.</p>
+</blockquote>
 <h2 id="TL;DR">TL;DR<a class="anchor-link" href="#TL;DR">&#182;</a></h2><ul>
-<li>We improve upon our first <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb"><em>Beacon Runner</em></a>, an economics-focused simulation environment for eth2.</li>
+<li>We improve upon our first <a href="br.html"><em>Beacon Runner</em></a>, an economics-focused simulation environment for eth2.</li>
 <li>We introduce network-level events and simulate a partition. Stake from inactive validators is leaked until active validators dominate on their side of the partition, so finalisation can resume.</li>
 <li>We make a short detour to introduce aggregation of attestations.</li>
 </ul>
 <hr>
-<p>In this notebook, we extend the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb"><em>Beacon Runner</em></a> to create network-level events. This is a second step towards an abstracted (but realistic) simulation environment to study economic properties of validation of eth2. We will make use of our p2p network abstraction to simulate a network partition, where for some reason (an adversary, <a href="https://www.theguardian.com/world/2011/apr/06/georgian-woman-cuts-web-access">a Georgian granny</a>, World War III) the network is split in two with both sides unable to communicate with each other.</p>
-<p>To recap' what happened in our <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">first notebook</a>, we wrapped the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">current eth2 specs</a> in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> environment. This wrap augmented the dynamics of chain updates (forming and adding a new block) with validator <em>policies</em>, which inform the state updates. We assumed zero network latency, i.e., all validators aware of all events as they happen, and sharing the same view of the chain. In practice, this assumption does not hold. We usually assume a <em>partially synchronous</em> model, where all validators are <em>eventually</em> informed of any event, with no bound on how long this may take (but a finite time in any case).</p>
+<p>In this notebook, we extend the <a href="br.html"><em>Beacon Runner</em></a> to create network-level events. This is a second step towards an abstracted (but realistic) simulation environment to study economic properties of validation of eth2. We will make use of our p2p network abstraction to simulate a network partition, where for some reason (an adversary, <a href="https://www.theguardian.com/world/2011/apr/06/georgian-woman-cuts-web-access">a Georgian granny</a>, World War III) the network is split in two with both sides unable to communicate with each other.</p>
+<p>To recap' what happened in our <a href="br.html">first notebook</a>, we wrapped the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">current eth2 specs</a> in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> environment. This wrap augmented the dynamics of chain updates (forming and adding a new block) with validator <em>policies</em>, which inform the state updates. We assumed zero network latency, i.e., all validators aware of all events as they happen, and sharing the same view of the chain. In practice, this assumption does not hold. We usually assume a <em>partially synchronous</em> model, where all validators are <em>eventually</em> informed of any event, with no bound on how long this may take (but a finite time in any case).</p>
 <p>Under a partially synchronous model, validators may not share the same view of the chain, since they may not be aware that a new block was created when they have not yet received it from the underlying p2p network. In the worst-case, an adversary manipulating the network can successfully game the view of other validators. If they are skilled enough, they could even <a href="https://ethresear.ch/t/non-attributable-censorship-attack-on-fraud-proof-based-layer2-protocols/6492">pretend that their manipulation is not malicious and is the result of unfortunate network delays</a>. How can we create policies that are <em>robust</em> to network uncertainty and strategic interactions?</p>
 <p>We will develop these questions throughout, getting insight from our models and simulations.</p>
 <h2 id="Setting-up">Setting up<a class="anchor-link" href="#Setting-up">&#182;</a></h2><p>First, we need to load the beacon chain specs, as defined by the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">canonical eth2 repo</a>. This time, we're using the new <code>eth2spec</code> Python package that you can pull directly with <code>pip</code> or <code>pipenv</code>. We've also built our own version of the specs using the procedure detailed <a href="https://github.com/ethereum/eth2.0-specs/tree/dev/tests/core/pyspec#dev-install">here</a>. It's so simple!</p>
@@ -14397,7 +14399,7 @@ a.anchor-link {
 0: [0,1]
 1: [1,2]
 2: [2,3]</code></pre>
-<p>Same as we did in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">first notebook</a>, we now create a dummy genesis state with four validators who each deposit 32 ETH in the contract -- the minimum to start validating.</p>
+<p>Same as we did in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/br.html">first notebook</a>, we now create a dummy genesis state with four validators who each deposit 32 ETH in the contract -- the minimum to start validating.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 4 (click to open)</summary>
@@ -14421,7 +14423,7 @@ a.anchor-link {
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>In the next code chunk, validator 3 disseminates an <code>Attestation</code> object, which is kept in the <code>items</code> attributes of the network.</p>
-<p><em>Note:</em> We use <a href="brlib.py">brlib.py</a> -- the Beacon Runner library of validator behaviours -- to create this attestation object. Unlike the first notebook, we won’t be going over the code governing validator policies, but if you’re curious to see how it works, check  it out <a href="brlib.py">here</a>.</p>
+<p><em>Note:</em> We use <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2049/brlib.py">brlib.py</a> -- the Beacon Runner library of validator behaviours -- to create this attestation object. Unlike the first notebook, we won’t be going over the code governing validator policies, but if you’re curious to see how it works, check  it out <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2049/brlib.py">here</a>.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 5 (click to open)</summary>
@@ -14693,8 +14695,7 @@ validator sets who know about this attestation: [2]
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Simulation-time!">Simulation time!<a class="anchor-link" href="#Simulation-time!">&#182;</a></h3><p>We have quite a few new building blocks to our simulation, with most of the code is abstracted away in our <a href="brlib.py">brlib.py</a> file. Without reading that code though, you should be able to get how the simulation will be built from the way we organise our <code>block_attestation_psub</code> array (if you are not sure what this means, take a look at <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">the first notebook!</a>).</p>
-<p>The simulation is not quite fast yet. There are workarounds to improve the performance (check out <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/observers/observed-br2049.ipynb">this additional notebook</a>), but for the sake of exposition, they are not included here.</p>
+<h3 id="Simulation-time!">Simulation time!<a class="anchor-link" href="#Simulation-time!">&#182;</a></h3><p>We have quite a few new building blocks to our simulation, with most of the code is abstracted away in our <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2049/brlib.py">brlib.py</a> file. Without reading that code though, you should be able to get how the simulation will be built from the way we organise our <code>block_attestation_psub</code> array (if you are not sure what this means, take a look at <a href="br.html">the first notebook!</a>).</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 11 (click to open)</summary>
@@ -14774,7 +14775,7 @@ validator sets who know about this attestation: [2]
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Aggregates">Aggregates<a class="anchor-link" href="#Aggregates">&#182;</a></h3><p>If you remember how we built attestations in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner/beacon_runner.ipynb">initial Beacon Runner</a>, we had an <code>aggregation_bits</code> attribute in <code>Attestation</code> instances. In the previous notebook, we set all bits of the <code>aggregation_bits</code> to 0, except for the one bit corresponding to the validator's index in its committee, which we set to 1.</p>
+<h3 id="Aggregates">Aggregates<a class="anchor-link" href="#Aggregates">&#182;</a></h3><p>If you remember how we built attestations in the <a href="br.html">initial Beacon Runner</a>, we had an <code>aggregation_bits</code> attribute in <code>Attestation</code> instances. In the previous notebook, we set all bits of the <code>aggregation_bits</code> to 0, except for the one bit corresponding to the validator's index in its committee, which we set to 1.</p>
 <p>If however, in the ideal case, we expect all validators from the same committee to cast the exact same vote (same source, target and head), why bother collating all these votes as single <code>Attestation</code>s?</p>
 <p>Instead, we set the bits of the <code>aggregation_bits</code> attribute to represent which validators from the committee have cast this exact attestation.</p>
 <div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">Attestation</span><span class="p">(</span><span class="n">AttestationData</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">committee</span><span class="p">,</span> <span class="n">slot</span><span class="p">))</span>
