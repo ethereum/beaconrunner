@@ -6,26 +6,36 @@ from dataclasses import dataclass, field
 from .specs import (
     Slot, Root, Epoch, CommitteeIndex, ValidatorIndex, Store,
     BeaconState, BeaconBlock, BeaconBlockBody, SignedBeaconBlock,
-    Attestation, AttestationData, Checkpoint, BLSSignature,
+    Attestation, AttestationData, Checkpoint, BLSSignature, Eth1Data,
+    SyncCommitteeSignature, SyncCommitteeContribution, SyncAggregate,
     MAX_VALIDATORS_PER_COMMITTEE, VALIDATOR_REGISTRY_LIMIT,
     SLOTS_PER_EPOCH, DOMAIN_RANDAO, DOMAIN_BEACON_PROPOSER,
-    DOMAIN_BEACON_ATTESTER,
+    DOMAIN_BEACON_ATTESTER, DOMAIN_SYNC_COMMITTEE,
+    SYNC_COMMITTEE_SUBNET_COUNT, SYNC_COMMITTEE_SIZE,
     get_forkchoice_store, get_current_slot, compute_epoch_at_slot,
     get_head, process_slots, on_tick, get_current_epoch,
     get_committee_assignment, compute_start_slot_at_epoch,
     get_block_root, process_block, process_attestation,
     get_block_root_at_slot, get_beacon_proposer_index,
     get_domain, compute_signing_root, state_transition,
-    on_block, on_attestation,
+    on_block, on_attestation, process_sync_committee_contributions,
+    get_sync_committee_signature,
 )
 
-import milagro_bls_binding as bls
+# import milagro_bls_binding as bls
+import eth2spec.utils.bls as bls
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
 from eth2spec.utils.ssz.ssz_typing import Container, List, uint64, Bitlist, Bytes32
 from eth2spec.test.helpers.keys import pubkeys, pubkey_to_privkey
 
 frequency = 1
 assert frequency in [1, 10, 100, 1000]
+
+@dataclass
+class SyncCommitteeBundle(object):
+    sync_committee_index: uint64
+    sync_subcommittee_index: uint64
+    sync_committee_signature: SyncCommitteeSignature
 
 class ValidatorMove(object):
     """
@@ -83,10 +93,20 @@ class ValidatorData:
     next_committee: List[ValidatorIndex, MAX_VALIDATORS_PER_COMMITTEE]
     """Last computed committee to attest in the next epoch"""
 
+    current_sync_committee: List[List[uint64, 2], SYNC_COMMITTEE_SIZE]
+    """
+    List of tuples (sync_committee_index, sync_subcommittee_index)
+    """
+
     last_slot_attested: Optional[Slot]
     """
     Last slot where validator attested. Possibly we have
     `self.slot == self.last_slot_attested`
+    """
+
+    last_slot_sync_committee: Optional[Slot]
+    """
+    Last slot where validator published a sync committee signature.
     """
 
     current_proposer_duties: Sequence[bool]
@@ -101,7 +121,7 @@ class ValidatorData:
     `self.slot == self.last_slot_proposed`
     """
 
-    recorded_attestations: List[Root, VALIDATOR_REGISTRY_LIMIT]
+    recorded_attestations: List[Root, 2048]
     """
     Hash roots of `Store` recorded attestations. Used for internal cache.
     """
@@ -117,10 +137,10 @@ class HashableSpecStore(Container):
     `get_head` only depends on stored blocks and latest messages, so we use that here.
     """
 
-    recorded_attestations: List[Root, VALIDATOR_REGISTRY_LIMIT]
+    recorded_attestations: List[Root, 2048]
     """Recorded attestations in the `Store`"""
 
-    recorded_blocks: List[Root, VALIDATOR_REGISTRY_LIMIT]
+    recorded_blocks: List[Root, 2048]
     """Recorded blocks in the `Store`"""
 
 class BRValidator:
@@ -151,7 +171,7 @@ class BRValidator:
     store: Store
     """`Store` objects are defined in the specs."""
 
-    history: List[ValidatorMove, VALIDATOR_REGISTRY_LIMIT]
+    history: List[ValidatorMove, 2048]
     """History of `ValidatorMove` by the validator."""
 
     data: ValidatorData
@@ -179,17 +199,18 @@ class BRValidator:
 
         self.validator_index = validator_index
         self.pubkey = pubkeys[validator_index]
-        self.privkey = pubkey_to_privkey[self.pubkey].to_bytes(32, 'big')
+        # self.privkey = pubkey_to_privkey[self.pubkey].to_bytes(32, 'big')
+        self.privkey = pubkey_to_privkey[self.pubkey]
 
         self.history = []
 
         self.data = ValidatorData()
 
-    def load_state(self, state: BeaconState) -> None:
+    def load_state(self, state: BeaconState, anchor_block: BeaconBlock) -> None:
         """
         """
 
-        self.store = get_forkchoice_store(state.copy())
+        self.store = get_forkchoice_store(state.copy(), anchor_block.copy())
 
         self.data.time_ms = self.store.time * 1000
         self.data.recorded_attestations = []
@@ -202,6 +223,7 @@ class BRValidator:
             process_slots(current_state, self.data.slot)
 
         self.update_attester(current_state, self.data.current_epoch)
+        self.update_sync_committee(current_state)
         self.update_proposer(current_state)
         self.update_data()
 
@@ -344,6 +366,22 @@ class BRValidator:
             self.data.next_committee_index = committee_index
             self.data.next_committee = committee
 
+    def state_current_sync_committee_readable(self, current_state: BeaconState) -> None:
+        pubkeys = [v.pubkey for v in current_state.validators]
+        print([pubkeys.index(pk) for pk in current_state.current_sync_committee.pubkeys])
+
+    def update_sync_committee(self, current_state: BeaconState) -> None:
+        """
+        Based on `compute_subnets_for_sync_committee`
+        """
+        # self.state_current_sync_committee_readable(current_state)
+        target_pubkey = current_state.validators[self.validator_index].pubkey
+        sync_committee_indices = [index for index, pubkey in enumerate(current_state.current_sync_committee.pubkeys) if pubkey == target_pubkey]
+        self.data.current_sync_committee = [
+            (index, uint64(index // (SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT)))
+            for index in sync_committee_indices
+        ]
+
     def update_proposer(self, current_state: BeaconState) -> None:
         """
         This is a fairly expensive operation, so we try not to call it when we don't have to.
@@ -392,6 +430,21 @@ class BRValidator:
 
         slots_attested = sorted([log.slot for log in self.history if log.move == "attest"], reverse = True)
         self.data.last_slot_attested = None if len(slots_attested) == 0 else slots_attested[0]
+
+    def update_sync_committee_move(self) -> None:
+        """
+        When was the last sync committee produced by the validator?
+        Updates `self.data.last_slot_sync_committee`.
+
+        Args:
+            self (BRValidator): Validator
+
+        Returns:
+            None
+        """
+
+        slots_sync_committee = sorted([log.slot for log in self.history if log.move == "sync_committee"], reverse = True)
+        self.data.last_slot_sync_committee = None if len(slots_sync_committee) == 0 else slots_sync_committee[0]
 
     def update_propose_move(self) -> None:
         """
@@ -448,6 +501,7 @@ class BRValidator:
         current_epoch = compute_epoch_at_slot(slot)
 
         self.update_attest_move()
+        self.update_sync_committee_move()
         self.update_propose_move()
 
         # Did the validator record a block for this slot?
@@ -475,6 +529,7 @@ class BRValidator:
                     else:
                         self.update_proposer(current_state)
                         self.update_attester(current_state, current_epoch)
+                    self.update_sync_committee(current_state)
                 self.data.head_root = head_root
 
         else:
@@ -488,6 +543,9 @@ class BRValidator:
 
                 # We need to check our attester role for this new epoch
                 self.update_attester(current_state, current_epoch)
+
+                # We should update sync committees (not each epoch... can be optimised)
+                self.update_sync_committee(current_state)
 
         self.data.slot = slot
         self.data.current_epoch = current_epoch
@@ -517,6 +575,18 @@ class BRValidator:
         ))
         self.update_attest_move()
 
+    def log_sync_committee(self, item: SyncCommitteeBundle) -> None:
+        """
+        Recording 'SyncCommitteeBundle' move by the validator in its history.
+        """
+
+        self.history.append(ValidatorMove(
+            time = self.data.time_ms,
+            slot = item.sync_committee_signature.slot,
+            move = "sync_committee"
+        ))
+        self.update_sync_committee_move()
+
     def record_block(self, item: SignedBeaconBlock) -> bool:
         """
         When a validator receives a block from the network, they call `record_block` to see
@@ -532,6 +602,7 @@ class BRValidator:
         # - The block parent is not known
         try:
             state = self.process_to_slot(item.message.parent_root, item.message.slot)
+            print(f"record_block {self.validator_index}")
             on_block(self.store, item, state = state)
         except AssertionError as e:
             return False
@@ -721,6 +792,78 @@ def aggregate_attestations(attestations):
         [att for att in attestations if att_hash == hash_tree_root(att.data)]
     ) for att_hash in hashes]
 
+### Sync committee strategies
+
+def honest_sync_committee(validator, known_items):
+    """
+    Returns an honest sync committee signature from `validator`.
+
+    Args:
+        validator (BRValidator): A validator in at least one sync committee
+        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+    Returns:
+        Sequence[SyncCommitteeBundle]: The honest (sync committee index, subcommittee index, sync committee signature) objects returned by the validator
+    """
+
+    block_root = validator.get_head()
+    head_state = validator.store.block_states[block_root].copy()
+    if head_state.slot < validator.data.slot:
+        process_slots(head_state, validator.data.slot)
+
+    sync_committee_signature = get_sync_committee_signature(head_state, block_root, validator.validator_index, validator.privkey)
+    sync_committee_signature.beacon_block_root = validator.get_head()
+
+    sync_committee_signatures = []
+    for (sync_committee_index, subcommittee_index) in validator.data.current_sync_committee:
+        sync_committee_signatures += [SyncCommitteeBundle(
+            sync_committee_index=sync_committee_index,
+            sync_subcommittee_index=subcommittee_index,
+            sync_committee_signature=sync_committee_signature)]
+
+    return sync_committee_signatures
+
+### Sync committee aggregation helpers
+
+def get_sync_aggregate_signature(sync_committees: Sequence[SyncCommitteeSignature]) -> BLSSignature:
+    signatures = [sync_committee.signature for sync_committee in sync_committees]
+    return bls.Aggregate(signatures)
+
+def build_sync_aggregate(sc_bundles):
+    """
+    Given a set of attestations from the same slot, committee index and vote for
+    same source, target and beacon block, return an aggregated attestation.
+    """
+
+    if len(sc_bundles) == 0:
+        return None
+
+    aggregation_bits_length = SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT
+    aggregation_bits = Bitlist[aggregation_bits_length](*([0] * aggregation_bits_length))
+    for sc_bundle in sc_bundles:
+        validator_index_in_committee = sc_bundle.sync_committee_index % aggregation_bits_length
+        aggregation_bits[validator_index_in_committee] = True
+
+    aggregate_sync_committee = SyncCommitteeContribution(
+        slot = sc_bundles[0].sync_committee_signature.slot,
+        beacon_block_root = sc_bundles[0].sync_committee_signature.beacon_block_root,
+        subcommittee_index = sc_bundles[0].sync_subcommittee_index,
+        aggregation_bits = aggregation_bits,
+    )
+    aggregate_signature = get_aggregate_signature([sc_bundle.sync_committee_signature for sc_bundle in sc_bundles])
+    aggregate_sync_committee.signature = aggregate_signature
+
+    return aggregate_sync_committee
+
+def aggregate_sync_committees(sc_bundles):
+    """
+    Take in a set of sync committees. Output aggregated sync committees.
+    """
+
+    return [item for item in [build_sync_aggregate(
+        [sc_bundle for sc_bundle in sc_bundles if sc_bundle.sync_subcommittee_index == subcommittee_index]
+    ) for subcommittee_index in range(SYNC_COMMITTEE_SUBNET_COUNT)] if not item is None]
+
 ### Proposal strategies
 
 def get_block_signature(state: BeaconState, block: BeaconBlock, privkey: int) -> BLSSignature:
@@ -759,8 +902,15 @@ def honest_propose(validator, known_items):
 
     processed_state = validator.process_to_slot(head, slot)
 
+    # Include attestations
     attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
     attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
+
+    # Include sync committees
+    sc_bundles = [sc_bundle for sc_bundle in known_items["sync_committees"]]
+    sc_contributions = aggregate_sync_committees(
+        [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot]
+    )
 
     beacon_block = BeaconBlock(
         slot=slot,
@@ -769,12 +919,18 @@ def honest_propose(validator, known_items):
     )
 
     beacon_block_body = BeaconBlockBody(
-        attestations=attestations
+        attestations=attestations,
+        eth1_data = Eth1Data(
+            deposit_count = len(processed_state.validators)
+        )
     )
     epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
     beacon_block_body.randao_reveal = epoch_signature
 
     beacon_block.body = beacon_block_body
+
+    if len(sc_contributions) > 0:
+        process_sync_committee_contributions(beacon_block, sc_contributions)
 
     process_block(processed_state, beacon_block)
     state_root = hash_tree_root(processed_state)

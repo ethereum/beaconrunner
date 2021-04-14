@@ -17,9 +17,9 @@
 
 <style type="text/css">
     pre { line-height: 125%; }
-td.linenos pre { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: #000000; background-color: #f0f0f0; padding-left: 5px; padding-right: 5px; }
-td.linenos pre.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
 .highlight .hll { background-color: var(--jp-cell-editor-active-background) }
 .highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
@@ -14281,7 +14281,7 @@ a.anchor-link {
         </div>
 
         <div class="sub-title">
-          
+          Note: This post describes a result that was true in the v1 specs, but is fixed in the first major upgrade, v1.1, a.k.a. Altair. The table of rewards presented in Section 1. is also outdated. The value of the case study remains.
         </div>
       </div>
 
@@ -14294,7 +14294,7 @@ a.anchor-link {
 <p>We really care (and want to check) that honest, protocol-following validators, reap the highest (in-protocol) rewards. We'll get a feel for what this means here by pitting different validator behaviours against each other.</p>
 <p>To introduce a bit of terminology, we are creating an <em>agent-based model</em> here. We do not explicitly code a scenario that agents follow, but program simple update and interaction rules, let them unfold for a while, and then look at the tape to infer conclusions.</p>
 <p>We'll distinguish between <em>strategies</em> and <em>behaviours</em>. A validator can do several things: attest, propose, or do nothing. We'll call <em>strategies</em> instantiations of these particular actions. For instance, a validator may employ the strategy of always attesting correctly, or flipping a coin and half the time attesting correctly, half the time not attesting at all (a pretty dumb strategy if you ask me).</p>
-<p>We use the word <em>behaviour</em> to describe the general articulation of these strategies: what to play and <em>when</em>. We explored in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/br2050.ipynb">main notebook</a> the behaviour of the <a href="https://github.com/barnabemonnot/beaconrunner/blob/master/beaconrunner/validators/ASAPValidator.py">ASAP validator</a>, who does something as early as possible according to the specs (at the beginning of the slot for a block proposal; a third of a slot, i.e., 4 seconds in <em>or</em> whenever the block for that slot is received for an attestation).</p>
+<p>We use the word <em>behaviour</em> to describe the general articulation of these strategies: what to play and <em>when</em>. We explored in the <a href="br2050.html">main notebook</a> the behaviour of the <a href="https://github.com/barnabemonnot/beaconrunner/blob/master/beaconrunner/validators/ASAPValidator.py">ASAP validator</a>, who does something as early as possible according to the specs (at the beginning of the slot for a block proposal; a third of a slot, i.e., 4 seconds in <em>or</em> whenever the block for that slot is received for an attestation).</p>
 <p>In this notebook, we'll look at a different behaviour too: the <a href="https://github.com/barnabemonnot/beaconrunner/blob/master/beaconrunner/validators/PrudentValidator.py">Prudent validator</a>. Although validators are expected to propose their block as early as possible, network delays could prevent attesters from receiving the block before a third of the slot has elapsed. ASAP validators would attest anyways, at the risk of voting on the wrong head, before receiving the block for that slot. Prudent validators hedge their bets a bit:</p>
 <ul>
 <li>If Prudent validators receive the block for their attesting slot, they publish their attestation with the head set to that block.</li>
@@ -14309,7 +14309,7 @@ a.anchor-link {
 <li>Validators receive a bonus for attesting on the correct head. Attesting too early means possibly losing out on this bonus if the head specified in the attestation is incorrect.</li>
 <li>Validators receive a bonus for early inclusion of their attestation in a block. This means that they should attest relatively soon, and cannot wait forever to see if a missing block will turn up.</li>
 </ul>
-<p>You can see <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md#get_attestation_deltas">here in the specs</a> how rewards and penalties are computed at the end of each epoch. Let's unpack the computations below.</p>
+<p>You can see <a href="https://github.com/ethereum/eth2.0-specs/blob/579da6d2dc734b269dbf67aa1004b54bb9449784/specs/phase0/beacon-chain.md#get_attestation_deltas">here in the specs</a> how rewards and penalties are computed at the end of each epoch. Let's unpack the computations below.</p>
 <h3 id="Attester-rewards-in-eth2">Attester rewards in eth2<a class="anchor-link" href="#Attester-rewards-in-eth2">&#182;</a></h3><p>A <em>base reward</em> $\texttt{BR}$ is computed that depends only on the validator's effective balance (maximum 32 ETH) and the current total active balance (the total effective balance of <em>all</em> active validators). Letting $i$ denote our validator,</p>
 $$ \texttt{BR[i]} = \texttt{balance[i]} \cdot \frac{\texttt{BRF}}{\sqrt{\texttt{total\_balance}} \cdot \texttt{BRPE}} $$<p>$\texttt{BRPE}$ stands for <em>base rewards per epoch</em>. A validator can be rewarded for</p>
 <ol>
@@ -14322,65 +14322,12 @@ $$ \texttt{BR[i]} = \texttt{balance[i]} \cdot \frac{\texttt{BRF}}{\sqrt{\texttt{
 <p>For each of the first three items, we scale the base reward by the fraction of the active stake who correctly attested for the item. If $\rho_s$ is the fraction of the stake who attested correctly for the source, then a validator $i$ with a correct source receives $\rho_s \cdot \texttt{BR[i]}$. However, failure to attest or attesting for an incorrect source, target or head incurs the full $\texttt{BR[i]}$ as penalty.</p>
 <p>Now, let's dig deeper into item 4, early inclusion. Attestations may be included at least one slot after the slot they are attesting for, called the <em>committee slot</em>. If they are included in the block immediately following their committee slot, they receive the full base reward, minus the <em>proposer reward</em>, endowed to the block producer (see table below). If they are included in the block two slots after their committee slot, they receive half. Three blocks later, a third, etc. Attestations must be included at the latest one full epoch after their committee slot. This means the smallest inclusion reward is 1/32 of the base reward (assuming <code>SLOTS_PER_EPOCH</code> is equal to 32).</p>
 <p>These are the attester rewards in the best of times. Note however, that the penalties are not symmetric. Whenever a validator fails to attest for one of the first three items, or attests incorrectly, the penalty is equal to the whole base reward. No discount!</p>
-<p>What about the worst of times? From the perspective of rewards and penalities, this happens when the chain is not finalising epochs anymore (a situation we explored in a <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2049/beacon_runner_2049.ipynb">different notebook</a>). In this case, we want to "leak" the stake of inactive validators, who are preventing finalisation. A <a href="https://github.com/ethereum/eth2.0-specs/pull/1830">recent modification</a> ensures that validators who perform optimally (i.e., attest correctly to all three items <em>and</em> included in the block immediately following their committee slot) do not suffer any losses. Meanwhile, validators who are not attesting for the correct target (a key ingredient for finalisation) suffer increasingly painful consequences, as the <em>finality delay</em> (the gap between the current epoch and the last finalised epoch) grows.</p>
+<p>What about the worst of times? From the perspective of rewards and penalities, this happens when the chain is not finalising epochs anymore (a situation we explored in a <a href="br2049.html">different notebook</a>). In this case, we want to "leak" the stake of inactive validators, who are preventing finalisation. A <a href="https://github.com/ethereum/eth2.0-specs/pull/1830">recent modification</a> ensures that validators who perform optimally (i.e., attest correctly to all three items <em>and</em> included in the block immediately following their committee slot) do not suffer any losses. Meanwhile, validators who are not attesting for the correct target (a key ingredient for finalisation) suffer increasingly painful consequences, as the <em>finality delay</em> (the gap between the current epoch and the last finalised epoch) grows.</p>
 <p>This is all synthesised in the following table. "IL" items refer to "Inactivity Leak": the rewards and penalties during these worst of times.</p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<table>
-<thead><tr>
-<th></th>
-<th>Reward</th>
-<th>Penalty</th>
-<th>Reward (IL)</th>
-<th>Penalty (IL)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Correct source?</td>
-<td>$\rho_s \cdot \texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-</tr>
-<tr>
-<td>Correct target?</td>
-<td>$\rho_t \cdot \texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-</tr>
-<tr>
-<td>Correct head?</td>
-<td>$\rho_h \cdot \texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-<td>$\texttt{BR[i]}$</td>
-</tr>
-<tr>
-<td>Correct source <em>and</em> inclusion with delay $d$?</td>
-<td>$\Big(1 - \frac{1}{\texttt{PRQ}} \Big) \frac{\texttt{BR[i]}}{d}$</td>
-<td>0</td>
-<td>$\Big(1 - \frac{1}{\texttt{PRQ}} \Big)\frac{\texttt{BR[i]}}{d}$</td>
-<td>0</td>
-</tr>
-<tr>
-<td>Finality delay $d$ (incurred by everyone)</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>$\Big( \texttt{BRPE} - \frac{1}{\texttt{PRQ}} \Big) \cdot \texttt{BR[i]}$</td>
-</tr>
-<tr>
-<td>Correct target (finality delay = $f$)?</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>$\texttt{balance[i]} \cdot \frac{f}{\texttt{IPQ}}$</td>
-</tr>
-</tbody>
-</table>
+<p><img src="img/rewardsv1.png" alt=""></p>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
@@ -14400,7 +14347,7 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 <h3 id="Some-hypotheses-before-simulating">Some hypotheses before simulating<a class="anchor-link" href="#Some-hypotheses-before-simulating">&#182;</a></h3><p>In a network with perfect (or close to perfect) latency and honest proposers, we don't expect ASAP and prudent validator earnings to differ significantly. But under real-world conditions, the behaviour of prudent validators appears more <em>robust</em> than that of ASAP validators. By robust, we mean that prudent validators perform better under slight variations of the parameters, e.g., the average network latency.</p>
 <p>When network delays are high or block proposers are lazy (meaning they don't propagate their blocks in time, perhaps because they are being prudent in order to collect more incoming attestations), prudent validators stand to reap the "correct head" reward more often. On the other hand, when network delays are really, really high, perhaps proposing ASAP is a better strategy, as it ensures at least <em>something</em> goes through, even if it's possibly incorrect.</p>
 <h2 id="&quot;Two-nodes-enter!-One-node-leaves!&quot;"><em>"Two nodes enter! One node leaves!"</em><a class="anchor-link" href="#&quot;Two-nodes-enter!-One-node-leaves!&quot;">&#182;</a></h2><p>Let's pit <code>PrudentValidator</code>s against <code>ASAP</code>s and observe the result. In this simulation, we let <code>SLOTS_PER_EPOCH</code> equal 4 and simulate a small number of validators. Runs are now random: sometimes the network updates, sometimes it doesn't. We'll set it up later so that on average messages propagate one step further on the network every 4 seconds.</p>
-<p>We first load all the necessary packages. The remainder will look a lot like what we did in the <a href="https://github.com/ethereum/rig/blob/master/eth2economics/code/beaconrunner2050/br2050.ipynb">main notebook</a>, check it out for more background!</p>
+<p>We first load all the necessary packages. The remainder will look a lot like what we did in the <a href="br2050.html">main notebook</a>, check it out for more background!</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 1 (click to open)</summary>

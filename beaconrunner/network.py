@@ -5,9 +5,11 @@ from dataclasses import dataclass, field
 from .specs import (
     VALIDATOR_REGISTRY_LIMIT,
     ValidatorIndex, Slot,
-    BeaconState, Attestation, SignedBeaconBlock,
+    BeaconState, Attestation, SignedBeaconBlock
 )
-from .validatorlib import BRValidator
+from .validatorlib import (
+    BRValidator, SyncCommitteeBundle
+)
 
 from eth2spec.utils.ssz.ssz_typing import Container, List, uint64
 
@@ -26,6 +28,11 @@ class NetworkAttestation(object):
     info_sets: List[NetworkSetIndex, VALIDATOR_REGISTRY_LIMIT]
 
 @dataclass
+class NetworkSyncCommittee(object):
+    item: SyncCommitteeBundle
+    info_sets: List[NetworkSetIndex, VALIDATOR_REGISTRY_LIMIT]
+
+@dataclass
 class NetworkBlock(object):
     item: SignedBeaconBlock
     info_sets: List[NetworkSetIndex, VALIDATOR_REGISTRY_LIMIT]
@@ -38,6 +45,7 @@ class Network(object):
     # In a previous implementation, we kept attestations and blocks in the same queue.
     # This was unwieldy. We can extend this easily by adding `Attester/ProposerSlashing`s
     attestations: List[NetworkAttestation, VALIDATOR_REGISTRY_LIMIT] = field(default_factory=list)
+    sync_committees: List[SyncCommitteeBundle, VALIDATOR_REGISTRY_LIMIT] = field(default_factory=list)
     blocks: List[NetworkBlock, VALIDATOR_REGISTRY_LIMIT] = field(default_factory=list)
 
     # We have the possibility of malicious validators refusing to propagate messages.
@@ -54,8 +62,13 @@ def knowledge_set(network: Network, validator_index: ValidatorIndex) -> Dict[str
 
     info_sets = set(get_all_sets_for_validator(network, validator_index))
     known_attestations = [item for item in network.attestations if len(set(item.info_sets) & info_sets) > 0]
+    known_sync_committees = [item for item in network.sync_committees if len(set(item.info_sets) & info_sets) > 0]
     known_blocks = [item for item in network.blocks if len(set(item.info_sets) & info_sets) > 0]
-    return { "attestations": known_attestations, "blocks": known_blocks }
+    return {
+        "attestations": known_attestations,
+        "sync_committees": known_sync_committees,
+        "blocks": known_blocks,
+    }
 
 def ask_to_check_backlog(network: Network,
                          validator_indices: Set[ValidatorIndex]) -> None:
@@ -68,6 +81,52 @@ def ask_to_check_backlog(network: Network,
         # Check if there are pending attestations/blocks that can be recorded
         known_items = knowledge_set(network, validator_index)
         validator.check_backlog(known_items)
+
+def disseminate_attestations(network: Network, items: Sequence[Tuple[ValidatorIndex, Attestation]]) -> None:
+    # We get a set of attestations and disseminate them over the network
+
+    # Finding out who receives a new attestation
+    broadcast_validators = set()
+    for item in items:
+        sender = item[0]
+        attestation = item[1]
+        broadcast_list = get_all_sets_for_validator(network, sender)
+
+        # The sender records that they have sent an attestation
+        network.validators[sender].log_attestation(attestation)
+
+        # Adding the attestation to network items
+        networkItem = NetworkAttestation(item=attestation, info_sets=broadcast_list)
+        network.attestations.append(networkItem)
+
+        # Update list of validators who received a new item
+        for info_set_index in broadcast_list:
+            broadcast_validators |= set(network.sets[info_set_index].validators)
+
+    ask_to_check_backlog(network, broadcast_validators)
+
+def disseminate_sync_committees(network: Network, items: Sequence[Tuple[ValidatorIndex, SyncCommitteeBundle]]) -> None:
+    # We get a set of attestations and disseminate them over the network
+
+    # Finding out who receives a new attestation
+    broadcast_validators = set()
+    for item in items:
+        sender = item[0]
+        sc_bundle = item[1]
+        broadcast_list = get_all_sets_for_validator(network, sender)
+
+        # The sender records that they have sent an attestation
+        network.validators[sender].log_sync_committee(sc_bundle)
+
+        # Adding the attestation to network items
+        networkItem = NetworkSyncCommittee(item=sc_bundle, info_sets=broadcast_list)
+        network.sync_committees.append(networkItem)
+
+        # Update list of validators who received a new item
+        for info_set_index in broadcast_list:
+            broadcast_validators |= set(network.sets[info_set_index].validators)
+
+    ask_to_check_backlog(network, broadcast_validators)
 
 def disseminate_block(network: Network,
                       sender: ValidatorIndex,
@@ -90,29 +149,6 @@ def disseminate_block(network: Network,
     broadcast_validators = set()
     for info_set_index in broadcast_list:
         broadcast_validators |= set(network.sets[info_set_index].validators)
-
-    ask_to_check_backlog(network, broadcast_validators)
-
-def disseminate_attestations(network: Network, items: Sequence[Tuple[ValidatorIndex, Attestation]]) -> None:
-    # We get a set of attestations and disseminate them over the network
-
-    # Finding out who receives a new attestation
-    broadcast_validators = set()
-    for item in items:
-        sender = item[0]
-        attestation = item[1]
-        broadcast_list = get_all_sets_for_validator(network, sender)
-
-        # The sender records that they have sent an attestation
-        network.validators[sender].log_attestation(attestation)
-
-        # Adding the attestation to network items
-        networkItem = NetworkAttestation(item=attestation, info_sets=broadcast_list)
-        network.attestations.append(networkItem)
-
-        # Update list of validators who received a new item
-        for info_set_index in broadcast_list:
-            broadcast_validators |= set(network.sets[info_set_index].validators)
 
     ask_to_check_backlog(network, broadcast_validators)
 
