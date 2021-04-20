@@ -602,7 +602,6 @@ class BRValidator:
         # - The block parent is not known
         try:
             state = self.process_to_slot(item.message.parent_root, item.message.slot)
-            print(f"record_block {self.validator_index}")
             on_block(self.store, item, state = state)
         except AssertionError as e:
             return False

@@ -27,7 +27,7 @@ def apply_constants_config(spec_globals: Dict[str, Any], warn_if_unknown: bool =
 # To apply the config, reload the spec module (it will re-initialize with the config taken from here).
 def prepare_config(configs_path: str, config_name: str) -> None:
     global config
-    print(configs_path)
+#     print(configs_path)
     config = load_config_file(configs_path, config_name)
 
 
@@ -38,7 +38,7 @@ def load_config_file(configs_dir: str, presets_name: str) -> Dict[str, Any]:
     :return: Dictionary, mapping of constant-name -> constant-value
     """
     present_dir = Path(configs_dir) / presets_name
-    print("present_dir", present_dir)
+#     print("present_dir", present_dir)
     # _, _, config_files = next(os.walk(present_dir))
     # config_files.sort()
     loaded_config = {}
