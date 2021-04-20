@@ -3,7 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>thunderdome</title><script src="../static/underscore.min.js"></script>
+<title>altair_incentives</title><script src="../static/underscore.min.js"></script>
   <script src="../static/react.development.js"></script>
   <script src="../static/react-dom.development.js"></script>
   <script src="../static/component-library.js"></script>
@@ -14277,11 +14277,11 @@ a.anchor-link {
     <div class="document-container">
       <div class="title-container">
         <div class="title">
-          Beacon Runner: Thunderdome
+          Simulating validator rewards in Altair
         </div>
 
         <div class="sub-title">
-          Note: This post describes a result that was true in the v1 specs, but is fixed in the first major upgrade, v1.1, a.k.a. Altair. The table of rewards presented in Section 1. is also outdated. The value of the case study remains.
+          
         </div>
       </div>
 
@@ -14291,63 +14291,7 @@ a.anchor-link {
       </div>
       
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>We really care (and want to check) that honest, protocol-following validators, reap the highest (in-protocol) rewards. We'll get a feel for what this means here by pitting different validator behaviours against each other.</p>
-<p>To introduce a bit of terminology, we are creating an <em>agent-based model</em> here. We do not explicitly code a scenario that agents follow, but program simple update and interaction rules, let them unfold for a while, and then look at the tape to infer conclusions.</p>
-<p>We'll distinguish between <em>strategies</em> and <em>behaviours</em>. A validator can do several things: attest, propose, or do nothing. We'll call <em>strategies</em> instantiations of these particular actions. For instance, a validator may employ the strategy of always attesting correctly, or flipping a coin and half the time attesting correctly, half the time not attesting at all (a pretty dumb strategy if you ask me).</p>
-<p>We use the word <em>behaviour</em> to describe the general articulation of these strategies: what to play and <em>when</em>. We explored in the <a href="br2050.html">main notebook</a> the behaviour of the <a href="https://github.com/barnabemonnot/beaconrunner/blob/master/notebooks/thunderdome/validators/ASAPValidator.py">ASAP validator</a>, who does something as early as possible according to the specs (at the beginning of the slot for a block proposal; a third of a slot, i.e., 4 seconds in <em>or</em> whenever the block for that slot is received for an attestation).</p>
-<p>In this notebook, we'll look at a different behaviour too: the <a href="https://github.com/barnabemonnot/beaconrunner/blob/master/notebooks/thunderdome/validators/PrudentValidator.py">Prudent validator</a>. Although validators are expected to propose their block as early as possible, network delays could prevent attesters from receiving the block before a third of the slot has elapsed. ASAP validators would attest anyways, at the risk of voting on the wrong head, before receiving the block for that slot. Prudent validators hedge their bets a bit:</p>
-<ul>
-<li>If Prudent validators receive the block for their attesting slot, they publish their attestation with the head set to that block.</li>
-<li>If more than 8 seconds have elapsed into the slot, and they still haven't received a block, they attest for the head they know about.</li>
-</ul>
-<p>In other words, although prudent validators are willing to wait to see if the block will turn up, there is a limit to how long they will wait: they need to communicate their attestations in a timely manner after all! They only differ from ASAPs by how long they are willing to wait.</p>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Rewards-under-consideration">Rewards under consideration<a class="anchor-link" href="#Rewards-under-consideration">&#182;</a></h3><p>To see how this behaviour impacts the payoff received by ASAP and prudent validators, let's dive into the rewards and penalties schedule for attesters (we won't look at rewards from block proposing here). Note first the following two things:</p>
-<ul>
-<li>Validators receive a bonus for attesting on the correct head. Attesting too early means possibly losing out on this bonus if the head specified in the attestation is incorrect.</li>
-<li>Validators receive a bonus for early inclusion of their attestation in a block. This means that they should attest relatively soon, and cannot wait forever to see if a missing block will turn up.</li>
-</ul>
-<p>You can see <a href="https://github.com/ethereum/eth2.0-specs/blob/579da6d2dc734b269dbf67aa1004b54bb9449784/specs/phase0/beacon-chain.md#get_attestation_deltas">here in the specs</a> how rewards and penalties are computed at the end of each epoch. Let's unpack the computations below.</p>
-<h3 id="Attester-rewards-in-eth2">Attester rewards in eth2<a class="anchor-link" href="#Attester-rewards-in-eth2">&#182;</a></h3><p>A <em>base reward</em> $\texttt{BR}$ is computed that depends only on the validator's effective balance (maximum 32 ETH) and the current total active balance (the total effective balance of <em>all</em> active validators). Letting $i$ denote our validator,</p>
-$$ \texttt{BR[i]} = \texttt{balance[i]} \cdot \frac{\texttt{BRF}}{\sqrt{\texttt{total\_balance}} \cdot \texttt{BRPE}} $$<p>$\texttt{BRPE}$ stands for <em>base rewards per epoch</em>. A validator can be rewarded for</p>
-<ol>
-<li>Attesting to the correct source, yielding $\texttt{BR[i]}$.</li>
-<li>Attesting to the correct target, yielding $\texttt{BR[i]}$.</li>
-<li>Attesting to the correct head, yielding $\texttt{BR[i]}$.</li>
-<li>Early inclusion, yielding at most $\texttt{BR[i]} \Big( 1 - \frac{1}{\texttt{PRQ}} \Big)$ with $\texttt{PRQ}$ the <em>proposer reward quotient</em>.</li>
-</ol>
-<p>These four items are why $\texttt{BRPE}$ is set to 4 (at least in phase 0). $\texttt{BRF}$, the <em>base reward factor</em>, is a scaling constant currently set at $2^6 = 64$.</p>
-<p>For each of the first three items, we scale the base reward by the fraction of the active stake who correctly attested for the item. If $\rho_s$ is the fraction of the stake who attested correctly for the source, then a validator $i$ with a correct source receives $\rho_s \cdot \texttt{BR[i]}$. However, failure to attest or attesting for an incorrect source, target or head incurs the full $\texttt{BR[i]}$ as penalty.</p>
-<p>Now, let's dig deeper into item 4, early inclusion. Attestations may be included at least one slot after the slot they are attesting for, called the <em>committee slot</em>. If they are included in the block immediately following their committee slot, they receive the full base reward, minus the <em>proposer reward</em>, endowed to the block producer (see table below). If they are included in the block two slots after their committee slot, they receive half. Three blocks later, a third, etc. Attestations must be included at the latest one full epoch after their committee slot. This means the smallest inclusion reward is 1/32 of the base reward (assuming <code>SLOTS_PER_EPOCH</code> is equal to 32).</p>
-<p>These are the attester rewards in the best of times. Note however, that the penalties are not symmetric. Whenever a validator fails to attest for one of the first three items, or attests incorrectly, the penalty is equal to the whole base reward. No discount!</p>
-<p>What about the worst of times? From the perspective of rewards and penalities, this happens when the chain is not finalising epochs anymore (a situation we explored in a <a href="br2049.html">different notebook</a>). In this case, we want to "leak" the stake of inactive validators, who are preventing finalisation. A <a href="https://github.com/ethereum/eth2.0-specs/pull/1830">recent modification</a> ensures that validators who perform optimally (i.e., attest correctly to all three items <em>and</em> included in the block immediately following their committee slot) do not suffer any losses. Meanwhile, validators who are not attesting for the correct target (a key ingredient for finalisation) suffer increasingly painful consequences, as the <em>finality delay</em> (the gap between the current epoch and the last finalised epoch) grows.</p>
-<p>This is all synthesised in the following table. "IL" items refer to "Inactivity Leak": the rewards and penalties during these worst of times.</p>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p><img src="img/rewardsv1.png" alt=""></p>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Let's explore a few examples. We note at the end of the formula whether the result is positive (the validator makes a profit) or negative (the validator makes a loss).</p>
-<ul>
-<li>A validator who gets everything correct, and whose attestations are included 2 slots after their committee slot, while the chain is finalising, reaps:</li>
-</ul>
-$$ \Big( \rho_s + \rho_t + \rho_h + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) \Big) \texttt{BR[i]} &gt; 0 $$<ul>
-<li>A validator who gets everything correct, and whose attestations are included 2 slots after their committee slot, while the chain is <em>not finalising</em>, reaps:</li>
-</ul>
-$$ \Big(3 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \frac{1}{\texttt{PRQ}} \Big) \texttt{BR[i]} = \Big(-\frac{1}{2} + \frac{1}{2\texttt{PRQ}} \Big) \texttt{BR[i]} &lt; 0 $$<ul>
-<li>A validator who gets everything correct <em>except the target</em>, and whose attestations are included 2 slots after their committee slot, while the chain is <em>not finalising</em> with finality delay $f$, reaps:</li>
-</ul>
-$$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \frac{1}{\texttt{PRQ}} \Big) \texttt{BR[i]} - \texttt{balance[i]} \cdot \frac{f}{\texttt{IPQ}} = \Big(-\frac{5}{2} + \frac{1}{2\texttt{PRQ}} \Big) \texttt{BR[i]} - \texttt{balance[i]} \cdot \frac{f}{\texttt{IPQ}} &lt; 0 $$
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Some-hypotheses-before-simulating">Some hypotheses before simulating<a class="anchor-link" href="#Some-hypotheses-before-simulating">&#182;</a></h3><p>In a network with perfect (or close to perfect) latency and honest proposers, we don't expect ASAP and prudent validator earnings to differ significantly. But under real-world conditions, the behaviour of prudent validators appears more <em>robust</em> than that of ASAP validators. By robust, we mean that prudent validators perform better under slight variations of the parameters, e.g., the average network latency.</p>
-<p>When network delays are high or block proposers are lazy (meaning they don't propagate their blocks in time, perhaps because they are being prudent in order to collect more incoming attestations), prudent validators stand to reap the "correct head" reward more often. On the other hand, when network delays are really, really high, perhaps proposing ASAP is a better strategy, as it ensures at least <em>something</em> goes through, even if it's possibly incorrect.</p>
-<h2 id="&quot;Two-nodes-enter!-One-node-leaves!&quot;"><em>"Two nodes enter! One node leaves!"</em><a class="anchor-link" href="#&quot;Two-nodes-enter!-One-node-leaves!&quot;">&#182;</a></h2><p>Let's pit <code>PrudentValidator</code>s against <code>ASAP</code>s and observe the result. In this simulation, we let <code>SLOTS_PER_EPOCH</code> equal 4 and simulate a small number of validators. Runs are now random: sometimes the network updates, sometimes it doesn't. We'll set it up later so that on average messages propagate one step further on the network every 4 seconds.</p>
-<p>We first load all the necessary packages. The remainder will look a lot like what we did in the <a href="br2050.html">main notebook</a>, check it out for more background!</p>
+<p>In this noteboook we test the rewards given out by the protocol to different types of validators. Our <code>fast</code> config reduces the size of most constants to avoid allocating more memory than necessary (we'll only test with a few validators). We also reduce the number of slots per epoch to speed things up. All these changes are without loss of generality.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 1 (click to open)</summary>
@@ -14360,6 +14304,16 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 <span class="kn">import</span> <span class="nn">types</span>
 <span class="kn">from</span> <span class="nn">eth2spec.config.config_util</span> <span class="kn">import</span> <span class="n">prepare_config</span>
 <span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="c1"># Load current beacon runner specs (v1.1.0-alpha.3)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">))</span>
+
+<span class="kn">import</span> <span class="nn">beaconrunner</span> <span class="k">as</span> <span class="nn">br</span>
+
+<span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fast.yaml&quot;</span><span class="p">)</span>
+
+<span class="n">br</span><span class="o">.</span><span class="n">reload_package</span><span class="p">(</span><span class="n">br</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14368,6 +14322,10 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 </div>
 
 </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<p>Below are metrics extracted from the state of the simulation. We don't really care about most of them except for <code>get_current_validator_state</code>, but they are left here for future use/reference.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <details><summary>Input 2 (click to open)</summary>
@@ -14376,10 +14334,75 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/notebooks/thunderdome&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">current_state</span>
 
-<span class="kn">import</span> <span class="nn">beaconrunner</span> <span class="k">as</span> <span class="nn">br</span>
+<span class="k">def</span> <span class="nf">current_slot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">total_balance_asap</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">asap_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_behaviour</span> <span class="o">==</span> <span class="s2">&quot;asap&quot;</span><span class="p">]</span>
+    <span class="n">asap_balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">asap_indices</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;total_balance_asap&quot;</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">asap_balances</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">get_base_reward</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">base_reward</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_base_reward</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;base_reward&quot;</span><span class="p">,</span> <span class="n">base_reward</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_block_proposer</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">block_proposer</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">validator_index</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_proposer_duties</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;current_slot&quot;</span><span class="p">]</span> <span class="o">%</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">]][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;block_proposer&quot;</span><span class="p">,</span> <span class="n">block_proposer</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_block_proposer_balance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">block_proposer_balance</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;block_proposer&quot;</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;block_proposer_balance&quot;</span><span class="p">,</span> <span class="n">block_proposer_balance</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_sync_committee</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_sync_committee_indices</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;sync_committee&quot;</span><span class="p">,</span> <span class="n">sync_committee</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_head</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">,</span> <span class="n">head</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_current_validator_state</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">current_validator_state</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">:</span>
+        <span class="n">current_validator_state</span> <span class="o">+=</span> <span class="p">[{</span>
+            <span class="s2">&quot;slot&quot;</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">,</span>
+            <span class="s2">&quot;validator_index&quot;</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_index</span><span class="p">,</span>
+            <span class="s2">&quot;balance&quot;</span><span class="p">:</span> <span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">validator_index</span><span class="p">],</span>
+            <span class="s2">&quot;block_proposer&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;block_proposer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_index</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;attester&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;sync_committee&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_sync_committee</span><span class="p">),</span>
+        <span class="p">}]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_validator_state&quot;</span><span class="p">,</span> <span class="n">current_validator_state</span><span class="p">)</span>
+
+<span class="n">observers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;current_slot&quot;</span><span class="p">:</span> <span class="n">current_slot</span><span class="p">,</span>
+    <span class="s2">&quot;total_balance_asap&quot;</span><span class="p">:</span> <span class="n">total_balance_asap</span><span class="p">,</span>
+    <span class="s2">&quot;base_reward&quot;</span><span class="p">:</span> <span class="n">get_base_reward</span><span class="p">,</span>
+    <span class="s2">&quot;block_proposer&quot;</span><span class="p">:</span> <span class="n">get_block_proposer</span><span class="p">,</span>
+    <span class="s2">&quot;block_proposer_balance&quot;</span><span class="p">:</span> <span class="n">get_block_proposer_balance</span><span class="p">,</span>
+    <span class="s2">&quot;sync_committee&quot;</span><span class="p">:</span> <span class="n">get_sync_committee</span><span class="p">,</span>
+    <span class="s2">&quot;head&quot;</span><span class="p">:</span> <span class="n">get_head</span><span class="p">,</span>
+    <span class="s2">&quot;current_validator_state&quot;</span><span class="p">:</span> <span class="n">get_current_validator_state</span><span class="p">,</span>
+<span class="p">}</span>
 </pre></div>
 
      </div>
@@ -14389,6 +14412,10 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 
 </details>
 
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<p>Run the simulation.</p>
+
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 3 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
@@ -14396,7 +14423,40 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fast.yaml&quot;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
+<span class="kn">from</span> <span class="nn">beaconrunner.validators.ASAPValidator</span> <span class="kn">import</span> <span class="n">ASAPValidator</span>
+
+<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">16</span>
+
+<span class="c1"># Initiate validators</span>
+<span class="n">validators</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">):</span>
+    <span class="n">new_validator</span> <span class="o">=</span> <span class="n">ASAPValidator</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_validator</span><span class="p">)</span>
+
+<span class="c1"># Create a genesis state</span>
+<span class="p">(</span><span class="n">genesis_state</span><span class="p">,</span> <span class="n">genesis_block</span><span class="p">)</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">get_genesis_state_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+
+<span class="c1"># Validators load the state</span>
+<span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">genesis_block</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span>
+
+<span class="c1"># We skip the genesis block</span>
+<span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+
+<span class="c1"># Create the network</span>
+<span class="n">set_a</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)))</span>
+<span class="n">network_sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">])</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span> <span class="o">=</span> <span class="n">network_sets</span><span class="p">)</span>
+
+<span class="c1"># Set simulation parameters</span>
+<span class="n">parameters</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">SimulationParameters</span><span class="p">({</span>
+    <span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="s2">&quot;run_index&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;network_update_rate&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="p">})</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">observers</span><span class="p">)</span> 
 </pre></div>
 
      </div>
@@ -14418,8 +14478,109 @@ $$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>.
-present_dir fast.yaml
+<pre>will simulate 4 epochs ( 16 slots ) at frequency 1 moves/second
+total 192 simulation steps
+
+                  ___________    ____
+  ________ __ ___/ / ____/   |  / __ \
+ / ___/ __` / __  / /   / /| | / / / /
+/ /__/ /_/ / /_/ / /___/ ___ |/ /_/ /
+\___/\__,_/\__,_/\____/_/  |_/_____/
+by cadCAD
+
+Execution Mode: local_proc
+Configuration Count: 1
+Dimensions of the first simulation: (Timesteps, Params, Runs, Vars) = (192, 2, 1, 9)
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+
+
+
+
+
+<div id="ed2664d8-e83a-4d35-a5e3-efdd12e5e83c" class="jupyter-widgets jp-OutputArea-output ">
+<script type="text/javascript">
+var element = document.getElementById('ed2664d8-e83a-4d35-a5e3-efdd12e5e83c');
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id": "537fcdae919c44af9b96e9e950e23980", "version_major": 2, "version_minor": 0}
+</script>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Execution Method: local_simulations
+SimIDs   : [0]
+SubsetIDs: [0]
+Ns       : [0]
+ExpIDs   : [0]
+Execution Mode: single_threaded
+11 proposing block for slot 1
+11 proposing block for slot 2
+6 proposing block for slot 3
+5 proposing block for slot 4
+9 proposing block for slot 5
+0 proposing block for slot 6
+0 proposing block for slot 7
+12 proposing block for slot 8
+7 proposing block for slot 9
+timestep 100 of run 1
+13 proposing block for slot 10
+10 proposing block for slot 11
+2 proposing block for slot 12
+0 proposing block for slot 13
+4 proposing block for slot 14
+9 proposing block for slot 15
+4 proposing block for slot 16
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+
+
+
+
+
+<div id="c3dceca8-a990-4096-a91f-f48ca637deca" class="jupyter-widgets jp-OutputArea-output ">
+<script type="text/javascript">
+var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id": "7c30969f9cd44f9ab1f4738f00b84d9c", "version_major": 2, "version_minor": 0}
+</script>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Total execution time: 46.75s
 </pre>
 </div>
 </div>
@@ -14435,7 +14596,7 @@ present_dir fast.yaml
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">br</span><span class="o">.</span><span class="n">reload_package</span><span class="p">(</span><span class="n">br</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;subset&#39;</span><span class="p">,</span> <span class="s1">&#39;run&#39;</span><span class="p">])</span>
 </pre></div>
 
      </div>
@@ -14447,159 +14608,25 @@ present_dir fast.yaml
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>We then create our <em>observers</em>, to allow us to record interesting metrics at each simulation step.</p>
+<p>We collect the validator state data in a separate dataframe, of schema <code>(slot, validator_index, balance, block_proposer, attester, sync_committee)</code>. We ignore the first few epochs (rewards aren't given out, or imperfectly) and make sure the key <code>(slot, validator_index)</code> is unique.</p>
 
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<details><summary>Input 5 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">current_slot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">average_balance_prudent</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
-    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
-    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
-    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
-    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
-    <span class="n">prudent_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_behaviour</span> <span class="o">==</span> <span class="s2">&quot;prudent&quot;</span><span class="p">]</span>
-    <span class="n">prudent_balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">prudent_indices</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">eth2</span><span class="o">.</span><span class="n">gwei_to_eth</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">prudent_balances</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prudent_indices</span><span class="p">))))</span>
-
-<span class="k">def</span> <span class="nf">average_balance_asap</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
-    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
-    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
-    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
-    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
-    <span class="n">asap_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_behaviour</span> <span class="o">==</span> <span class="s2">&quot;asap&quot;</span><span class="p">]</span>
-    <span class="n">asap_balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">asap_indices</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;average_balance_asap&quot;</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">eth2</span><span class="o">.</span><span class="n">gwei_to_eth</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">asap_balances</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">asap_indices</span><span class="p">))))</span>
-
-<span class="n">observers</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;current_slot&quot;</span><span class="p">:</span> <span class="n">current_slot</span><span class="p">,</span>
-    <span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">:</span> <span class="n">average_balance_prudent</span><span class="p">,</span>
-    <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">:</span> <span class="n">average_balance_asap</span><span class="p">,</span>
-<span class="p">}</span>
-</pre></div>
-
-     </div>
-</div>
-</div>
-</div>
-
-</details>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>And define a "main" function -- in this case, <code>simulate_thunderdome</code> -- to run the simulation. The function returns a <code>pandas</code> dataframe containing the metrics recorded throughout the run.</p>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<details><summary>Input 6 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
-<span class="kn">from</span> <span class="nn">beaconrunner.validators.ASAPValidator</span> <span class="kn">import</span> <span class="n">ASAPValidator</span>
-<span class="kn">from</span> <span class="nn">beaconrunner.validators.PrudentValidator</span> <span class="kn">import</span> <span class="n">PrudentValidator</span>
-
-<span class="k">def</span> <span class="nf">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">):</span>
-    <span class="c1"># Half our validators are prudent, the others are ASAPs</span>
-    <span class="n">num_prudent</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
-
-    <span class="c1"># We sample the position on the p2p network of prudent validators randomly</span>
-    <span class="n">prudentset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">),</span> <span class="n">num_prudent</span><span class="p">))</span>
-
-    <span class="n">validators</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="c1"># Initiate validators</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">prudentset</span><span class="p">:</span>
-            <span class="n">new_validator</span> <span class="o">=</span> <span class="n">PrudentValidator</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">new_validator</span> <span class="o">=</span> <span class="n">ASAPValidator</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="n">validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_validator</span><span class="p">)</span>
-    
-    <span class="c1"># Create a genesis state</span>
-    <span class="n">genesis_state</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">get_genesis_state</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
-    
-    <span class="c1"># Validators load the state</span>
-    <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span>
-
-    <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
-
-    <span class="n">network</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span><span class="o">=</span><span class="n">network_sets</span><span class="p">)</span>
-
-    <span class="n">parameters</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">SimulationParameters</span><span class="p">({</span>
-        <span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-        <span class="s2">&quot;num_run&quot;</span><span class="p">:</span> <span class="n">num_run</span><span class="p">,</span>
-        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;network_update_rate&quot;</span><span class="p">:</span> <span class="n">network_update_rate</span><span class="p">,</span>
-    <span class="p">})</span>
-
-    <span class="k">return</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">observers</span><span class="p">)</span>
-</pre></div>
-
-     </div>
-</div>
-</div>
-</div>
-
-</details>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 7 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
-
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-
-<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">12</span>
-
-<span class="c1"># Create the network peers</span>
-<span class="n">set_a</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">))))</span>
-<span class="n">set_b</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span> <span class="n">num_validators</span><span class="p">)))</span>
-<span class="n">network_sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">,</span> <span class="n">set_b</span><span class="p">])</span>
-
-<span class="n">num_runs</span> <span class="o">=</span> <span class="mi">40</span>
-<span class="n">network_update_rate</span> <span class="o">=</span> <span class="mf">0.25</span>
-
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">num_run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_runs</span><span class="p">)])</span>
-</pre></div>
-
-     </div>
-</div>
-</div>
-</div>
-
-</details>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>To do a fair amount of runs (40) simulating a good number of epochs (20), we set a low number of validators (12). Since we are more interested in comparing individual rewards between ASAP and prudent validators rather than macro-properties or even scalability of the chain, this is not a bad thing to do (and it speeds things up quite a bit).</p>
-<p>Note here that we keep the same network topology across all our runs. However, validator types are placed randomly over the network with each new run, with always 50% of them Prudent and the other 50% ASAPs.</p>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Since we have 4 slots per epoch, and 20 epochs, let's read the average balances at slot 81, after the 20th epoch rewards and penalties were computed.</p>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 8 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">==</span> <span class="mi">81</span><span class="p">][[</span><span class="s1">&#39;average_balance_prudent&#39;</span><span class="p">,</span> <span class="s1">&#39;average_balance_asap&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">validator_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">df</span><span class="p">[((</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">&gt;</span> <span class="mi">11</span><span class="p">)][</span><span class="s2">&quot;current_validator_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:])</span>
+<span class="p">)</span>
+<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;validator_index&quot;</span><span class="p">])[[</span><span class="s2">&quot;balance&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">shift</span><span class="p">()</span>
+<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span>
+<span class="n">validator_df</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">&gt;</span> <span class="mi">12</span><span class="p">]</span>
+<span class="n">validator_df</span>
 </pre></div>
 
      </div>
@@ -14617,7 +14644,7 @@ present_dir fast.yaml
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
 
 
 
@@ -14640,50 +14667,720 @@ present_dir fast.yaml
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>average_balance_prudent</th>
-      <th>average_balance_asap</th>
+      <th>slot</th>
+      <th>validator_index</th>
+      <th>balance</th>
+      <th>block_proposer</th>
+      <th>attester</th>
+      <th>sync_committee</th>
+      <th>previous_balance</th>
+      <th>balance_diff</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>count</th>
-      <td>40.000000</td>
-      <td>40.000000</td>
+      <th>16</th>
+      <td>13</td>
+      <td>0</td>
+      <td>32012342987</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.201055e+10</td>
+      <td>1788837.0</td>
     </tr>
     <tr>
-      <th>mean</th>
-      <td>32.057495</td>
-      <td>32.053940</td>
+      <th>17</th>
+      <td>13</td>
+      <td>1</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
-      <th>std</th>
-      <td>0.001533</td>
-      <td>0.002275</td>
+      <th>18</th>
+      <td>13</td>
+      <td>2</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
-      <th>min</th>
-      <td>32.052082</td>
-      <td>32.047887</td>
+      <th>19</th>
+      <td>13</td>
+      <td>3</td>
+      <td>32008049780</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200769e+10</td>
+      <td>357768.0</td>
     </tr>
     <tr>
-      <th>25%</th>
-      <td>32.056637</td>
-      <td>32.052751</td>
+      <th>20</th>
+      <td>13</td>
+      <td>4</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
-      <th>50%</th>
-      <td>32.057755</td>
-      <td>32.054041</td>
+      <th>21</th>
+      <td>13</td>
+      <td>5</td>
+      <td>32009480849</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.200912e+10</td>
+      <td>357768.0</td>
     </tr>
     <tr>
-      <th>75%</th>
-      <td>32.058686</td>
-      <td>32.055261</td>
+      <th>22</th>
+      <td>13</td>
+      <td>6</td>
+      <td>32001431069</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
-      <th>max</th>
-      <td>32.060025</td>
-      <td>32.057624</td>
+      <th>23</th>
+      <td>13</td>
+      <td>7</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>13</td>
+      <td>8</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>13</td>
+      <td>9</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>13</td>
+      <td>10</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>13</td>
+      <td>11</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>13</td>
+      <td>12</td>
+      <td>32009480849</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.200912e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>13</td>
+      <td>13</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>13</td>
+      <td>14</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>13</td>
+      <td>15</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>32</th>
+      <td>14</td>
+      <td>0</td>
+      <td>32012700755</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.201234e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>33</th>
+      <td>14</td>
+      <td>1</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>14</td>
+      <td>2</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>35</th>
+      <td>14</td>
+      <td>3</td>
+      <td>32008407548</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200805e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>36</th>
+      <td>14</td>
+      <td>4</td>
+      <td>32001431069</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>1431069.0</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>14</td>
+      <td>5</td>
+      <td>32009838617</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200948e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>38</th>
+      <td>14</td>
+      <td>6</td>
+      <td>32001431069</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>39</th>
+      <td>14</td>
+      <td>7</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>14</td>
+      <td>8</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>41</th>
+      <td>14</td>
+      <td>9</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>42</th>
+      <td>14</td>
+      <td>10</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>14</td>
+      <td>11</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>44</th>
+      <td>14</td>
+      <td>12</td>
+      <td>32009838617</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200948e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>45</th>
+      <td>14</td>
+      <td>13</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>14</td>
+      <td>14</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>47</th>
+      <td>14</td>
+      <td>15</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>15</td>
+      <td>0</td>
+      <td>32013058523</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.201270e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>15</td>
+      <td>1</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>15</td>
+      <td>2</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>15</td>
+      <td>3</td>
+      <td>32008765316</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.200841e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>52</th>
+      <td>15</td>
+      <td>4</td>
+      <td>32001431069</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>53</th>
+      <td>15</td>
+      <td>5</td>
+      <td>32010196385</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200984e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>54</th>
+      <td>15</td>
+      <td>6</td>
+      <td>32001431069</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>55</th>
+      <td>15</td>
+      <td>7</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>56</th>
+      <td>15</td>
+      <td>8</td>
+      <td>32000000000</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>57</th>
+      <td>15</td>
+      <td>9</td>
+      <td>32006618702</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>1431069.0</td>
+    </tr>
+    <tr>
+      <th>58</th>
+      <td>15</td>
+      <td>10</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>59</th>
+      <td>15</td>
+      <td>11</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>60</th>
+      <td>15</td>
+      <td>12</td>
+      <td>32010196385</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200984e+10</td>
+      <td>357768.0</td>
+    </tr>
+    <tr>
+      <th>61</th>
+      <td>15</td>
+      <td>13</td>
+      <td>32005187633</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>62</th>
+      <td>15</td>
+      <td>14</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>63</th>
+      <td>15</td>
+      <td>15</td>
+      <td>32003756564</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>64</th>
+      <td>16</td>
+      <td>0</td>
+      <td>32015562899</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.201306e+10</td>
+      <td>2504376.0</td>
+    </tr>
+    <tr>
+      <th>65</th>
+      <td>16</td>
+      <td>1</td>
+      <td>32002146608</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>66</th>
+      <td>16</td>
+      <td>2</td>
+      <td>32007334241</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>67</th>
+      <td>16</td>
+      <td>3</td>
+      <td>32011269692</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.200877e+10</td>
+      <td>2504376.0</td>
+    </tr>
+    <tr>
+      <th>68</th>
+      <td>16</td>
+      <td>4</td>
+      <td>32005008746</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>3577677.0</td>
+    </tr>
+    <tr>
+      <th>69</th>
+      <td>16</td>
+      <td>5</td>
+      <td>32012700761</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.201020e+10</td>
+      <td>2504376.0</td>
+    </tr>
+    <tr>
+      <th>70</th>
+      <td>16</td>
+      <td>6</td>
+      <td>32003577677</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200143e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>71</th>
+      <td>16</td>
+      <td>7</td>
+      <td>32007334241</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>72</th>
+      <td>16</td>
+      <td>8</td>
+      <td>32002146608</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200000e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>73</th>
+      <td>16</td>
+      <td>9</td>
+      <td>32008765310</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200662e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>74</th>
+      <td>16</td>
+      <td>10</td>
+      <td>32007334241</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>75</th>
+      <td>16</td>
+      <td>11</td>
+      <td>32007334241</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>76</th>
+      <td>16</td>
+      <td>12</td>
+      <td>32012700761</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.201020e+10</td>
+      <td>2504376.0</td>
+    </tr>
+    <tr>
+      <th>77</th>
+      <td>16</td>
+      <td>13</td>
+      <td>32007334241</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200519e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>78</th>
+      <td>16</td>
+      <td>14</td>
+      <td>32005903172</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>2146608.0</td>
+    </tr>
+    <tr>
+      <th>79</th>
+      <td>16</td>
+      <td>15</td>
+      <td>32005903172</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3.200376e+10</td>
+      <td>2146608.0</td>
     </tr>
   </tbody>
 </table>
@@ -14698,7 +15395,46 @@ present_dir fast.yaml
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>It doesn't seem like a big difference, yet on average prudent validators have higher earnings than ASAPs! Taking into account the <a href="https://en.wikipedia.org/wiki/Standard_error">standard error</a>, the difference between the means appears to be <a href="https://www.investopedia.com/terms/s/statistically_significant.asp">statistically significant</a>, meaning that even though the difference is small, it's not likely to be due to chance alone (while we won't go down this path here, there are statistical tests we could use to test this more precisely if we wished). To see if our intuition is correct, let's chart the ensemble mean over the 40 runs too:</p>
+<h2 id="Obtaining-rewards-per-duty">Obtaining rewards per duty<a class="anchor-link" href="#Obtaining-rewards-per-duty">&#182;</a></h2><p>We isolate validators who occupied a unique role over a slot to obtain the rewards for block proposers and sync committee members. When rewards are given out during the epoch transition, the minimum received by any validator is received by a validator who neither proposed a block for the whole epoch and was never part of the sync committee, giving us the attester reward received by one validator.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details><summary>Input 8 (click to open)</summary>
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_proposer_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;block proposer reward = </span><span class="si">{</span><span class="n">block_proposer_reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>block proposer reward = 1431069.0
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 9 (click to open)</summary>
@@ -14707,7 +15443,8 @@ present_dir fast.yaml
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;current_slot&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">attester_reward</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span> <span class="o">==</span> <span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;attester reward = </span><span class="si">{</span><span class="n">attester_reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14725,78 +15462,28 @@ present_dir fast.yaml
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[9]:</div>
-
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
-<pre>&lt;AxesSubplot:xlabel=&#39;current_slot&#39;&gt;</pre>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
 
-
-
-<div class="jp-RenderedImage jp-OutputArea-output ">
-<img src="data:image/png;base64,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
-"
->
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>attester reward = 2146608.0
+</pre>
+</div>
 </div>
 
 </div>
 
 </div>
 
-</div>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>We see that, as we extend time, prudent validators definitely overtake ASAP validators. Even though 20 epochs is not that long -- at 12 seconds per slot, and 32 slots per epoch, 20 epochs is approximately 2 hours -- over time these differences accumulate.</p>
-<h2 id="Try-it-out!">Try it out!<a class="anchor-link" href="#Try-it-out!">&#182;</a></h2><p>We specified the ASAP and prudent validators as two very simple Python classes. For instance, this is how the prudent validator's attestation behaviour is implemented:</p>
-<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">specs</span><span class="o">.</span><span class="n">Attestation</span><span class="p">]:</span> 
-    <span class="c1"># Not the moment to attest</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="n">time_in_slot</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">SECONDS_PER_SLOT</span>
-
-    <span class="c1"># Too early in the slot / didn&#39;t receive block</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">received_block</span> <span class="ow">and</span> <span class="n">time_in_slot</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="c1"># Already attested for this slot</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_attested</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="c1"># honest attest</span>
-    <span class="k">return</span> <span class="n">honest_attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span>
-</pre></div>
-<p>You too can specify your own agent behaviours following the simple validator API documented <a href="https://barnabemonnot.com/beaconrunner/build/html/validatorlib.html">here</a>, and have them attest and produce block in a simulated beacon chain environment following the steps outlined above.</p>
-<p>Validators consume information contained in their <code>data</code> attribute. If you find yourself requiring more inputs from the simulation to program your validators, try opening an issue in the <a href="https://github.com/barnabemonnot/beaconrunner">Beacon Runner repo</a>.</p>
-
-</div>
-<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="(Bonus)-Better-network">(Bonus) Better network<a class="anchor-link" href="#(Bonus)-Better-network">&#182;</a></h2><p>When latency decreases (faster propagation), are the effects as strong? We set the network update rate to 0.9, meaning that objects propagate on the network almost definitely each step.</p>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 10 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
-
-<span class="n">network_update_rate</span> <span class="o">=</span> <span class="mf">0.9</span>
-
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">num_run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_runs</span><span class="p">)])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sync_committee_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sync committee reward = </span><span class="si">{</span><span class="n">sync_committee_reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14805,6 +15492,27 @@ present_dir fast.yaml
 </div>
 
 </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>sync committee reward = 357768.0
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <details><summary>Input 11 (click to open)</summary>
@@ -14813,7 +15521,8 @@ present_dir fast.yaml
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;current_slot&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">base_reward</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;base_reward&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;base reward = </span><span class="si">{</span><span class="n">base_reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14831,31 +15540,13 @@ present_dir fast.yaml
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
-
-
-
-
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
-<pre>&lt;AxesSubplot:xlabel=&#39;current_slot&#39;&gt;</pre>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
 
-
-
-<div class="jp-RenderedImage jp-OutputArea-output ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYAAAAEHCAYAAACncpHfAAAAOXRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjMuMywgaHR0cHM6Ly9tYXRwbG90bGliLm9yZy/Il7ecAAAACXBIWXMAAAsTAAALEwEAmpwYAAAyMElEQVR4nO3de3wU5dn4/8+VM+GQBAjHAOGgICCghoOCiFgObW0LigoKghWxVltbn/76ta1PYxG/auuvT6v1UFsR7IOoUFFBUUFBDiJJOIqcj5JwSCAQCCQhyV7fP3ZCI+ySDSSZ3ez1fr32RWbmvmeu2V3m2rnnnrlFVTHGGBN+ItwOwBhjjDssARhjTJiyBGCMMWHKEoAxxoQpSwDGGBOmotwOoDqaN2+uqampbodhjDEhZc2aNUdUNfnc+SGVAFJTU8nKynI7DGOMCSkiss/XfGsCMsaYMGUJwBhjwpQlAGOMCVMhdQ3Al9LSUrKzsykuLnY7FGOIi4sjJSWF6Ohot0MxpkohnwCys7Np3LgxqampiIjb4ZgwpqocPXqU7OxsOnbs6HY4xlQp5JuAiouLadasmR38jetEhGbNmtnZqAkZIZ8AADv4m6Bh30UTSkK+CcgYY+qjsnIP+48VsSu3kINHjjJhcPca30aVCUBE4oBlQKxTfq6qpovILCANKAUygPtVtdRH/YnAY87kNFWd6cyPAf4GDAE8wO9U9d+XvEfGGBPCsvMLmTf9GZIKttCRA/SMOMANnKDg6v0kNGpYo9sKpAmoBBiqqr2BPsBIERkAzAK6AVcCDYDJ51YUkaZAOtAf6Aeki0iSs/h3QK6qXg50Bz6/tF0xgVq6dCk333xzteoMGTKkXt2F/fjjj/Pss89eVN29e/fyxhtv1HBExnhtmP8CPyt8jjExq+jWPIroy2+ibMjvSIip+W1VeQag3iHDCp3JaOelqvphRRkRyQBSfFQfASxS1Xyn3CJgJDAb+DHeBIKqeoAjF78b9Ut5eTmRkZFuhxFyysrKiIqq/VbNigRw55131vq2THgpK/fQZs88DkW3o9VvvyKulq8pBfS/RUQigTVAF+AFVV1daVk0MAF42EfVtsD+StPZQFsRSXSmnxCRIcAu4CFVPexj21OAKQDt27e/YJx/mP81mw+cCGSXAta9TRPSf9DjgmVGjRrF/v37KS4u5uGHH8bj8bBr1y7+9Kc/ATBjxgyysrL429/+xv/+7//y3HPPcebMGfr378+LL75IZGQkjRo14v7772fx4sW88MILfPbZZ8yfP5+ioiKuu+46/v73vyMiZGZmcu+99xIREcGwYcNYuHAhmzZtory8nEcffZSlS5dSUlLCgw8+yP333+835hMnTvD973+fnTt3cuONN/Liiy8SERHBAw88QGZmJkVFRYwZM4Y//OEP59X1VyY1NZWJEycyf/58SktLmTNnDt26daOwsJCf/exnZGVlISKkp6dz66238sknn5Cenk5JSQmdO3fmtddeo1GjRj7jTU1N5fbbb2fhwoU0aNCAN954gy5dujBp0iTi4uJYt24dAwcOpEmTJjRq1Ihf/epXAPTs2ZMFCxaQmprKk08+ycyZM2nRogXt2rXjmmuuAWDXrl08+OCD5OXlER8fzz/+8Q+6devGpEmTaNKkCVlZWRw6dIg//vGPjBkzhkcffZQtW7bQp08fJk6cyC9/+cuqv0jGBCBjTRbXsYXt3f6LVnXQoSCgXkCqWq6qffD+yu8nIj0rLX4RWKaqy6ux3ShnXV+o6tXAKsDn+biqvqKqaaqalpx83sPsgsL06dNZs2YNWVlZPPfcc4wePZp58+adXf7WW28xduxYtmzZwltvvcXKlStZv349kZGRzJo1C4BTp07Rv39/NmzYwKBBg3jooYfIzMxk06ZNFBUVsWDBAgDuuece/v73v5+tX+HVV18lISGBzMxMMjMz+cc//sGePXv8xpyRkcHzzz/P5s2b2bVrF++88w4ATz75JFlZWWzcuJHPP/+cjRs3nlf3QmWaN2/O2rVreeCBB842sTzxxBMkJCTw1VdfsXHjRoYOHcqRI0eYNm0aixcvZu3ataSlpfHnP//5gu9zxToeeughfvGLX5ydn52dzRdffHHB+mvWrOHNN99k/fr1fPjhh2RmZp5dNmXKFJ5//nnWrFnDs88+y09/+tOzyw4ePMiKFStYsGABjz76KABPP/00119/PevXr7eDv6lRx1fNpJwIOg79cZ1sr1rny6p6XESW4G3G2SQi6UAy4O+nZg7ei7wVUoClwFHgNPCOM38OcG91YvGlql/qteW55547e8Dfv38/e/bsoVOnTnz55ZdcdtllbN26lYEDB/LCCy+wZs0a+vbtC0BRUREtWrQAIDIykltvvfXsOpcsWcIf//hHTp8+TX5+Pj169OD666/n5MmTXHvttQDceeedZxPDJ598wsaNG5k7dy4ABQUF7Nixw+8NSf369aNTp04AjBs3jhUrVjBmzBjefvttXnnlFcrKyjh48CCbN2+mV69e36p7oTK33HILANdcc83ZpLJ48WLefPPNs/WTkpJYsGABmzdvZuDAgQCcOXPm7H75M27cuLP/Vj7w3nbbbVU2mS1fvpzRo0cTHx8PwA9/+EMACgsL+eKLL7jtttvOli0pKTn796hRo4iIiKB79+4cPnzeCaoxNeZYYTF98heyJ6EfXZJ8tajXvEB6ASUDpc7BvwEwDHhGRCbjbeO/yWnD9+Vj4P9WuvA7HPiNqqqIzMebHD4DbgI2X9quuGPp0qUsXryYVatWER8fz5AhQyguLmbs2LG8/fbbdOvWjdGjRyMiqCoTJ07kqaeeOm89cXFxZw9ixcXF/PSnPyUrK4t27drx+OOPV3lzkary/PPPM2LEiIDiPre/uoiwZ88enn32WTIzM0lKSmLSpEnnbbeqMrGxsYA3oZWVlV0w3mHDhjF79uyA4j035sp/N2z4n54RUVFReDz/+TpW9b55PB4SExNZv369z+UV+1MRszG1JeOzdxkhR8nuO7XOthlIE1BrYImIbAQy8V7UXQC8DLQEVonIehH5PYCIpInIPwGci79POPUygakVF4SB/wM87qx3AvBfNbhfdaagoICkpCTi4+PZunUrX375JQCjR4/mvffeY/bs2YwdOxaAm266iblz55KbmwtAfn4++/ad/5juioNW8+bNKSwsPPurPjExkcaNG7N6tfcSTOVf1SNGjOCll16itNTbE3f79u2cOnXKb9wZGRns2bMHj8fDW2+9xaBBgzhx4gQNGzYkISGBw4cPs3DhwvPqBVLmXMOGDeOFF144O33s2DEGDBjAypUr2blzJ+BtAtu+ffsF1/PWW2+d/dff2UJqaipr164FYO3atWebwQYPHsy7775LUVERJ0+eZP78+QA0adKEjh07MmfOHMB7kN+wYcMF42jcuDEnT56sareNqZboTW9SKA1JGTCmzrYZSC+gjcBVPub7rKuqWVTqEqqq04HpPsrtAwZXJ9hgNHLkSF5++WWuuOIKunbtyoABAwBvM8cVV1zB5s2b6devHwDdu3dn2rRpDB8+HI/HQ3R0NC+88AIdOnT41joTExO5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
-"
->
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>base reward = 2862144
+</pre>
 </div>
-
 </div>
 
 </div>
@@ -14864,7 +15555,55 @@ present_dir fast.yaml
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>It is not as advantageous to be Prudent now, their payoffs are broadly similar to ASAPs. But it doesn't hurt either.</p>
+<p>Make our checks.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details><summary>Input 12 (click to open)</summary>
+<div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[12]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">total_per_epoch</span> <span class="o">=</span> <span class="n">num_validators</span> <span class="o">*</span> <span class="n">base_reward</span>
+<span class="n">total_for_proposers</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">)</span> <span class="o">*</span> <span class="n">block_proposer_reward</span>
+<span class="n">total_for_attesters</span> <span class="o">=</span> <span class="n">num_validators</span> <span class="o">*</span> <span class="n">attester_reward</span>
+<span class="n">total_for_sync_committee</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SYNC_COMMITTEE_SIZE</span><span class="p">)</span> <span class="o">*</span> <span class="n">sync_committee_reward</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected total per epoch = </span><span class="si">{</span><span class="n">total_per_epoch</span><span class="si">}</span><span class="s2"> vs. realised total = </span><span class="si">{</span><span class="n">total_for_proposers</span> <span class="o">+</span> <span class="n">total_for_attesters</span> <span class="o">+</span> <span class="n">total_for_sync_committee</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of attester rewards = </span><span class="si">{</span><span class="n">total_for_attesters</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of sync committee rewards = </span><span class="si">{</span><span class="n">total_for_sync_committee</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of block proposer rewards = </span><span class="si">{</span><span class="n">total_for_proposers</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+</details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>expected total per epoch = 45794304 vs. realised total = 45794292.0
+percent of attester rewards = 0.75
+percent of sync committee rewards = 0.125
+percent of block proposer rewards = 0.12499973795867714
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
 
 </div>
 
@@ -14888,7 +15627,7 @@ let authorData = ["barnabe"];
     ReactDOM.render(
       e(
         Footer, {
-          acknowledgements: 'Many thanks to Sacha for his edits and suggestions; Danny, Protolambda and Terence for comments.',
+          acknowledgements: '',
         }
       ),
       document.querySelector("#footer")
