@@ -147,39 +147,57 @@
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
+  <script src="static/underscore.min.js"></script>
+  <script src="static/react.development.js"></script>
+  <script src="static/react-dom.development.js"></script>
+  <script src="static/component-library.js"></script>
+  <script src="static/header.js"></script>
+  <link rel="stylesheet" type="text/css" href="static/index.css"/>
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">Beacon runner notebooks</h1>
-</header>
-<p>An agent-based model of <a href="https://github.com/ethereum/eth2.0-specs">eth2</a>.</p>
-<h2 id="starting-up">Starting up</h2>
-<p>You can simply run the following commands in a terminal, assuming <code>pipenv</code> is installed on your machine.</p>
-<pre><code>git clone https://github.com/barnabemonnot/beaconrunner.git
-cd beaconrunner
+<div id="header"></div>
+  <script>
+  ReactDOM.render(
+    e(Header, null),
+    document.querySelector("#header")
+  );
+  </script>
+  <div class="article-container">
+    <div class="document-container">
+      <div class="title-container">
+                  <div class="title">
+            Beacon runner notebooks
+          </div>
+        
+              </div>
+                        <p>An agent-based model of <a href="https://github.com/ethereum/eth2.0-specs">eth2</a>.</p>
+                        <h2 id="starting-up">Starting up</h2>
+                        <p>You can simply run the following commands in a terminal, assuming <code>pipenv</code> is installed on your machine.</p>
+                        <pre><code>git clone https://github.com/barnabemonnot/beaconrunner.git
+                        cd beaconrunner
 
-###
-# Optional: use a virtual environment
-python3 -m venv env
-source env/bin/activate
-###
+                        ###
+                        # Optional: use a virtual environment
+                        python3 -m venv env
+                        source env/bin/activate
+                        ###
 
-pip install -r requirements.txt</code></pre>
-<p>Once you enter the shell, you can type in</p>
-<pre><code>jupyter lab</code></pre>
-<h2 id="beacon-runner-in-practice">Beacon Runner in practice</h2>
-<p>Notebooks using the current <code>beaconrunner</code> library.</p>
-<h3 id="beacon-runner-thunderdome"><a href="notebooks/thunderdome.html">Beacon Runner: Thunderdome</a></h3>
-<p>We show that honest, protocol-following agents sometimes perform worse than agents who behave more prudently. This is the case when latency is bad enough that agents hedge their bets before taking action. Agents are modelled with the beacon runner validator API and simulated.</p>
-<h2 id="early-notebooks">Early notebooks</h2>
-<p>The beacon runner was built iteratively over several notebooks. Early notebooks use early iterations of the beacon runner codebase and will not function with the code contained in this package. These early notebooks however provide background to eth2 concepts and to the general approach of our simulations.</p>
-<h3 id="beacon-runner-a-beaconstate-cadcad-wrap"><a href="notebooks/br.html">Beacon Runner: A BeaconState cadCAD wrap</a></h3>
-<p>This notebook introduces basic eth2 concepts and provides a “centralised client” implementation. We introduce the main duties of validators in eth2 phase 0: producing blocks and attesting. In this implementation, the centralised client is the only one adding blocks to the beacon chain and attesting, thus it also has perfect view of the chain. This allows us to focus on the interplay between state (the state of the beacon chain) and policies (the duties performed by the centralised client).</p>
-<h3 id="beacon-runner-2049-liveness-and-inactivity-leak"><a href="notebooks/br2049.html">Beacon Runner 2049: Liveness and inactivity leak</a></h3>
-<p>The centralised client of the previous notebook was the only agent producing blocks and attestations. In this notebook, we introduce validators distributed over a peer-to-peer network, who exchange the blocks and attestations they produce. We assume the network is split in half, such that neither half is able to finalise the state of the beacon chain, focusing on the cryptoeconomic mechanism that allows finalisation to resume. Our implementation is still somewhat centralised, in the sense that all validators in the same half of the network have the same view of the chain (albeit a different view from the other half’s).</p>
-<h3 id="beacon-runner-2050-an-agent-based-model-of-eth2"><a href="notebooks/br2050.html">Beacon Runner 2050: An agent-based model of eth2</a></h3>
-<p>We fully decentralise the model of the previous notebook by allowing each validator to have its own view of the chain. Additionally, we provide an interface to model the behaviour of validators, using a simple API. In this notebook, we implement honest validation and observe the progress of the chain.</p>
-<h2 id="docs">Docs</h2>
-<p>Some documentation is available <a href="https://barnabemonnot.com/beaconrunner/build/html/">here</a>.</p>
-</body>
+                        pip install -r requirements.txt</code></pre>
+                        <p>Once you enter the shell, you can type in</p>
+                        <pre><code>jupyter lab</code></pre>
+                        <h2 id="beacon-runner-in-practice">Beacon Runner in practice</h2>
+                        <p>Notebooks using the current <code>beaconrunner</code> library.</p>
+                        <h3 id="beacon-runner-thunderdome"><a href="notebooks/thunderdome.html">Beacon Runner: Thunderdome</a></h3>
+                        <p>We show that honest, protocol-following agents sometimes perform worse than agents who behave more prudently. This is the case when latency is bad enough that agents hedge their bets before taking action. Agents are modelled with the beacon runner validator API and simulated.</p>
+                        <h2 id="early-notebooks">Early notebooks</h2>
+                        <p>The beacon runner was built iteratively over several notebooks. Early notebooks use early iterations of the beacon runner codebase and will not function with the code contained in this package. These early notebooks however provide background to eth2 concepts and to the general approach of our simulations.</p>
+                        <h3 id="beacon-runner-a-beaconstate-cadcad-wrap"><a href="notebooks/br.html">Beacon Runner: A BeaconState cadCAD wrap</a></h3>
+                        <p>This notebook introduces basic eth2 concepts and provides a “centralised client” implementation. We introduce the main duties of validators in eth2 phase 0: producing blocks and attesting. In this implementation, the centralised client is the only one adding blocks to the beacon chain and attesting, thus it also has perfect view of the chain. This allows us to focus on the interplay between state (the state of the beacon chain) and policies (the duties performed by the centralised client).</p>
+                        <h3 id="beacon-runner-2049-liveness-and-inactivity-leak"><a href="notebooks/br2049.html">Beacon Runner 2049: Liveness and inactivity leak</a></h3>
+                        <p>The centralised client of the previous notebook was the only agent producing blocks and attestations. In this notebook, we introduce validators distributed over a peer-to-peer network, who exchange the blocks and attestations they produce. We assume the network is split in half, such that neither half is able to finalise the state of the beacon chain, focusing on the cryptoeconomic mechanism that allows finalisation to resume. Our implementation is still somewhat centralised, in the sense that all validators in the same half of the network have the same view of the chain (albeit a different view from the other half’s).</p>
+                        <h3 id="beacon-runner-2050-an-agent-based-model-of-eth2"><a href="notebooks/br2050.html">Beacon Runner 2050: An agent-based model of eth2</a></h3>
+                        <p>We fully decentralise the model of the previous notebook by allowing each validator to have its own view of the chain. Additionally, we provide an interface to model the behaviour of validators, using a simple API. In this notebook, we implement honest validation and observe the progress of the chain.</p>
+                        <h2 id="docs">Docs</h2>
+                        <p>Some documentation is available <a href="https://barnabemonnot.com/beaconrunner/build/html/">here</a>.</p>
+      </body>
 </html>
