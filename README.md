@@ -10,8 +10,14 @@ cd beaconrunner
 
 ###
 # Optional: use a virtual environment
-python3 -m venv env
+python -m venv env
+
+# Unix
 source env/bin/activate
+
+# Windows
+.\env\bin\activate
+
 ###
 
 pip install -r requirements.txt
