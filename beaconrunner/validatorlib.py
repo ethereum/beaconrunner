@@ -841,7 +841,7 @@ def build_sync_aggregate(sc_bundles):
     aggregation_bits = Bitlist[aggregation_bits_length](*([0] * aggregation_bits_length))
     for sc_bundle in sc_bundles:
         validator_index_in_committee = sc_bundle.sync_committee_index % aggregation_bits_length
-        aggregation_bits[validator_index_in_committee] = True
+        aggregation_bits[validator_index_in_committee] = 1
 
     aggregate_sync_committee = SyncCommitteeContribution(
         slot = sc_bundles[0].sync_committee_signature.slot,
