@@ -2,10 +2,10 @@ An agent-based model of [eth2](https://github.com/ethereum/eth2.0-specs).
 
 ## Starting up
 
-You can simply run the following commands in a terminal, assuming `pipenv` is installed on your machine.
+You can simply run the following commands in a terminal.
 
 ```
-git clone https://github.com/barnabemonnot/beaconrunner.git
+git clone https://github.com/ethereum/beaconrunner.git
 cd beaconrunner
 
 ###
@@ -16,8 +16,7 @@ python -m venv env
 source env/bin/activate
 
 # Windows
-.\env\bin\activate
-
+.\env\Scripts\activate
 ###
 
 pip install -r requirements.txt
@@ -55,4 +54,4 @@ We fully decentralise the model of the previous notebook by allowing each valida
 
 ## Docs
 
-Some documentation is available [here](https://barnabemonnot.com/beaconrunner/build/html/).
+Some documentation is available [here](https://ethereum.github.io/beaconrunner/build/html/).
