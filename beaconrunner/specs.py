@@ -2062,6 +2062,7 @@ def process_sync_committee(state: BeaconState, aggregate: SyncAggregate) -> None
     participant_indices = [index for index, bit in zip(committee_indices, aggregate.sync_committee_bits) if bit]
     for participant_index in participant_indices:
         increase_balance(state, participant_index, participant_reward)
+        print(proposer_reward)
         increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
 
 

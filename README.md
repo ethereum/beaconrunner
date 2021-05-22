@@ -4,7 +4,7 @@ An agent-based model of [eth2](https://github.com/ethereum/eth2.0-specs).
 
 You can simply run the following commands in a terminal.
 
-```
+```shell
 git clone https://github.com/ethereum/beaconrunner.git
 cd beaconrunner
 
@@ -54,4 +54,4 @@ We fully decentralise the model of the previous notebook by allowing each valida
 
 ## Docs
 
-Some documentation is available [here](https://ethereum.github.io/beaconrunner/build/html/).
+Some documentation is available [here](https://ethereum.github.io/beaconrunner/docs/build/html/).

@@ -14370,6 +14370,7 @@ a.anchor-link {
 <span class="k">def</span> <span class="nf">get_sync_committee</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
     <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
     <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">current_sync_committee</span>
     <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_sync_committee_indices</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;sync_committee&quot;</span><span class="p">,</span> <span class="n">sync_committee</span><span class="p">)</span>
 
@@ -14399,7 +14400,7 @@ a.anchor-link {
     <span class="s2">&quot;base_reward&quot;</span><span class="p">:</span> <span class="n">get_base_reward</span><span class="p">,</span>
     <span class="s2">&quot;block_proposer&quot;</span><span class="p">:</span> <span class="n">get_block_proposer</span><span class="p">,</span>
     <span class="s2">&quot;block_proposer_balance&quot;</span><span class="p">:</span> <span class="n">get_block_proposer_balance</span><span class="p">,</span>
-    <span class="s2">&quot;sync_committee&quot;</span><span class="p">:</span> <span class="n">get_sync_committee</span><span class="p">,</span>
+<span class="c1">#     &quot;sync_committee&quot;: get_sync_committee,</span>
     <span class="s2">&quot;head&quot;</span><span class="p">:</span> <span class="n">get_head</span><span class="p">,</span>
     <span class="s2">&quot;current_validator_state&quot;</span><span class="p">:</span> <span class="n">get_current_validator_state</span><span class="p">,</span>
 <span class="p">}</span>
@@ -14490,7 +14491,7 @@ by cadCAD
 
 Execution Mode: local_proc
 Configuration Count: 1
-Dimensions of the first simulation: (Timesteps, Params, Runs, Vars) = (192, 2, 1, 9)
+Dimensions of the first simulation: (Timesteps, Params, Runs, Vars) = (192, 2, 1, 8)
 </pre>
 </div>
 </div>
@@ -14506,12 +14507,12 @@ Dimensions of the first simulation: (Timesteps, Params, Runs, Vars) = (192, 2, 1
 
 
 
-<div id="ed2664d8-e83a-4d35-a5e3-efdd12e5e83c" class="jupyter-widgets jp-OutputArea-output ">
+<div id="4b069508-7d08-4793-87f0-a33d14774cc4" class="jupyter-widgets jp-OutputArea-output ">
 <script type="text/javascript">
-var element = document.getElementById('ed2664d8-e83a-4d35-a5e3-efdd12e5e83c');
+var element = document.getElementById('4b069508-7d08-4793-87f0-a33d14774cc4');
 </script>
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id": "537fcdae919c44af9b96e9e950e23980", "version_major": 2, "version_minor": 0}
+{"model_id": "e32bc454cdb3475db3c2733a8d9ac8dc", "version_major": 2, "version_minor": 0}
 </script>
 </div>
 
@@ -14532,21 +14533,1551 @@ ExpIDs   : [0]
 Execution Mode: single_threaded
 11 proposing block for slot 1
 11 proposing block for slot 2
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 6 proposing block for slot 3
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 5 proposing block for slot 4
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 9 proposing block for slot 5
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 0 proposing block for slot 6
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 0 proposing block for slot 7
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 12 proposing block for slot 8
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 7 proposing block for slot 9
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 timestep 100 of run 1
 13 proposing block for slot 10
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 10 proposing block for slot 11
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 2 proposing block for slot 12
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 0 proposing block for slot 13
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 4 proposing block for slot 14
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 9 proposing block for slot 15
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 4 proposing block for slot 16
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
+25554
 </pre>
 </div>
 </div>
@@ -14562,12 +16093,12 @@ timestep 100 of run 1
 
 
 
-<div id="c3dceca8-a990-4096-a91f-f48ca637deca" class="jupyter-widgets jp-OutputArea-output ">
+<div id="ecb5f42d-1aee-4e6e-9ff0-11f9330957bf" class="jupyter-widgets jp-OutputArea-output ">
 <script type="text/javascript">
-var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
+var element = document.getElementById('ecb5f42d-1aee-4e6e-9ff0-11f9330957bf');
 </script>
 <script type="application/vnd.jupyter.widget-view+json">
-{"model_id": "7c30969f9cd44f9ab1f4738f00b84d9c", "version_major": 2, "version_minor": 0}
+{"model_id": "f586d3cf8c3e44aa90e4d68ab8f015da", "version_major": 2, "version_minor": 0}
 </script>
 </div>
 
@@ -14580,7 +16111,7 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Total execution time: 46.75s
+<pre>Total execution time: 86.56s
 </pre>
 </div>
 </div>
@@ -14611,10 +16142,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 <p>We collect the validator state data in a separate dataframe, of schema <code>(slot, validator_index, balance, block_proposer, attester, sync_committee)</code>. We ignore the first few epochs (rewards aren't given out, or imperfectly) and make sure the key <code>(slot, validator_index)</code> is unique.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 7 (click to open)</summary>
+<details><summary>Input 5 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">itertools</span>
@@ -14644,7 +16175,7 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
+    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
 
 
 
@@ -14682,45 +16213,45 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>16</th>
       <td>13</td>
       <td>0</td>
-      <td>32012342987</td>
+      <td>32007896435</td>
       <td>1</td>
       <td>0</td>
       <td>1</td>
-      <td>3.201055e+10</td>
-      <td>1788837.0</td>
+      <td>3.200652e+10</td>
+      <td>1379957.0</td>
     </tr>
     <tr>
       <th>17</th>
       <td>13</td>
       <td>1</td>
-      <td>32000000000</td>
+      <td>32002146608</td>
       <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200000e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200197e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>18</th>
       <td>13</td>
       <td>2</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>1</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>19</th>
       <td>13</td>
       <td>3</td>
-      <td>32008049780</td>
+      <td>32005903172</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200769e+10</td>
-      <td>357768.0</td>
+      <td>3.200572e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>20</th>
@@ -14737,34 +16268,34 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>21</th>
       <td>13</td>
       <td>5</td>
-      <td>32009480849</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>1</td>
       <td>1</td>
-      <td>3.200912e+10</td>
-      <td>357768.0</td>
+      <td>3.200710e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>22</th>
       <td>13</td>
       <td>6</td>
-      <td>32001431069</td>
+      <td>32001379957</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200143e+10</td>
+      <td>3.200138e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>23</th>
       <td>13</td>
       <td>7</td>
-      <td>32005187633</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200710e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>24</th>
@@ -14781,56 +16312,56 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>25</th>
       <td>13</td>
       <td>9</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
+      <td>1</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>26</th>
       <td>13</td>
       <td>10</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>27</th>
       <td>13</td>
       <td>11</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>28</th>
       <td>13</td>
       <td>12</td>
-      <td>32009480849</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>1</td>
       <td>1</td>
-      <td>3.200912e+10</td>
-      <td>357768.0</td>
+      <td>3.200710e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>29</th>
       <td>13</td>
       <td>13</td>
-      <td>32005187633</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200710e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>30</th>
@@ -14858,89 +16389,89 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>32</th>
       <td>14</td>
       <td>0</td>
-      <td>32012700755</td>
+      <td>32007896435</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.201234e+10</td>
-      <td>357768.0</td>
+      <td>3.200790e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>33</th>
       <td>14</td>
       <td>1</td>
-      <td>32000000000</td>
+      <td>32002325492</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200000e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200215e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>34</th>
       <td>14</td>
       <td>2</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>35</th>
       <td>14</td>
       <td>3</td>
-      <td>32008407548</td>
+      <td>32006082056</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200805e+10</td>
-      <td>357768.0</td>
+      <td>3.200590e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>36</th>
       <td>14</td>
       <td>4</td>
-      <td>32001431069</td>
+      <td>32001379957</td>
       <td>1</td>
       <td>0</td>
       <td>0</td>
       <td>3.200000e+10</td>
-      <td>1431069.0</td>
+      <td>1379957.0</td>
     </tr>
     <tr>
       <th>37</th>
       <td>14</td>
       <td>5</td>
-      <td>32009838617</td>
+      <td>32007462013</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200948e+10</td>
-      <td>357768.0</td>
+      <td>3.200728e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>38</th>
       <td>14</td>
       <td>6</td>
-      <td>32001431069</td>
+      <td>32001379957</td>
       <td>0</td>
       <td>1</td>
       <td>0</td>
-      <td>3.200143e+10</td>
+      <td>3.200138e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>39</th>
       <td>14</td>
       <td>7</td>
-      <td>32005187633</td>
+      <td>32007462013</td>
       <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200728e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>40</th>
@@ -14957,56 +16488,56 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>41</th>
       <td>14</td>
       <td>9</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
+      <td>1</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>42</th>
       <td>14</td>
       <td>10</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>1</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>43</th>
       <td>14</td>
       <td>11</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>44</th>
       <td>14</td>
       <td>12</td>
-      <td>32009838617</td>
+      <td>32007462013</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200948e+10</td>
-      <td>357768.0</td>
+      <td>3.200728e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>45</th>
       <td>14</td>
       <td>13</td>
-      <td>32005187633</td>
+      <td>32007462013</td>
       <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200728e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>46</th>
@@ -15034,89 +16565,89 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>48</th>
       <td>15</td>
       <td>0</td>
-      <td>32013058523</td>
+      <td>32007896435</td>
       <td>0</td>
       <td>1</td>
       <td>1</td>
-      <td>3.201270e+10</td>
-      <td>357768.0</td>
+      <td>3.200790e+10</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>49</th>
       <td>15</td>
       <td>1</td>
-      <td>32000000000</td>
+      <td>32002504376</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200000e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200233e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>50</th>
       <td>15</td>
       <td>2</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>51</th>
       <td>15</td>
       <td>3</td>
-      <td>32008765316</td>
+      <td>32006260940</td>
       <td>0</td>
       <td>1</td>
       <td>1</td>
-      <td>3.200841e+10</td>
-      <td>357768.0</td>
+      <td>3.200608e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>52</th>
       <td>15</td>
       <td>4</td>
-      <td>32001431069</td>
+      <td>32001379957</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200143e+10</td>
+      <td>3.200138e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>53</th>
       <td>15</td>
       <td>5</td>
-      <td>32010196385</td>
+      <td>32007640897</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200984e+10</td>
-      <td>357768.0</td>
+      <td>3.200746e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>54</th>
       <td>15</td>
       <td>6</td>
-      <td>32001431069</td>
+      <td>32001379957</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200143e+10</td>
+      <td>3.200138e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>55</th>
       <td>15</td>
       <td>7</td>
-      <td>32005187633</td>
+      <td>32007640897</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200746e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>56</th>
@@ -15133,56 +16664,56 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>57</th>
       <td>15</td>
       <td>9</td>
-      <td>32006618702</td>
+      <td>32006516478</td>
       <td>1</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>1431069.0</td>
+      <td>1</td>
+      <td>3.200514e+10</td>
+      <td>1379957.0</td>
     </tr>
     <tr>
       <th>58</th>
       <td>15</td>
       <td>10</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>59</th>
       <td>15</td>
       <td>11</td>
-      <td>32005187633</td>
+      <td>32005136521</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>0.0</td>
     </tr>
     <tr>
       <th>60</th>
       <td>15</td>
       <td>12</td>
-      <td>32010196385</td>
+      <td>32007640897</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200984e+10</td>
-      <td>357768.0</td>
+      <td>3.200746e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>61</th>
       <td>15</td>
       <td>13</td>
-      <td>32005187633</td>
+      <td>32007640897</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>3.200746e+10</td>
+      <td>178884.0</td>
     </tr>
     <tr>
       <th>62</th>
@@ -15210,89 +16741,89 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>64</th>
       <td>16</td>
       <td>0</td>
-      <td>32015562899</td>
+      <td>32010043043</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.201306e+10</td>
-      <td>2504376.0</td>
+      <td>3.200790e+10</td>
+      <td>2146608.0</td>
     </tr>
     <tr>
       <th>65</th>
       <td>16</td>
       <td>1</td>
-      <td>32002146608</td>
+      <td>32004829868</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200000e+10</td>
-      <td>2146608.0</td>
+      <td>1</td>
+      <td>3.200250e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>66</th>
       <td>16</td>
       <td>2</td>
-      <td>32007334241</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>2146608.0</td>
     </tr>
     <tr>
       <th>67</th>
       <td>16</td>
       <td>3</td>
-      <td>32011269692</td>
+      <td>32008586432</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200877e+10</td>
-      <td>2504376.0</td>
+      <td>3.200626e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>68</th>
       <td>16</td>
       <td>4</td>
-      <td>32005008746</td>
+      <td>32004906522</td>
       <td>1</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200143e+10</td>
-      <td>3577677.0</td>
+      <td>3.200138e+10</td>
+      <td>3526565.0</td>
     </tr>
     <tr>
       <th>69</th>
       <td>16</td>
       <td>5</td>
-      <td>32012700761</td>
+      <td>32009966389</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.201020e+10</td>
-      <td>2504376.0</td>
+      <td>3.200764e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>70</th>
       <td>16</td>
       <td>6</td>
-      <td>32003577677</td>
+      <td>32003526565</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200143e+10</td>
+      <td>3.200138e+10</td>
       <td>2146608.0</td>
     </tr>
     <tr>
       <th>71</th>
       <td>16</td>
       <td>7</td>
-      <td>32007334241</td>
+      <td>32009966389</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>2146608.0</td>
+      <td>1</td>
+      <td>3.200764e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>72</th>
@@ -15309,56 +16840,56 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
       <th>73</th>
       <td>16</td>
       <td>9</td>
-      <td>32008765310</td>
+      <td>32008663086</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200662e+10</td>
+      <td>1</td>
+      <td>3.200652e+10</td>
       <td>2146608.0</td>
     </tr>
     <tr>
       <th>74</th>
       <td>16</td>
       <td>10</td>
-      <td>32007334241</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>1</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>2146608.0</td>
     </tr>
     <tr>
       <th>75</th>
       <td>16</td>
       <td>11</td>
-      <td>32007334241</td>
+      <td>32007283129</td>
       <td>0</td>
       <td>0</td>
       <td>0</td>
-      <td>3.200519e+10</td>
+      <td>3.200514e+10</td>
       <td>2146608.0</td>
     </tr>
     <tr>
       <th>76</th>
       <td>16</td>
       <td>12</td>
-      <td>32012700761</td>
+      <td>32009966389</td>
       <td>0</td>
       <td>1</td>
       <td>1</td>
-      <td>3.201020e+10</td>
-      <td>2504376.0</td>
+      <td>3.200764e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>77</th>
       <td>16</td>
       <td>13</td>
-      <td>32007334241</td>
+      <td>32009966389</td>
       <td>0</td>
       <td>0</td>
-      <td>0</td>
-      <td>3.200519e+10</td>
-      <td>2146608.0</td>
+      <td>1</td>
+      <td>3.200764e+10</td>
+      <td>2325492.0</td>
     </tr>
     <tr>
       <th>78</th>
@@ -15398,10 +16929,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 <h2 id="Obtaining-rewards-per-duty">Obtaining rewards per duty<a class="anchor-link" href="#Obtaining-rewards-per-duty">&#182;</a></h2><p>We isolate validators who occupied a unique role over a slot to obtain the rewards for block proposers and sync committee members. When rewards are given out during the epoch transition, the minimum received by any validator is received by a validator who neither proposed a block for the whole epoch and was never part of the sync committee, giving us the attester reward received by one validator.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 8 (click to open)</summary>
+<details><summary>Input 6 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_proposer_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
@@ -15427,7 +16958,7 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>block proposer reward = 1431069.0
+<pre>block proposer reward = 1379957.0
 </pre>
 </div>
 </div>
@@ -15437,10 +16968,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 9 (click to open)</summary>
+<details><summary>Input 7 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">attester_reward</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span> <span class="o">==</span> <span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">])</span>
@@ -15476,10 +17007,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 10 (click to open)</summary>
+<details><summary>Input 8 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sync_committee_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
@@ -15505,7 +17036,7 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>sync committee reward = 357768.0
+<pre>sync committee reward = 178884.0
 </pre>
 </div>
 </div>
@@ -15515,10 +17046,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 11 (click to open)</summary>
+<details><summary>Input 9 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">base_reward</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;base_reward&quot;</span><span class="p">]</span>
@@ -15558,10 +17089,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 <p>Make our checks.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 12 (click to open)</summary>
+<details><summary>Input 10 (click to open)</summary>
 <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">total_per_epoch</span> <span class="o">=</span> <span class="n">num_validators</span> <span class="o">*</span> <span class="n">base_reward</span>
@@ -15593,10 +17124,10 @@ var element = document.getElementById('c3dceca8-a990-4096-a91f-f48ca637deca');
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>expected total per epoch = 45794304 vs. realised total = 45794292.0
+<pre>expected total per epoch = 45794304 vs. realised total = 45589844.0
 percent of attester rewards = 0.75
 percent of sync committee rewards = 0.125
-percent of block proposer rewards = 0.12499973795867714
+percent of block proposer rewards = 0.1205352525938597
 </pre>
 </div>
 </div>
