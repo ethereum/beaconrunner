@@ -27,7 +27,7 @@ Once you enter the shell, you can type in
 ```
 jupyter lab
 ```
-
+ 
 ## Beacon Runner in practice
 
 Notebooks using the current `beaconrunner` library.
