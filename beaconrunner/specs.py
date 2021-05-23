@@ -1,26 +1,22 @@
-from eth2spec.config.config_util import apply_constants_config
-from typing import (
-    Any, Callable, Dict, Set, Sequence, Tuple, Optional, TypeVar
-)
-
+from lru import LRU
 from dataclasses import (
     dataclass,
     field,
 )
+from typing import (
+    Any, Callable, Dict, Set, Sequence, Tuple, Optional, TypeVar
+)
 
-from lru import LRU
-
+from eth2spec.config.config_util import apply_constants_config
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root, copy, uint_to_bytes
 from eth2spec.utils.ssz.ssz_typing import (
     View, boolean, Container, List, Vector, uint8, uint32, uint64,
-    Bytes1, Bytes4, Bytes32, Bytes48, Bytes96, Bitlist, Bitvector,
-)
+    Bytes1, Bytes4, Bytes32, Bytes48, Bytes96, Bitlist)
+from eth2spec.utils.ssz.ssz_typing import Bitvector  # noqa: F401
 from eth2spec.utils import bls
-
 from eth2spec.utils.hash_function import hash
 
 SSZObject = TypeVar('SSZObject', bound=View)
-
 CONFIG_NAME = 'mainnet'
 
 
@@ -48,6 +44,10 @@ class Gwei(uint64):
 
 
 class Root(Bytes32):
+    pass
+
+
+class Hash32(Bytes32):
     pass
 
 
@@ -156,30 +156,31 @@ TARGET_AGGREGATORS_PER_COMMITTEE = 2**4
 RANDOM_SUBNETS_PER_VALIDATOR = 2**0
 EPOCHS_PER_RANDOM_SUBNET_SUBSCRIPTION = 2**8
 ATTESTATION_SUBNET_COUNT = 64
-TIMELY_HEAD_FLAG_INDEX = 0
-TIMELY_SOURCE_FLAG_INDEX = 1
-TIMELY_TARGET_FLAG_INDEX = 2
-TIMELY_HEAD_WEIGHT = uint64(12)
+TIMELY_SOURCE_FLAG_INDEX = 0
+TIMELY_TARGET_FLAG_INDEX = 1
+TIMELY_HEAD_FLAG_INDEX = 2
 TIMELY_SOURCE_WEIGHT = uint64(12)
 TIMELY_TARGET_WEIGHT = uint64(24)
+TIMELY_HEAD_WEIGHT = uint64(12)
 SYNC_REWARD_WEIGHT = uint64(8)
 PROPOSER_WEIGHT = uint64(8)
 WEIGHT_DENOMINATOR = uint64(64)
 G2_POINT_AT_INFINITY = BLSSignature(b'\xc0' + b'\x00' * 95)
+PARTICIPATION_FLAG_WEIGHTS = [TIMELY_SOURCE_WEIGHT, TIMELY_TARGET_WEIGHT, TIMELY_HEAD_WEIGHT]
 INACTIVITY_PENALTY_QUOTIENT_ALTAIR = uint64(3 * 2**24)
 MIN_SLASHING_PENALTY_QUOTIENT_ALTAIR = uint64(2**6)
 PROPORTIONAL_SLASHING_MULTIPLIER_ALTAIR = uint64(2)
-SYNC_COMMITTEE_SIZE = uint64(2**10)
-SYNC_PUBKEYS_PER_AGGREGATE = uint64(2**6)
+SYNC_COMMITTEE_SIZE = uint64(2**9)
+EPOCHS_PER_SYNC_COMMITTEE_PERIOD = uint64(2**9)
 INACTIVITY_SCORE_BIAS = uint64(4)
-EPOCHS_PER_SYNC_COMMITTEE_PERIOD = Epoch(2**8)
+INACTIVITY_SCORE_RECOVERY_RATE = uint64(16)
 DOMAIN_SYNC_COMMITTEE = DomainType('0x07000000')
 DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF = DomainType('0x08000000')
 DOMAIN_CONTRIBUTION_AND_PROOF = DomainType('0x09000000')
 TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE = 2**2
-SYNC_COMMITTEE_SUBNET_COUNT = 8
+SYNC_COMMITTEE_SUBNET_COUNT = 4
 ALTAIR_FORK_VERSION = Version('0x01000000')
-ALTAIR_FORK_SLOT = Slot(18446744073709551615)
+ALTAIR_FORK_EPOCH = Epoch(18446744073709551615)
 
 
 apply_constants_config(globals())
@@ -239,7 +240,7 @@ class PendingAttestation(Container):
 class Eth1Data(Container):
     deposit_root: Root
     deposit_count: uint64
-    block_hash: Bytes32
+    block_hash: Hash32
 
 
 class HistoricalBatch(Container):
@@ -361,7 +362,7 @@ class SignedBeaconBlock(Container):
 
 class SyncCommittee(Container):
     pubkeys: Vector[BLSPubkey, SYNC_COMMITTEE_SIZE]
-    pubkey_aggregates: Vector[BLSPubkey, SYNC_COMMITTEE_SIZE // SYNC_PUBKEYS_PER_AGGREGATE]
+    aggregate_pubkey: BLSPubkey
 
 
 class BeaconState(Container):
@@ -437,7 +438,7 @@ class SignedContributionAndProof(Container):
     signature: BLSSignature
 
 
-class SyncCommitteeSigningData(Container):
+class SyncAggregatorSelectionData(Container):
     slot: Slot
     subcommittee_index: uint64
 
@@ -886,7 +887,7 @@ def initialize_beacon_state_from_eth1(eth1_block_hash: Bytes32,
                                       deposits: Sequence[Deposit]) -> BeaconState:
     fork = Fork(
         previous_version=GENESIS_FORK_VERSION,
-        current_version=GENESIS_FORK_VERSION,
+        current_version=ALTAIR_FORK_VERSION,  # [Modified in Altair]
         epoch=GENESIS_EPOCH,
     )
     state = BeaconState(
@@ -914,6 +915,11 @@ def initialize_beacon_state_from_eth1(eth1_block_hash: Bytes32,
 
     # Set genesis validators root for domain separation and chain versioning
     state.genesis_validators_root = hash_tree_root(state.validators)
+
+    # [New in Altair] Fill in sync committees
+    # Note: A duplicate committee is assigned for the current and next committee at genesis
+    state.current_sync_committee = get_next_sync_committee(state)
+    state.next_sync_committee = get_next_sync_committee(state)
 
     return state
 
@@ -1070,6 +1076,13 @@ def weigh_justification_and_finalization(state: BeaconState,
 
 
 def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei:
+    """
+    Return the base reward for the validator defined by ``index`` with respect to the current ``state``.
+
+    Note: An optimally performing validator can earn one base reward per epoch over a long time horizon.
+    This takes into account both per-epoch (e.g. attestation) and intermittent duties (e.g. block proposal
+    and sync committees).
+    """
     increments = state.validators[index].effective_balance // EFFECTIVE_BALANCE_INCREMENT
     return Gwei(increments * get_base_reward_per_increment(state))
 
@@ -1170,17 +1183,13 @@ def get_inactivity_penalty_deltas(state: BeaconState) -> Tuple[Sequence[Gwei], S
     """
     rewards = [Gwei(0) for _ in range(len(state.validators))]
     penalties = [Gwei(0) for _ in range(len(state.validators))]
-    if is_in_inactivity_leak(state):
-        previous_epoch = get_previous_epoch(state)
-        matching_target_indices = get_unslashed_participating_indices(state, TIMELY_TARGET_FLAG_INDEX, previous_epoch)
-        for index in get_eligible_validator_indices(state):
-            for (_, weight) in get_flag_indices_and_weights():
-                # This inactivity penalty cancels the flag reward corresponding to the flag index
-                penalties[index] += Gwei(get_base_reward(state, index) * weight // WEIGHT_DENOMINATOR)
-            if index not in matching_target_indices:
-                penalty_numerator = state.validators[index].effective_balance * state.inactivity_scores[index]
-                penalty_denominator = INACTIVITY_SCORE_BIAS * INACTIVITY_PENALTY_QUOTIENT_ALTAIR
-                penalties[index] += Gwei(penalty_numerator // penalty_denominator)
+    previous_epoch = get_previous_epoch(state)
+    matching_target_indices = get_unslashed_participating_indices(state, TIMELY_TARGET_FLAG_INDEX, previous_epoch)
+    for index in get_eligible_validator_indices(state):
+        if index not in matching_target_indices:
+            penalty_numerator = state.validators[index].effective_balance * state.inactivity_scores[index]
+            penalty_denominator = INACTIVITY_SCORE_BIAS * INACTIVITY_PENALTY_QUOTIENT_ALTAIR
+            penalties[index] += Gwei(penalty_numerator // penalty_denominator)
     return rewards, penalties
 
 
@@ -1212,8 +1221,7 @@ def process_rewards_and_penalties(state: BeaconState) -> None:
     if get_current_epoch(state) == GENESIS_EPOCH:
         return
 
-    flag_indices_and_numerators = get_flag_indices_and_weights()
-    flag_deltas = [get_flag_index_deltas(state, index, numerator) for (index, numerator) in flag_indices_and_numerators]
+    flag_deltas = [get_flag_index_deltas(state, flag_index) for flag_index in range(len(PARTICIPATION_FLAG_WEIGHTS))]
     deltas = flag_deltas + [get_inactivity_penalty_deltas(state)]
     for (rewards, penalties) in deltas:
         for index in range(len(state.validators)):
@@ -1413,35 +1421,21 @@ def process_attestation(state: BeaconState, attestation: Attestation) -> None:
     committee = get_beacon_committee(state, data.slot, data.index)
     assert len(attestation.aggregation_bits) == len(committee)
 
-    if data.target.epoch == get_current_epoch(state):
-        epoch_participation = state.current_epoch_participation
-        justified_checkpoint = state.current_justified_checkpoint
-    else:
-        epoch_participation = state.previous_epoch_participation
-        justified_checkpoint = state.previous_justified_checkpoint
-
-    # Matching roots
-    is_matching_head = data.beacon_block_root == get_block_root_at_slot(state, data.slot)
-    is_matching_source = data.source == justified_checkpoint
-    is_matching_target = data.target.root == get_block_root(state, data.target.epoch)
-    assert is_matching_source
+    # Participation flag indices
+    participation_flag_indices = get_attestation_participation_flag_indices(state, data, state.slot - data.slot)
 
     # Verify signature
     assert is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation))
 
-    # Participation flag indices
-    participation_flag_indices = []
-    if is_matching_head and is_matching_target and state.slot == data.slot + MIN_ATTESTATION_INCLUSION_DELAY:
-        participation_flag_indices.append(TIMELY_HEAD_FLAG_INDEX)
-    if is_matching_source and state.slot <= data.slot + integer_squareroot(SLOTS_PER_EPOCH):
-        participation_flag_indices.append(TIMELY_SOURCE_FLAG_INDEX)
-    if is_matching_target and state.slot <= data.slot + SLOTS_PER_EPOCH:
-        participation_flag_indices.append(TIMELY_TARGET_FLAG_INDEX)
-
     # Update epoch participation flags
+    if data.target.epoch == get_current_epoch(state):
+        epoch_participation = state.current_epoch_participation
+    else:
+        epoch_participation = state.previous_epoch_participation
+
     proposer_reward_numerator = 0
     for index in get_attesting_indices(state, data, attestation.aggregation_bits):
-        for flag_index, weight in get_flag_indices_and_weights():
+        for flag_index, weight in enumerate(PARTICIPATION_FLAG_WEIGHTS):
             if flag_index in participation_flag_indices and not has_flag(epoch_participation[index], flag_index):
                 epoch_participation[index] = add_flag(epoch_participation[index], flag_index)
                 proposer_reward_numerator += get_base_reward(state, index) * weight
@@ -1948,33 +1942,35 @@ def eth2_fast_aggregate_verify(pubkeys: Sequence[BLSPubkey], message: Bytes32, s
     return True
 
 
-def get_flag_indices_and_weights() -> Sequence[Tuple[int, uint64]]:
-    return (
-        (TIMELY_HEAD_FLAG_INDEX, TIMELY_HEAD_WEIGHT),
-        (TIMELY_SOURCE_FLAG_INDEX, TIMELY_SOURCE_WEIGHT),
-        (TIMELY_TARGET_FLAG_INDEX, TIMELY_TARGET_WEIGHT),
-    )
-
-
 def add_flag(flags: ParticipationFlags, flag_index: int) -> ParticipationFlags:
+    """
+    Return a new ``ParticipationFlags`` adding ``flag_index`` to ``flags``.
+    """
     flag = ParticipationFlags(2**flag_index)
     return flags | flag
 
 
 def has_flag(flags: ParticipationFlags, flag_index: int) -> bool:
+    """
+    Return whether ``flags`` has ``flag_index`` set.
+    """
     flag = ParticipationFlags(2**flag_index)
     return flags & flag == flag
 
 
-def get_sync_committee_indices(state: BeaconState, epoch: Epoch) -> Sequence[ValidatorIndex]:
+def get_next_sync_committee_indices(state: BeaconState) -> Sequence[ValidatorIndex]:
     """
-    Return the sequence of sync committee indices (which may include duplicate indices) for a given state and epoch.
+    Return the sequence of sync committee indices (which may include duplicate indices)
+    for the next sync committee, given a ``state`` at a sync committee period boundary.
+
+    Note: Committee can contain duplicate indices for small validator sets (< SYNC_COMMITTEE_SIZE + 128)
     """
+    epoch = Epoch(get_current_epoch(state) + 1)
+
     MAX_RANDOM_BYTE = 2**8 - 1
-    base_epoch = Epoch((max(epoch // EPOCHS_PER_SYNC_COMMITTEE_PERIOD, 1) - 1) * EPOCHS_PER_SYNC_COMMITTEE_PERIOD)
-    active_validator_indices = get_active_validator_indices(state, base_epoch)
+    active_validator_indices = get_active_validator_indices(state, epoch)
     active_validator_count = uint64(len(active_validator_indices))
-    seed = get_seed(state, base_epoch, DOMAIN_SYNC_COMMITTEE)
+    seed = get_seed(state, epoch, DOMAIN_SYNC_COMMITTEE)
     i = 0
     sync_committee_indices: List[ValidatorIndex] = []
     while len(sync_committee_indices) < SYNC_COMMITTEE_SIZE:
@@ -1982,21 +1978,31 @@ def get_sync_committee_indices(state: BeaconState, epoch: Epoch) -> Sequence[Val
         candidate_index = active_validator_indices[shuffled_index]
         random_byte = hash(seed + uint_to_bytes(uint64(i // 32)))[i % 32]
         effective_balance = state.validators[candidate_index].effective_balance
-        if effective_balance * MAX_RANDOM_BYTE >= MAX_EFFECTIVE_BALANCE * random_byte:  # Sample with replacement
+        if effective_balance * MAX_RANDOM_BYTE >= MAX_EFFECTIVE_BALANCE * random_byte:
             sync_committee_indices.append(candidate_index)
         i += 1
     return sync_committee_indices
 
 
-def get_sync_committee(state: BeaconState, epoch: Epoch) -> SyncCommittee:
+def get_next_sync_committee(state: BeaconState) -> SyncCommittee:
     """
-    Return the sync committee for a given state and epoch.
+    Return the *next* sync committee for a given ``state``.
+
+    ``SyncCommittee`` contains an aggregate pubkey that enables
+    resource-constrained clients to save some computation when verifying
+    the sync committee's signature.
+
+    ``SyncCommittee`` can also contain duplicate pubkeys, when ``get_next_sync_committee_indices``
+    returns duplicate indices. Implementations must take care when handling
+    optimizations relating to aggregation and verification in the presence of duplicates.
+
+    Note: This function should only be called at sync committee period boundaries by ``process_sync_committee_updates``
+    as ``get_next_sync_committee_indices`` is not stable within a given period.
     """
-    indices = get_sync_committee_indices(state, epoch)
+    indices = get_next_sync_committee_indices(state)
     pubkeys = [state.validators[index].pubkey for index in indices]
-    partition = [pubkeys[i:i + SYNC_PUBKEYS_PER_AGGREGATE] for i in range(0, len(pubkeys), SYNC_PUBKEYS_PER_AGGREGATE)]
-    pubkey_aggregates = [bls.AggregatePKs(preaggregate) for preaggregate in partition]
-    return SyncCommittee(pubkeys=pubkeys, pubkey_aggregates=pubkey_aggregates)
+    aggregate_pubkey = bls.AggregatePKs(pubkeys)
+    return SyncCommittee(pubkeys=pubkeys, aggregate_pubkey=aggregate_pubkey)
 
 
 def get_base_reward_per_increment(state: BeaconState) -> Gwei:
@@ -2005,7 +2011,7 @@ def get_base_reward_per_increment(state: BeaconState) -> Gwei:
 
 def get_unslashed_participating_indices(state: BeaconState, flag_index: int, epoch: Epoch) -> Set[ValidatorIndex]:
     """
-    Return the active and unslashed validator indices for the given epoch and flag index.
+    Return the set of validator indices that are both active and unslashed for the given ``flag_index`` and ``epoch``.
     """
     assert epoch in (get_previous_epoch(state), get_current_epoch(state))
     if epoch == get_current_epoch(state):
@@ -2017,26 +2023,53 @@ def get_unslashed_participating_indices(state: BeaconState, flag_index: int, epo
     return set(filter(lambda index: not state.validators[index].slashed, participating_indices))
 
 
-def get_flag_index_deltas(state: BeaconState, flag_index: int, weight: uint64) -> Tuple[Sequence[Gwei], Sequence[Gwei]]:
+def get_attestation_participation_flag_indices(state: BeaconState,
+                                               data: AttestationData,
+                                               inclusion_delay: uint64) -> Sequence[int]:
     """
-    Return the deltas for a given flag index by scanning through the participation flags.
+    Return the flag indices that are satisfied by an attestation.
+    """
+    if data.target.epoch == get_current_epoch(state):
+        justified_checkpoint = state.current_justified_checkpoint
+    else:
+        justified_checkpoint = state.previous_justified_checkpoint
+
+    # Matching roots
+    is_matching_source = data.source == justified_checkpoint
+    is_matching_target = is_matching_source and data.target.root == get_block_root(state, data.target.epoch)
+    is_matching_head = is_matching_target and data.beacon_block_root == get_block_root_at_slot(state, data.slot)
+    assert is_matching_source
+
+    participation_flag_indices = []
+    if is_matching_source and inclusion_delay <= integer_squareroot(SLOTS_PER_EPOCH):
+        participation_flag_indices.append(TIMELY_SOURCE_FLAG_INDEX)
+    if is_matching_target and inclusion_delay <= SLOTS_PER_EPOCH:
+        participation_flag_indices.append(TIMELY_TARGET_FLAG_INDEX)
+    if is_matching_head and inclusion_delay == MIN_ATTESTATION_INCLUSION_DELAY:
+        participation_flag_indices.append(TIMELY_HEAD_FLAG_INDEX)
+
+    return participation_flag_indices
+
+
+def get_flag_index_deltas(state: BeaconState, flag_index: int) -> Tuple[Sequence[Gwei], Sequence[Gwei]]:
+    """
+    Return the deltas for a given ``flag_index`` by scanning through the participation flags.
     """
     rewards = [Gwei(0)] * len(state.validators)
     penalties = [Gwei(0)] * len(state.validators)
-    unslashed_participating_indices = get_unslashed_participating_indices(state, flag_index, get_previous_epoch(state))
-    increment = EFFECTIVE_BALANCE_INCREMENT  # Factored out from balances to avoid uint64 overflow
-    unslashed_participating_increments = get_total_balance(state, unslashed_participating_indices) // increment
-    active_increments = get_total_active_balance(state) // increment
+    previous_epoch = get_previous_epoch(state)
+    unslashed_participating_indices = get_unslashed_participating_indices(state, flag_index, previous_epoch)
+    weight = PARTICIPATION_FLAG_WEIGHTS[flag_index]
+    unslashed_participating_balance = get_total_balance(state, unslashed_participating_indices)
+    unslashed_participating_increments = unslashed_participating_balance // EFFECTIVE_BALANCE_INCREMENT
+    active_increments = get_total_active_balance(state) // EFFECTIVE_BALANCE_INCREMENT
     for index in get_eligible_validator_indices(state):
         base_reward = get_base_reward(state, index)
         if index in unslashed_participating_indices:
-            if is_in_inactivity_leak(state):
-                # This flag reward cancels the inactivity penalty corresponding to the flag index
-                rewards[index] += Gwei(base_reward * weight // WEIGHT_DENOMINATOR)
-            else:
+            if not is_in_inactivity_leak(state):
                 reward_numerator = base_reward * weight * unslashed_participating_increments
                 rewards[index] += Gwei(reward_numerator // (active_increments * WEIGHT_DENOMINATOR))
-        else:
+        elif flag_index != TIMELY_HEAD_FLAG_INDEX:
             penalties[index] += Gwei(base_reward * weight // WEIGHT_DENOMINATOR)
     return rewards, penalties
 
@@ -2058,21 +2091,28 @@ def process_sync_committee(state: BeaconState, aggregate: SyncAggregate) -> None
     proposer_reward = Gwei(participant_reward * PROPOSER_WEIGHT // (WEIGHT_DENOMINATOR - PROPOSER_WEIGHT))
 
     # Apply participant and proposer rewards
-    committee_indices = get_sync_committee_indices(state, get_current_epoch(state))
+    all_pubkeys = [v.pubkey for v in state.validators]
+    committee_indices = [ValidatorIndex(all_pubkeys.index(pubkey)) for pubkey in state.current_sync_committee.pubkeys]
     participant_indices = [index for index, bit in zip(committee_indices, aggregate.sync_committee_bits) if bit]
     for participant_index in participant_indices:
         increase_balance(state, participant_index, participant_reward)
-        print(proposer_reward)
         increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
 
 
 def process_inactivity_updates(state: BeaconState) -> None:
+    # Score updates based on previous epoch participation, skip genesis epoch
+    if get_current_epoch(state) == GENESIS_EPOCH:
+        return
+
     for index in get_eligible_validator_indices(state):
+        # Increase inactivity score of inactive validators
         if index in get_unslashed_participating_indices(state, TIMELY_TARGET_FLAG_INDEX, get_previous_epoch(state)):
-            if state.inactivity_scores[index] > 0:
-                state.inactivity_scores[index] -= 1
-        elif is_in_inactivity_leak(state):
+            state.inactivity_scores[index] -= min(1, state.inactivity_scores[index])
+        else:
             state.inactivity_scores[index] += INACTIVITY_SCORE_BIAS
+        # Decrease the score of all validators for forgiveness when not during a leak
+        if not is_in_inactivity_leak(state):
+            state.inactivity_scores[index] -= min(INACTIVITY_SCORE_RECOVERY_RATE, state.inactivity_scores[index])
 
 
 def process_participation_flag_updates(state: BeaconState) -> None:
@@ -2084,7 +2124,7 @@ def process_sync_committee_updates(state: BeaconState) -> None:
     next_epoch = get_current_epoch(state) + Epoch(1)
     if next_epoch % EPOCHS_PER_SYNC_COMMITTEE_PERIOD == 0:
         state.current_sync_committee = state.next_sync_committee
-        state.next_sync_committee = get_sync_committee(state, next_epoch + EPOCHS_PER_SYNC_COMMITTEE_PERIOD)
+        state.next_sync_committee = get_next_sync_committee(state)
 
 
 def compute_sync_committee_period(epoch: Epoch) -> uint64:
@@ -2139,20 +2179,27 @@ def get_sync_committee_signature(state: BeaconState,
     return SyncCommitteeSignature(slot=state.slot, validator_index=validator_index, signature=signature)
 
 
-def compute_subnets_for_sync_committee(state: BeaconState, validator_index: ValidatorIndex) -> Sequence[uint64]:
+def compute_subnets_for_sync_committee(state: BeaconState, validator_index: ValidatorIndex) -> Set[uint64]:
+    next_slot_epoch = compute_epoch_at_slot(Slot(state.slot + 1))
+    if compute_sync_committee_period(get_current_epoch(state)) == compute_sync_committee_period(next_slot_epoch):
+        sync_committee = state.current_sync_committee
+    else:
+        sync_committee = state.next_sync_committee
+
     target_pubkey = state.validators[validator_index].pubkey
-    sync_committee_indices = [index for index, pubkey in enumerate(state.current_sync_committee.pubkeys)
-                              if pubkey == target_pubkey]
-    return [
+    sync_committee_indices = [index for index, pubkey in enumerate(sync_committee.pubkeys) if pubkey == target_pubkey]
+    return set([
         uint64(index // (SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT))
         for index in sync_committee_indices
-    ]
+    ])
 
 
-def get_sync_committee_selection_proof(state: BeaconState, slot: Slot,
-                                       subcommittee_index: uint64, privkey: int) -> BLSSignature:
+def get_sync_committee_selection_proof(state: BeaconState,
+                                       slot: Slot,
+                                       subcommittee_index: uint64,
+                                       privkey: int) -> BLSSignature:
     domain = get_domain(state, DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF, compute_epoch_at_slot(slot))
-    signing_data = SyncCommitteeSigningData(
+    signing_data = SyncAggregatorSelectionData(
         slot=slot,
         subcommittee_index=subcommittee_index,
     )
@@ -2189,6 +2236,20 @@ def get_contribution_and_proof_signature(state: BeaconState,
     domain = get_domain(state, DOMAIN_CONTRIBUTION_AND_PROOF, compute_epoch_at_slot(contribution.slot))
     signing_root = compute_signing_root(contribution_and_proof, domain)
     return bls.Sign(privkey, signing_root)
+
+
+def translate_participation(state: BeaconState, pending_attestations: Sequence[PendingAttestation]) -> None:
+    for attestation in pending_attestations:
+        data = attestation.data
+        inclusion_delay = attestation.inclusion_delay
+        # Translate attestation inclusion info to flag indices
+        participation_flag_indices = get_attestation_participation_flag_indices(state, data, inclusion_delay)
+
+        # Apply flags to all attesting validators
+        epoch_participation = state.previous_epoch_participation
+        for index in get_attesting_indices(state, data, attestation.aggregation_bits):
+            for flag_index in participation_flag_indices:
+                epoch_participation[index] = add_flag(epoch_participation[index], flag_index)
 
 
 def upgrade_to_altair(pre: BeaconState) -> BeaconState:
@@ -2230,9 +2291,13 @@ def upgrade_to_altair(pre: BeaconState) -> BeaconState:
         # Inactivity
         inactivity_scores=[uint64(0) for _ in range(len(pre.validators))],
     )
+    # Fill in previous epoch participation from the pre state's pending attestations
+    translate_participation(post, pre.previous_epoch_attestations)
+
     # Fill in sync committees
-    post.current_sync_committee = get_sync_committee(post, get_current_epoch(post))
-    post.next_sync_committee = get_sync_committee(post, get_current_epoch(post) + EPOCHS_PER_SYNC_COMMITTEE_PERIOD)
+    # Note: A duplicate committee is assigned for the current and next committee at the fork boundary
+    post.current_sync_committee = get_next_sync_committee(post)
+    post.next_sync_committee = get_next_sync_committee(post)
     return post
 
 

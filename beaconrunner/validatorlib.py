@@ -25,7 +25,7 @@ from .specs import (
 # import milagro_bls_binding as bls
 import eth2spec.utils.bls as bls
 from eth2spec.utils.ssz.ssz_impl import hash_tree_root
-from eth2spec.utils.ssz.ssz_typing import Container, List, uint64, Bitlist, Bytes32
+from eth2spec.utils.ssz.ssz_typing import Container, List, uint64, Bitlist, Bitvector, Bytes32
 from eth2spec.test.helpers.keys import pubkeys, pubkey_to_privkey
 
 frequency = 1
@@ -838,7 +838,7 @@ def build_sync_aggregate(sc_bundles):
         return None
 
     aggregation_bits_length = SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT
-    aggregation_bits = Bitlist[aggregation_bits_length](*([0] * aggregation_bits_length))
+    aggregation_bits = Bitvector[aggregation_bits_length](*([0] * aggregation_bits_length))
     for sc_bundle in sc_bundles:
         validator_index_in_committee = sc_bundle.sync_committee_index % aggregation_bits_length
         aggregation_bits[validator_index_in_committee] = 1
@@ -910,7 +910,7 @@ def honest_propose(validator, known_items):
     sc_contributions = aggregate_sync_committees(
         [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot]
     )
-
+    
     beacon_block = BeaconBlock(
         slot=slot,
         parent_root=head,

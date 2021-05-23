@@ -64,12 +64,12 @@ def get_initial_deposits(validators):
 def get_genesis_state_block(validators, seed="hello"):
     block_hash = hash(seed.encode("utf-8"))
     eth1_timestamp = MIN_GENESIS_TIME
-    genesis_state = upgrade_to_altair(initialize_beacon_state_from_eth1(
+#     genesis_state = upgrade_to_altair(initialize_beacon_state_from_eth1(
+#         block_hash, eth1_timestamp, get_initial_deposits(validators)
+#     ))
+    genesis_state = initialize_beacon_state_from_eth1(
         block_hash, eth1_timestamp, get_initial_deposits(validators)
-    ))
-    # genesis_state = initialize_beacon_state_from_eth1(
-    #     block_hash, eth1_timestamp, get_initial_deposits(validators)
-    # )
+    )
     genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
     return (genesis_state, genesis_block)
 
