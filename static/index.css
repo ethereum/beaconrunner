@@ -64,24 +64,33 @@ body {
   margin: 0;
 }
 
-.header {
+/* .header {
   height: 4rem;
   width: 100%;
   background: steelblue;
   display: flex;
   align-items: center;
+} */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.header{
+    border-bottom: 1px solid #E2E8F0;
+    background: steelblue;
 }
 
 .header-container {
-  width: 100%;
-  max-width: 1000px;
-  margin: auto;
-  display: flex;
-  padding-left: 1rem;
-  padding-right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
 }
 
-.header-left-element {
+/* .header-left-element {
   font-size: 16px;
   flex-grow: 1;
   font-family: "Menlo", monospace, monospace;
@@ -101,14 +110,73 @@ body {
   .header-left-element {
     font-size: 14px;
   }
+} */
+
+.hamburger {
+    display: none;
 }
 
 .header a {
   text-decoration: none;
   color: white;
-  font-weight: 200;
-  letter-spacing: 0.03em;
-  /* margin-right: 2rem; */
+}
+
+.header li {
+    list-style: none;
+}
+
+.nav-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-item {
+    margin-left: 5rem;
+    font-size: 16px;
+    font-family: "Menlo", monospace, monospace;
+}
+
+.nav-link{
+  font-size: 16px;
+  font-family: "Menlo", monospace, monospace;
+}
+
+.nav-link:hover{
+    color: #482ff7;
+}
+
+.nav-logo {
+  font-size: 16px;
+  font-family: "Menlo", monospace, monospace;
+}
+
+@media only screen and (max-width: 768px) {
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 4rem;
+        flex-direction: column;
+        background-color: steelblue;
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        box-shadow:
+            0 10px 27px rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .nav-item {
+        margin: 0.5rem 0;
+    }
+
+    .hamburger {
+        display: block;
+        cursor: pointer;
+    }
 }
 
 .title-container {
@@ -464,7 +532,7 @@ table.data-table td {
 }
 
 /* small screens */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 920px) {
   #toc-author-block {
     display: block;
   }
