@@ -53,6 +53,9 @@ class ValidatorData:
     """
     Holds current validator data, to be consumed by BRValidator subclasses.
     """
+    current_proposer_indices: Sequence[ValidatorIndex]
+    """Indices of block proposers"""
+
     slot: Slot
     """Current slot"""
 
@@ -369,14 +372,17 @@ class BRValidator:
         for slot in range(start_slot, start_slot + SLOTS_PER_EPOCH):
             if slot < start_state.slot:
                 current_proposer_duties += [False]
+                current_proposer_indices += [False]
                 continue
 
             if start_state.slot < slot:
                 process_slots(start_state, slot)
 
             current_proposer_duties += [get_beacon_proposer_index(start_state) == self.validator_index]
+            current_proposer_indices += [get_beacon_proposer_index(start_state)]
 
         self.data.current_proposer_duties = current_proposer_duties
+        self.data.current_proposer_indices = current_proposer_indices
 
     def update_attest_move(self) -> None:
         """
