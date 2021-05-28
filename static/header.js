@@ -7,20 +7,24 @@ class Header extends React.Component {
         'div', {	className: 'header' },
         e(
           "div", { className: "header-container" },
+          e('a', { href: 'https://github.com/ethereum/rig', className: 'nav-logo' }, "Robust Incentives Group"),
           e(
-            'div', { className: "header-left-element" },
-            e('a', { href: 'https://github.com/ethereum/rig' }, "Robust Incentives Group")
+            'ul', { className: "nav-menu" },
+            e('li', { className: 'nav-item' }, e('a', { href: '/abm1559' }, "eip1559")),
+            e('li', { className: 'nav-item' }, e('a', { href: '/beaconrunner' }, "eth2")),
+            e('li', { className: 'nav-item' }, e('a', { href: 'https://shsr2001.github.io/beacondigest' }, "beacondigest")),
           ),
           e(
-            'div', { className: "header-right-elements" },
-            e(
-              'div', { className: "header-right-element" },
-              e('a', { href: '/abm1559' }, "eip1559")
-            ),
-            e(
-              'div', { className: "header-right-element" },
-              e('a', { href: '/beaconrunner' }, "eth2")
-            )
+            'div', { className: "hamburger" }, "🍔"
+          )
+            // e(
+            //   'div', { className: "header-right-element" },
+            //   e('a', { href: '/abm1559' }, "eip1559")
+            // ),
+            // e(
+            //   'div', { className: "header-right-element" },
+            //   e('a', { href: '/beaconrunner' }, "eth2")
+            // )
             // e(
             //   'div', { className: "header-right-element" },
             //   e('a', { href: '/about' }, 'About')
@@ -29,7 +33,6 @@ class Header extends React.Component {
             //   'div', { className: "header-right-element" },
             //   e('a', { href: 'https://twitter.com/hackingresearch' }, 'Twitter')
             // )
-          )
         )
       )
     );
