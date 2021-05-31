@@ -36,7 +36,7 @@ class MRValidator(BRValidator):
         # honest attest
         return honest_attest(self, known_items)
 
-   def propose(self, known_items) -> Optional[SignedBeaconBlock]:
+  def propose(self, known_items) -> Optional[SignedBeaconBlock]:
 
 
         # Not supposed to propose for current slot
