@@ -1,5 +1,7 @@
 import time
 
+from copy import *
+
 from typing import Set, Optional, Sequence, Tuple, Dict, Text
 from dataclasses import dataclass, field
 
@@ -28,10 +30,11 @@ frequency = 1
 assert frequency in [1, 10, 100, 1000]
 
 class MaliciousData:
-    def __init__(self, malicious_validators = [], malicious_head = None, latest_malicious_slot = None):
+    def __init__(self, malicious_validators = [], malicious_head = None, latest_malicious_slot = None, malicious_attestations = []):
         self.latest_malicious_slot = latest_malicious_slot
         self.malicious_validators = malicious_validators
         self.malicious_head = malicious_head
+        self.malicious_attestations = malicious_attestations
 
 class ValidatorMove(object):
     """
@@ -805,6 +808,8 @@ def private_block_release(validator, known_items, malicious_data: MaliciousData)
     processed_state = validator.process_to_slot(head, slot)
 
     attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
+    for i in malicious_data.malicious_attestations:
+        attestations.append(i)
     attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
 
     beacon_block = BeaconBlock(
@@ -827,5 +832,6 @@ def private_block_release(validator, known_items, malicious_data: MaliciousData)
 
     block_signature = get_block_signature(processed_state, beacon_block, validator.privkey)
     signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
+    malicious_data.malicious_attestations = []
 
     return signed_block

@@ -1,3 +1,5 @@
+from copy import *
+
 class MaliciousValidator(BRValidator):
     
     def malicious_propose(self, known_items, malicious_data):
@@ -15,9 +17,11 @@ class MaliciousValidator(BRValidator):
             malicious_data.latest_malicious_slot = self.data.slot
             
         if (malicious_data.malicious_head != None) and (self.data.slot == malicious_data.latest_malicious_slot + 1) and (time_in_slot > 4):
-            return private_block_release(self, known_items, malicious_data)
+            malicious_data_copy = deepcopy(malicious_data)
             malicious_data.malicious_head = None
             malicious_data.latest_malicious_slot = None
+            return private_block_release(self, known_items, malicious_data_copy)
+            
 
         # if malicious_data.head is None:
         # # If the attack isn't currently ongoing

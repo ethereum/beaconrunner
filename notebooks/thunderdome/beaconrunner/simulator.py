@@ -103,6 +103,12 @@ def update_malicious_data_propose(params, step, sL, s, _input):
     malicious_data.malicious_head = block_root
     return ('malicious_data', malicious_data)
 
+def update_malicious_data_attest(params, step, sL, s, _input):
+    malicious_data = s['malicious_data']
+    attestation = _input['attestations'][0]
+    malicious_data.malicious_attestations.append(attestation)
+    return ('malicious_data', malicious_data)
+
 def update_attestations(params, step, sL, s, _input):
     # Get the attestations and disseminate them on-the-wire
     network = s["network"]
@@ -122,6 +128,25 @@ def update_blocks(params, step, sL, s, _input):
 ## Policies
 
 ### Attestations
+
+def malicious_attest_policy(params, step, sL, s):
+    # Pinging validators to check if anyone wants to attest
+
+    network = s['network']
+    malicious_data = s['malicious_data']
+    produced_attestations = []
+
+    for validator_index, validator in enumerate(network.validators):
+
+        if not validator_index in malicious_data.malicious_validators:
+            continue
+
+        known_items = knowledge_set(network, validator_index)
+        attestation = validator.attest(known_items)
+        if attestation is not None:
+            produced_attestations.append([validator_index, attestation])
+
+    return ({ 'attestations': produced_attestations })
 
 def attest_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to attest
@@ -149,7 +174,7 @@ def malicious_propose_policy(params, step, sL, s):
             continue
 
         known_items = knowledge_set(network, validator_index)
-        block = validator.malicious_propose(known_items)
+        block = validator.malicious_propose(known_items, malicious_data)
         if block is not None:
             produced_blocks.append(block)
 
@@ -211,6 +236,14 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
             },
             'variables': {
                 'network': update_attestations # step 2
+            }
+        },
+        {
+            'policies': {
+                'action': malicious_attest_policy
+            },
+            'variables': {
+                'malicious_data': update_malicious_data_attest,
             }
         },
         {
