@@ -16,6 +16,8 @@ class MaliciousValidator(BRValidator):
             
         if (malicious_data.malicious_head != None) and (self.data.slot == malicious_data.latest_malicious_slot + 1) and (time_in_slot > 4):
             return private_block_release(self, known_items, malicious_data)
+            malicious_data.malicious_head = None
+            malicious_data.latest_malicious_slot = None
 
         # if malicious_data.head is None:
         # # If the attack isn't currently ongoing
