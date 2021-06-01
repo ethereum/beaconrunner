@@ -27,6 +27,12 @@ from eth2spec.test.helpers.keys import pubkeys, pubkey_to_privkey
 frequency = 1
 assert frequency in [1, 10, 100, 1000]
 
+class MaliciousData:
+    def __init__(self, malicious_validators = [], malicious_head = None, latest_malicious_slot = None):
+        self.latest_malicious_slot = latest_malicious_slot
+        self.malicious_validators = malicious_validators
+        self.malicious_head = malicious_head
+
 class ValidatorMove(object):
     """
     Internal class recording validator moves: messages sent over the wire by the validator.
@@ -762,6 +768,39 @@ def honest_propose(validator, known_items):
 
     slot = validator.data.slot
     head = validator.data.head_root
+
+    processed_state = validator.process_to_slot(head, slot)
+
+    attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
+    attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
+
+    beacon_block = BeaconBlock(
+        slot=slot,
+        parent_root=head,
+        proposer_index = validator.validator_index,
+    )
+
+    beacon_block_body = BeaconBlockBody(
+        attestations=attestations
+    )
+    epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
+    beacon_block_body.randao_reveal = epoch_signature
+
+    beacon_block.body = beacon_block_body
+
+    process_block(processed_state, beacon_block)
+    state_root = hash_tree_root(processed_state)
+    beacon_block.state_root = state_root
+
+    block_signature = get_block_signature(processed_state, beacon_block, validator.privkey)
+    signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
+
+    return signed_block
+
+def private_block_release(validator, known_items, malicious_data: MaliciousData): 
+
+    slot = malicious_data.latest_slot
+    head = malicious_data.malicious_head
 
     processed_state = validator.process_to_slot(head, slot)
 

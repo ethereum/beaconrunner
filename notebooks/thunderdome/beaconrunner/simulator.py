@@ -95,6 +95,14 @@ def tick(params, step, sL, s, _input):
 
     return ("network", network)
 
+
+def update_malicious_data_propose(params, step, sL, s, _input):
+    malicious_data = s['malicious_data']
+    block = _input['produced_blocks'][0]
+    block_root = hash_tree_root(block)
+    malicious_data.malicious_head = block_root
+    return ('malicious_data', malicious_data)
+
 def update_attestations(params, step, sL, s, _input):
     # Get the attestations and disseminate them on-the-wire
     network = s["network"]
@@ -131,6 +139,22 @@ def attest_policy(params, step, sL, s):
 
 ### Block proposal
 
+def malicious_propose_policy(params, step, sL, s):
+    network = s['network']
+    malicious_data = s['malicious_data']
+    produced_blocks = []
+
+    for validator_index, validator in enumerate(network.validators):
+        if not validator_index in malicious_data.malicious_validators:
+            continue
+
+        known_items = knowledge_set(network, validator_index)
+        block = validator.malicious_propose(known_items)
+        if block is not None:
+            produced_blocks.append(block)
+
+    return ({ 'blocks': produced_blocks })
+
 def propose_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to propose a block
 
@@ -159,6 +183,12 @@ class SimulationParameters:
         self.num_run = obj["num_run"]
         self.frequency = obj["frequency"]
         self.network_update_rate = obj["network_update_rate"]
+
+def malicious_simulate(network: Network, malicious_data: MaliciousData, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
+    initial_conditions = {
+    "network": network,
+    "malicious_data": malicious_data
+    }
 
 def simulate(network: Network, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
     """
@@ -189,6 +219,14 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
             },
             'variables': {
                 'network': update_blocks # step 4
+            }
+        },
+        {
+            'policies': {
+                'action': malicious_propose_policy
+            },
+            'variables': {
+                'malicious_data': update_malicious_data_propose,
             }
         },
         {
