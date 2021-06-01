@@ -98,15 +98,15 @@ def tick(params, step, sL, s, _input):
 
 def update_malicious_data_propose(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    block = _input['produced_blocks'][0]
-    block_root = hash_tree_root(block)
-    malicious_data.malicious_head = block_root
+    # block = _input['produced_blocks'][0]
+    # block_root = hash_tree_root(block)
+    # malicious_data.malicious_head = block_root
     return ('malicious_data', malicious_data)
 
 def update_malicious_data_attest(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    attestation = _input['attestations'][0]
-    malicious_data.malicious_attestations.append(attestation)
+    # attestation = _input['attestations'][0]
+    # malicious_data.malicious_attestations.append(attestation)
     return ('malicious_data', malicious_data)
 
 def update_attestations(params, step, sL, s, _input):

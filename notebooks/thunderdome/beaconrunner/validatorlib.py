@@ -697,6 +697,45 @@ def honest_attest(validator, known_items):
 
     return attestation
 
+def honest_attest(validator, known_items,malicious_data):
+
+    # Unpacking
+    validator_index = validator.validator_index
+    store = validator.store
+    committee_slot = validator.data.current_attest_slot
+    committee_index = validator.data.current_committee_index
+    committee = validator.data.current_committee
+
+    # What am I attesting for?
+    block_root = malicious_data.malicious_head
+    head_state = store.block_states[block_root].copy()
+    if head_state.slot < committee_slot:
+        process_slots(head_state, committee_slot)
+    start_slot = compute_start_slot_at_epoch(get_current_epoch(head_state))
+    epoch_boundary_block_root = block_root if start_slot == head_state.slot else get_block_root_at_slot(head_state, start_slot)
+    tgt_checkpoint = Checkpoint(epoch=get_current_epoch(head_state), root=epoch_boundary_block_root)
+
+    att_data = AttestationData(
+        index = committee_index,
+        slot = committee_slot,
+        beacon_block_root = block_root,
+        source = head_state.current_justified_checkpoint,
+        target = tgt_checkpoint
+    )
+
+    # Set aggregation bits to myself only
+    committee_size = len(committee)
+    index_in_committee = committee.index(validator_index)
+    aggregation_bits = Bitlist[MAX_VALIDATORS_PER_COMMITTEE](*([0] * committee_size))
+    aggregation_bits[index_in_committee] = True # set the aggregation bit of the validator to True
+    attestation = Attestation(
+        aggregation_bits=aggregation_bits,
+        data=att_data
+    )
+    attestation_signature = get_attestation_signature(head_state, att_data, validator.privkey)
+    attestation.signature = attestation_signature
+
+    return attestation
 ### Aggregation helpers
 
 def get_aggregate_signature(attestations: Sequence[Attestation]) -> BLSSignature:
@@ -811,7 +850,8 @@ def private_block_release(validator, known_items, malicious_data: MaliciousData)
     for i in malicious_data.malicious_attestations:
         attestations.append(i)
     attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
-
+    malicious_data.malicious_attestations = []
+    
     beacon_block = BeaconBlock(
         slot=slot,
         parent_root=head,
