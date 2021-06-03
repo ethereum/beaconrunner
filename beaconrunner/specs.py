@@ -1,3 +1,5 @@
+# v1_1_0_alpha_5_pr2453
+
 from lru import LRU
 from dataclasses import (
     dataclass,
@@ -159,10 +161,10 @@ ATTESTATION_SUBNET_COUNT = 64
 TIMELY_SOURCE_FLAG_INDEX = 0
 TIMELY_TARGET_FLAG_INDEX = 1
 TIMELY_HEAD_FLAG_INDEX = 2
-TIMELY_SOURCE_WEIGHT = uint64(12)
-TIMELY_TARGET_WEIGHT = uint64(24)
-TIMELY_HEAD_WEIGHT = uint64(12)
-SYNC_REWARD_WEIGHT = uint64(8)
+TIMELY_SOURCE_WEIGHT = uint64(14)
+TIMELY_TARGET_WEIGHT = uint64(26)
+TIMELY_HEAD_WEIGHT = uint64(14)
+SYNC_REWARD_WEIGHT = uint64(2)
 PROPOSER_WEIGHT = uint64(8)
 WEIGHT_DENOMINATOR = uint64(64)
 G2_POINT_AT_INFINITY = BLSSignature(b'\xc0' + b'\x00' * 95)
@@ -2093,10 +2095,12 @@ def process_sync_committee(state: BeaconState, aggregate: SyncAggregate) -> None
     # Apply participant and proposer rewards
     all_pubkeys = [v.pubkey for v in state.validators]
     committee_indices = [ValidatorIndex(all_pubkeys.index(pubkey)) for pubkey in state.current_sync_committee.pubkeys]
-    participant_indices = [index for index, bit in zip(committee_indices, aggregate.sync_committee_bits) if bit]
-    for participant_index in participant_indices:
-        increase_balance(state, participant_index, participant_reward)
-        increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
+    for participant_index, participation_bit in zip(committee_indices, aggregate.sync_committee_bits):
+        if participation_bit:
+            increase_balance(state, participant_index, participant_reward)
+            increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
+        else:
+            decrease_balance(state, participant_index, participant_reward)
 
 
 def process_inactivity_updates(state: BeaconState) -> None:
