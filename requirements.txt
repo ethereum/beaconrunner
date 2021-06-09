@@ -44,7 +44,7 @@ jupyterlab-widgets==1.0.0
 lru-dict==1.1.6
 MarkupSafe==1.1.1
 matplotlib-inline==0.1.2
-milagro-bls-binding==1.5.0
+milagro-bls-binding==1.6.2
 mistune==0.8.4
 multiprocess==0.70.11.1
 mypy-extensions==0.4.3
@@ -89,7 +89,7 @@ toolz==0.11.1
 tornado==6.1
 tqdm==4.60.0
 traitlets==5.0.5
-urllib3==1.26.4
+urllib3==1.26.5
 wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
