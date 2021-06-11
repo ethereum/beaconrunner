@@ -19,7 +19,8 @@ del configs[:]
 from .specs import (
     Deposit, DepositData, BeaconState,
     SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
-    initialize_beacon_state_from_eth1,
+    initialize_beacon_state_from_eth1, 
+    MIN_GENESIS_TIME, BeaconBlock,
 )
 from .network import (
     Network,
@@ -39,6 +40,10 @@ from eth2spec.utils.ssz.ssz_typing import Bitlist, uint64
 from eth2spec.utils.hash_function import hash
 from .utils.eth2 import eth_to_gwei
 
+from .validatorlib import (
+MaliciousData,
+)
+
 ## Initialisation
 
 def get_initial_deposits(validators):
@@ -56,6 +61,18 @@ def get_initial_deposits(validators):
         amount=eth_to_gwei(32),
         pubkey=v.pubkey)
     ) for v in validators]
+
+def get_genesis_state_block(validators, seed="hello"):
+    block_hash = hash(seed.encode("utf-8"))
+    eth1_timestamp = MIN_GENESIS_TIME
+#     genesis_state = upgrade_to_altair(initialize_beacon_state_from_eth1(
+#         block_hash, eth1_timestamp, get_initial_deposits(validators)
+#     ))
+    genesis_state = initialize_beacon_state_from_eth1(
+        block_hash, eth1_timestamp, get_initial_deposits(validators)
+    )
+    genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
+    return (genesis_state, genesis_block)
 
 def get_genesis_state(validators, seed="hello"):
     block_hash = hash(seed.encode("utf-8"))
@@ -138,11 +155,11 @@ def malicious_attest_policy(params, step, sL, s):
 
     for validator_index, validator in enumerate(network.validators):
 
-        if not validator_index in malicious_data.malicious_validators:
+        if not validator in malicious_data.malicious_validators:
             continue
 
         known_items = knowledge_set(network, validator_index)
-        attestation = validator.attest(known_items)
+        attestation = validator.malicious_attest(known_items, malicious_data)
         if attestation is not None:
             produced_attestations.append([validator_index, attestation])
 
@@ -152,9 +169,14 @@ def attest_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to attest
 
     network = s['network']
+    malicious_data = s['malicious_data']
     produced_attestations = []
 
     for validator_index, validator in enumerate(network.validators):
+        
+        if validator in malicious_data.malicious_validators:
+            continue
+            
         known_items = knowledge_set(network, validator_index)
         attestation = validator.attest(known_items)
         if attestation is not None:
@@ -165,12 +187,14 @@ def attest_policy(params, step, sL, s):
 ### Block proposal
 
 def malicious_propose_policy(params, step, sL, s):
+    
     network = s['network']
     malicious_data = s['malicious_data']
     produced_blocks = []
 
     for validator_index, validator in enumerate(network.validators):
-        if not validator_index in malicious_data.malicious_validators:
+        
+        if not validator in malicious_data.malicious_validators:
             continue
 
         known_items = knowledge_set(network, validator_index)
@@ -184,9 +208,14 @@ def propose_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to propose a block
 
     network = s['network']
+    malicious_data = s['malicious_data']
     produced_blocks = []
 
     for validator_index, validator in enumerate(network.validators):
+        
+        if validator in malicious_data.malicious_validators:
+            continue
+            
         known_items = knowledge_set(network, validator_index)
         block = validator.propose(known_items)
         if block is not None:
@@ -215,7 +244,7 @@ def malicious_simulate(network: Network, malicious_data: MaliciousData, paramete
     "malicious_data": malicious_data
     }
 
-def simulate(network: Network, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
+def simulate(network: Network, malicious_data: MaliciousData, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
     """
     Args:
         network (Network): Network of :py:class:`beaconrunner.validatorlib.BRValidator`
@@ -226,7 +255,8 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
     """
 
     initial_conditions = {
-        'network': network
+        'network': network,
+        'malicious_data': malicious_data
     }
 
     psubs = [

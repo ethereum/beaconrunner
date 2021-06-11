@@ -8,17 +8,20 @@ from dataclasses import dataclass, field
 from .specs import (
     Slot, Root, Epoch, CommitteeIndex, ValidatorIndex, Store,
     BeaconState, BeaconBlock, BeaconBlockBody, SignedBeaconBlock,
-    Attestation, AttestationData, Checkpoint, BLSSignature,
+    Attestation, AttestationData, Checkpoint, BLSSignature, Eth1Data,
+    SyncCommitteeSignature, SyncCommitteeContribution, SyncAggregate,
     MAX_VALIDATORS_PER_COMMITTEE, VALIDATOR_REGISTRY_LIMIT,
     SLOTS_PER_EPOCH, DOMAIN_RANDAO, DOMAIN_BEACON_PROPOSER,
-    DOMAIN_BEACON_ATTESTER,
+    DOMAIN_BEACON_ATTESTER, DOMAIN_SYNC_COMMITTEE,
+    SYNC_COMMITTEE_SUBNET_COUNT, SYNC_COMMITTEE_SIZE,
     get_forkchoice_store, get_current_slot, compute_epoch_at_slot,
     get_head, process_slots, on_tick, get_current_epoch,
     get_committee_assignment, compute_start_slot_at_epoch,
     get_block_root, process_block, process_attestation,
     get_block_root_at_slot, get_beacon_proposer_index,
     get_domain, compute_signing_root, state_transition,
-    on_block, on_attestation,
+    on_block, on_attestation, process_sync_committee_contributions,
+    get_sync_committee_signature,
 )
 
 import milagro_bls_binding as bls
@@ -35,6 +38,8 @@ class MaliciousData:
         self.malicious_validators = malicious_validators
         self.malicious_head = malicious_head
         self.malicious_attestations = malicious_attestations
+        self.malicious_validator_indices = []
+        
 
 class ValidatorMove(object):
     """

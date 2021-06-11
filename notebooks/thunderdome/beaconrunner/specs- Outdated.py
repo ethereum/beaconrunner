@@ -1,3 +1,24 @@
+from eth2spec.config.config_util import apply_constants_config
+from typing import (
+    Any, Callable, Dict, Set, Sequence, Tuple, Optional, TypeVar
+)
+
+from dataclasses import (
+    dataclass,
+    field,
+)
+
+from lru import LRU
+
+from eth2spec.utils.ssz.ssz_impl import hash_tree_root
+from eth2spec.utils.ssz.ssz_typing import (
+    View, boolean, Container, List, Vector, uint64,
+    Bytes1, Bytes4, Bytes32, Bytes48, Bytes96, Bitlist, Bitvector,
+)
+from eth2spec.utils import bls
+bls.bls_active = False
+
+from eth2spec.utils.hash_function import hash
 from lru import LRU
 from dataclasses import (
     dataclass,
