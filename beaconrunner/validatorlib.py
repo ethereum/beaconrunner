@@ -31,6 +31,14 @@ from eth2spec.test.helpers.keys import pubkeys, pubkey_to_privkey
 frequency = 1
 assert frequency in [1, 10, 100, 1000]
 
+class MaliciousData:
+    def __init__(self, malicious_validators = [], malicious_validator_indices = [], malicious_head = None, latest_malicious_slot = None, malicious_attestations = []):
+        self.latest_malicious_slot = latest_malicious_slot
+        self.malicious_validators = malicious_validators
+        self.malicious_head = malicious_head
+        self.malicious_attestations = malicious_attestations
+        self.malicious_validator_indices = malicious_validator_indices
+
 @dataclass
 class SyncCommitteeBundle(object):
     sync_committee_index: uint64
@@ -63,6 +71,8 @@ class ValidatorData:
     """
     Holds current validator data, to be consumed by BRValidator subclasses.
     """
+    current_proposer_indices: Sequence[ValidatorIndex]
+    
     slot: Slot
     """Current slot"""
 
@@ -404,17 +414,22 @@ class BRValidator:
         self.store.block_states[get_block_root(current_state, current_epoch)].copy()
 
         current_proposer_duties = []
+        current_proposer_indices = []
+        
         for slot in range(start_slot, start_slot + SLOTS_PER_EPOCH):
             if slot < start_state.slot:
                 current_proposer_duties += [False]
+                current_proposer_indices += [False]
                 continue
 
             if start_state.slot < slot:
                 process_slots(start_state, slot)
 
             current_proposer_duties += [get_beacon_proposer_index(start_state) == self.validator_index]
+            current_proposer_indices += [get_beacon_proposer_index(start_state)]
 
         self.data.current_proposer_duties = current_proposer_duties
+        self.data.current_proposer_indices = current_proposer_indices
 
     def update_attest_move(self) -> None:
         """
@@ -702,6 +717,46 @@ def get_attestation_signature(state: BeaconState, attestation_data: AttestationD
     signing_root = compute_signing_root(attestation_data, domain)
     return bls.Sign(privkey, signing_root)
 
+def private_attest(validator, known_items,malicious_data):
+
+    # Unpacking
+    validator_index = validator.validator_index
+    store = validator.store
+    committee_slot = validator.data.current_attest_slot
+    committee_index = validator.data.current_committee_index
+    committee = validator.data.current_committee
+
+    # What am I attesting for?
+    block_root = malicious_data.malicious_head
+    head_state = store.block_states[block_root].copy()
+    if head_state.slot < committee_slot:
+        process_slots(head_state, committee_slot)
+    start_slot = compute_start_slot_at_epoch(get_current_epoch(head_state))
+    epoch_boundary_block_root = block_root if start_slot == head_state.slot else get_block_root_at_slot(head_state, start_slot)
+    tgt_checkpoint = Checkpoint(epoch=get_current_epoch(head_state), root=epoch_boundary_block_root)
+
+    att_data = AttestationData(
+        index = committee_index,
+        slot = committee_slot,
+        beacon_block_root = block_root,
+        source = head_state.current_justified_checkpoint,
+        target = tgt_checkpoint
+    )
+
+    # Set aggregation bits to myself only
+    committee_size = len(committee)
+    index_in_committee = committee.index(validator_index)
+    aggregation_bits = Bitlist[MAX_VALIDATORS_PER_COMMITTEE](*([0] * committee_size))
+    aggregation_bits[index_in_committee] = True # set the aggregation bit of the validator to True
+    attestation = Attestation(
+        aggregation_bits=aggregation_bits,
+        data=att_data
+    )
+    attestation_signature = get_attestation_signature(head_state, att_data, validator.privkey)
+    attestation.signature = attestation_signature
+
+    return attestation
+
 def honest_attest(validator, known_items):
     """
     Returns an honest attestation from `validator`.
@@ -881,6 +936,44 @@ def should_process_attestation(state: BeaconState, attestation: Attestation) -> 
         return True
     except:
         return False
+    
+def private_block_release(validator, known_items, malicious_data: MaliciousData): 
+
+    slot = malicious_data.latest_slot
+    head = malicious_data.malicious_head
+
+    processed_state = validator.process_to_slot(head, slot)
+
+    attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
+    for i in malicious_data.malicious_attestations:
+        attestations.append(i)
+    attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
+    malicious_data.malicious_attestations = []
+    
+    beacon_block = BeaconBlock(
+        slot=slot,
+        parent_root=head,
+        proposer_index = validator.validator_index,
+    )
+
+    beacon_block_body = BeaconBlockBody(
+        attestations=attestations
+    )
+    epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
+    beacon_block_body.randao_reveal = epoch_signature
+
+    beacon_block.body = beacon_block_body
+
+    process_block(processed_state, beacon_block)
+    state_root = hash_tree_root(processed_state)
+    beacon_block.state_root = state_root
+
+    block_signature = get_block_signature(processed_state, beacon_block, validator.privkey)
+    signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
+    malicious_data.malicious_attestations = []
+
+    return signed_block
+
 
 def honest_propose(validator, known_items):
     """

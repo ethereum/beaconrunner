@@ -115,14 +115,14 @@ def tick(params, step, sL, s, _input):
 
 def update_malicious_data_propose(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    block = _input['produced_blocks'][0]
+    block = _input['produced_blocks']
     block_root = hash_tree_root(block)
     malicious_data.malicious_head = block_root
     return ('malicious_data', malicious_data)
 
 def update_malicious_data_attest(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    attestation = _input['attestations'][0]
+    attestation = _input['malicious_attestations']
     malicious_data.malicious_attestations.append(attestation)
     return ('malicious_data', malicious_data)
 
@@ -163,7 +163,7 @@ def malicious_attest_policy(params, step, sL, s):
         if attestation is not None:
             produced_attestations.append([validator_index, attestation])
 
-    return ({ 'attestations': produced_attestations })
+    return ({ 'malicious_attestations': produced_attestations })
 
 def attest_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to attest

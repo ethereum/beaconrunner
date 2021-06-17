@@ -6,21 +6,18 @@ from ..specs import (
 )
 from ..validatorlib import (
     BRValidator,
-    honest_attest, honest_propose, MaliciousData
+    honest_attest, honest_propose, MaliciousData, private_attest,
+    private_block_release
 )
 
 class MaliciousValidator(BRValidator):
-
-    def __init__(self):
-        super(MaliciousValidator, self).__init__()
-
     validator_behaviour = "malicious"
-    def malicious_attest(self, known_items, malicious_data) ->  Optional[Attestation]:
-                    # Not the moment to attest
+    def malicious_attest(self, known_items, malicious_data):
+        # Not the moment to attest
         if self.data.current_attest_slot != self.data.slot:
             return None
 
-        time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
+        time_in_slot = (self.store.time - self.store.genesis_time)%SECONDS_PER_SLOT
 
         # Too early in the slot / didn't receive block
         if not self.data.received_block and time_in_slot < 4:
@@ -30,14 +27,13 @@ class MaliciousValidator(BRValidator):
         if self.data.last_slot_attested == self.data.slot:
             return None
             
-        if malicious_data.malicious_validators_indices.count(self.data.current_proposer_indices[self.data.slot % SLOTS_PER_EPOCH]) > 0:
+        if malicious_data.malicious_validator_indices.count(self.data.current_proposer_indices[self.data.slot % SLOTS_PER_EPOCH]) > 0:
             malicious_data.malicious_attestations.append(private_attest(self,known_items,malicious_data))
             return None
 
         # honest attest
         return honest_attest(self, known_items)
-
-    def malicious_propose(self, known_items, malicious_data) -> Optional[SignedBeaconBlock]:
+    def malicious_propose(self, known_items, malicious_data):
     # When should a malicious validator perform the attack?
         time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
 
