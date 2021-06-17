@@ -43,9 +43,7 @@ from eth2spec.utils.ssz.ssz_typing import Bitlist, uint64
 from eth2spec.utils.hash_function import hash
 from .utils.eth2 import eth_to_gwei
 
-from .validatorlib import (
-MaliciousData,
-)
+from .malicious import MaliciousData
 
 ## Initialisation
 
@@ -109,17 +107,29 @@ def tick(params, step, sL, s, _input):
 
     return ("network", network)
 
+def reset_attack(params, step, sL, s, _input):
+    malicious_data = s['malicious_data']
+    malicious_data.reset_attack()
+    return ('malicious_data', malicious_data)
+
 def update_malicious_data_propose(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    block = _input['produced_blocks']
+    blocks = _input['malicious_blocks']
+    if len(blocks) == 0:
+        return ('malicious_data', malicious_data)
+    
+    # We could have several malicious_blocks returned at the same time
+    # But not in this attack, so let's take the first block of the list
+    block = blocks[0]
     block_root = hash_tree_root(block)
     malicious_data.malicious_head = block_root
+    malicious_data.latest_malicious_slot = block.message.slot
     return ('malicious_data', malicious_data)
 
 def update_malicious_data_attest(params, step, sL, s, _input):
     malicious_data = s['malicious_data']
-    attestation = _input['malicious_attestations']
-    malicious_data.malicious_attestations.append(attestation)
+    attestations = _input['malicious_attestations']
+    malicious_data.malicious_attestations += [attestations]
     return ('malicious_data', malicious_data)
 
 def update_attestations(params, step, sL, s, _input):
@@ -155,14 +165,9 @@ def attest_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to attest
 
     network = s['network']
-    malicious_data = s['malicious_data']
     produced_attestations = []
 
-    for validator_index, validator in enumerate(network.validators):
-        
-        if validator in malicious_data.malicious_validators:
-            continue
-            
+    for validator_index, validator in enumerate(network.validators):    
         known_items = knowledge_set(network, validator_index)
         attestation = validator.attest(known_items)
         if attestation is not None:
@@ -179,7 +184,7 @@ def malicious_attest_policy(params, step, sL, s):
 
     for validator_index, validator in enumerate(network.validators):
 
-        if not validator in malicious_data.malicious_validators:
+        if not validator_index in malicious_data.malicious_validator_indices:
             continue
 
         known_items = knowledge_set(network, validator_index)
@@ -212,14 +217,9 @@ def propose_policy(params, step, sL, s):
     # Pinging validators to check if anyone wants to propose a block
 
     network = s['network']
-    malicious_data = s['malicious_data']
     produced_blocks = []
 
     for validator_index, validator in enumerate(network.validators):
-        
-        if validator in malicious_data.malicious_validators:
-            continue
-            
         known_items = knowledge_set(network, validator_index)
         block = validator.propose(known_items)
         if block is not None:
@@ -235,7 +235,7 @@ def malicious_propose_policy(params, step, sL, s):
 
     for validator_index, validator in enumerate(network.validators):
         
-        if not validator in malicious_data.malicious_validators:
+        if not validator_index in malicious_data.malicious_validator_indices:
             continue
 
         known_items = knowledge_set(network, validator_index)
@@ -243,7 +243,7 @@ def malicious_propose_policy(params, step, sL, s):
         if block is not None:
             produced_blocks.append(block)
 
-    return ({ 'blocks': produced_blocks })
+    return ({ 'malicious_blocks': produced_blocks })
 
 ### Simulator shell
 
@@ -260,7 +260,90 @@ class SimulationParameters:
         self.frequency = obj["frequency"]
         self.network_update_rate = obj["network_update_rate"]
 
-def simulate(network: Network, malicious_data: MaliciousData, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
+def simulate(network: Network, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
+    """
+    Args:
+        network (Network): Network of :py:class:`beaconrunner.validatorlib.BRValidator`
+        parameters (BRSimulationParameters): Simulation parameters
+
+    Returns:
+        pandas.DataFrame: Results of the simulation contained in a pandas data frame
+    """
+
+    initial_conditions = {
+        'network': network,
+    }
+
+    psubs = [
+        {
+            'policies': {
+                'action': attest_policy # step 1
+            },
+            'variables': {
+                'network': update_attestations # step 2
+            }
+        },
+        {
+            'policies': {
+                'action': propose_policy # step 3
+            },
+            'variables': {
+                'network': update_blocks # step 4
+            }
+        },
+        {
+            'policies': {
+            },
+            'variables': {
+                'network': tick # step 5
+            }
+        },
+    ]
+
+    # Determine how many steps the simulation is running for
+    num_slots = parameters.num_epochs * SLOTS_PER_EPOCH
+    steps = int(num_slots * SECONDS_PER_SLOT * parameters.frequency)
+
+    params = {
+        "frequency": [parameters.frequency],
+        "network_update_rate": [parameters.network_update_rate],
+    }
+
+    print("will simulate", parameters.num_epochs, "epochs (", num_slots, "slots ) at frequency", parameters.frequency, "moves/second")
+    print("total", steps, "simulation steps")
+
+    # Add our observers to the simulation
+    observed_ic = get_observed_initial_conditions(initial_conditions, observers)
+    observed_psubs = get_observed_psubs(psubs, observers)
+    # observed_params = add_loop_params(get_observed_params(params, observers))
+
+    sim_config = config_sim({
+        'T': range(steps),
+        'N': 1,
+        'M': {
+            'frequency': [parameters.frequency],
+            'network_update_rate': [parameters.network_update_rate],
+        }
+    })
+
+    from cadCAD import configs
+    del configs[:]
+
+    # Final simulation parameters and execution
+    experiment = Experiment()
+    experiment.append_configs(
+        initial_state = observed_ic,
+        partial_state_update_blocks = observed_psubs,
+        sim_configs = sim_config
+    )
+
+    exec_context = ExecutionContext()
+    simulation = Executor(exec_context=exec_context, configs=configs)
+    raw_result, tensor, sessions = simulation.execute()
+
+    return pd.DataFrame(raw_result)
+
+def malicious_simulate(network: Network, malicious_data: MaliciousData, parameters: SimulationParameters, observers: Dict[str, Callable[[BeaconState], Any]] = {}) -> pd.DataFrame:
     """
     Args:
         network (Network): Network of :py:class:`beaconrunner.validatorlib.BRValidator`
@@ -276,33 +359,25 @@ def simulate(network: Network, malicious_data: MaliciousData, parameters: Simula
     }
 
     psubs = [
+#         {
+#             'policies': {
+#                 'action': malicious_attest_policy
+#             },
+#             'variables': {
+#                 'malicious_data': update_malicious_data_attest,
+#             }
+#         },
         {
             'policies': {
-                'action': attest_policy # step 1
+                'action': attest_policy
             },
             'variables': {
-                'network': update_attestations # step 2
+                'network': update_attestations
             }
         },
         {
             'policies': {
-                'action': malicious_attest_policy
-            },
-            'variables': {
-                'malicious_data': update_malicious_data_attest,
-            }
-        },
-        {
-            'policies': {
-                'action': propose_policy # step 3
-            },
-            'variables': {
-                'network': update_blocks # step 4
-            }
-        },
-        {
-            'policies': {
-                'action': malicious_propose_policy
+                'action': malicious_propose_policy,
             },
             'variables': {
                 'malicious_data': update_malicious_data_propose,
@@ -310,9 +385,24 @@ def simulate(network: Network, malicious_data: MaliciousData, parameters: Simula
         },
         {
             'policies': {
+                'action': propose_policy
             },
             'variables': {
-                'network': tick # step 5
+                'network': update_blocks
+            }
+        },
+        {
+            'policies': {
+            },
+            'variables': {
+                'network': tick
+            }
+        },
+        {
+            'policies': {
+            },
+            'variables': {
+                'malicious_data': reset_attack,
             }
         },
     ]
