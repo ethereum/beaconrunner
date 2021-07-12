@@ -5,6 +5,14 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>Beacon runner notebooks</title>
+  <meta property="og:title" content="Beacon Runner" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner" />
+  <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
+  <meta property="og:description" content="Agent-based simulations of PoS Ethereum" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Beacon Runner">
+  <meta name="twitter:description" content="Agent-based simulations of PoS Ethereum">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
   <!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
@@ -35,17 +43,17 @@
                         <p>An agent-based model of <a href="https://github.com/ethereum/eth2.0-specs">Ethereum’s Proof-of-Stake consensus layer</a>.</p>
                         <h2 id="beacon-runner-in-practice">Beacon Runner in practice</h2>
                         <p>Notebooks using the current <code>beaconrunner</code> library.</p>
-                        <h3 id="altair-incentives-source">1. <a href="notebooks/altair_incentives.html">Altair incentives</a> + <a href="notebooks/altair_incentives.ipynb">source</a></h3>
+                        <h3 id="altair-incentives-source">05. <a href="notebooks/altair_incentives.html">Altair incentives</a> + <a href="notebooks/altair_incentives.ipynb">source</a></h3>
                         <p>We check that Altair incentives provide the expected rewards per validator by simulating the protocol for a few epochs.</p>
-                        <h3 id="beacon-runner-thunderdome-source">2. <a href="notebooks/thunderdome/thunderdome.html">Beacon Runner: Thunderdome</a> + <a href="notebooks/thunderdome">source</a></h3>
+                        <h3 id="beacon-runner-thunderdome-source">04. <a href="notebooks/thunderdome/thunderdome.html">Beacon Runner: Thunderdome</a> + <a href="notebooks/thunderdome">source</a></h3>
                         <p>We show that honest, protocol-following agents sometimes perform worse than agents who behave more prudently. This is the case when latency is bad enough that agents hedge their bets before taking action. Agents are modelled with the beacon runner validator API and simulated.</p>
                         <h2 id="early-notebooks">Early notebooks</h2>
-                        <p>The beacon runner was built iteratively over several notebooks. Early notebooks use early iterations of the beacon runner codebase and will not function with the code contained in this package. These early notebooks however provide background to eth2 concepts and to the general approach of our simulations.</p>
-                        <h3 id="beacon-runner-a-beaconstate-cadcad-wrap-source">1. <a href="notebooks/beaconrunner/br.html">Beacon Runner: A BeaconState cadCAD wrap</a> + <a href="notebooks/beaconrunner">source</a></h3>
-                        <p>This notebook introduces basic eth2 concepts and provides a “centralised client” implementation. We introduce the main duties of validators in eth2 phase 0: producing blocks and attesting. In this implementation, the centralised client is the only one adding blocks to the beacon chain and attesting, thus it also has perfect view of the chain. This allows us to focus on the interplay between state (the state of the beacon chain) and policies (the duties performed by the centralised client).</p>
-                        <h3 id="beacon-runner-2049-liveness-and-inactivity-leak-source">2. <a href="notebooks/beaconrunner2049/br2049.html">Beacon Runner 2049: Liveness and inactivity leak</a> + <a href="notebooks/beaconrunner2049">source</a></h3>
+                        <p>The beacon runner was built iteratively over several notebooks. Early notebooks use early iterations of the Beacon Runner codebase and will not function with the current code contained in this package. These early notebooks however provide background to PoS Ethereum concepts and to the general approach of our simulations. The code necessary to run them is provided in the source links.</p>
+                        <h3 id="beacon-runner-a-beaconstate-cadcad-wrap-source">01. <a href="notebooks/beaconrunner/br.html">Beacon Runner: A BeaconState cadCAD wrap</a> + <a href="notebooks/beaconrunner">source</a></h3>
+                        <p>This notebook introduces basic Ethereum PoS concepts and provides a “centralised client” implementation. We introduce the main duties of validators in PoS: producing blocks and attesting. In this implementation, the centralised client is the only one adding blocks to the beacon chain and attesting, thus it also has perfect view of the chain. This allows us to focus on the interplay between state (the state of the beacon chain) and policies (the duties performed by the centralised client).</p>
+                        <h3 id="beacon-runner-2049-liveness-and-inactivity-leak-source">02. <a href="notebooks/beaconrunner2049/br2049.html">Beacon Runner 2049: Liveness and inactivity leak</a> + <a href="notebooks/beaconrunner2049">source</a></h3>
                         <p>The centralised client of the previous notebook was the only agent producing blocks and attestations. In this notebook, we introduce validators distributed over a peer-to-peer network, who exchange the blocks and attestations they produce. We assume the network is split in half, such that neither half is able to finalise the state of the beacon chain, focusing on the cryptoeconomic mechanism that allows finalisation to resume. Our implementation is still somewhat centralised, in the sense that all validators in the same half of the network have the same view of the chain (albeit a different view from the other half’s).</p>
-                        <h3 id="beacon-runner-2050-an-agent-based-model-of-eth2-source">3. <a href="notebooks/beaconrunner2050/br2050.html">Beacon Runner 2050: An agent-based model of eth2</a> + <a href="notebooks/beaconrunner2050">source</a></h3>
+                        <h3 id="beacon-runner-2050-an-agent-based-model-of-pos-ethereum-source">03. <a href="notebooks/beaconrunner2050/br2050.html">Beacon Runner 2050: An agent-based model of PoS Ethereum</a> + <a href="notebooks/beaconrunner2050">source</a></h3>
                         <p>We fully decentralise the model of the previous notebook by allowing each validator to have its own view of the chain. Additionally, we provide an interface to model the behaviour of validators, using a simple API. In this notebook, we implement honest validation and observe the progress of the chain.</p>
                         <h2 id="starting-up">Starting up</h2>
                         <p>You can simply run the following commands in a terminal.</p>
@@ -55,6 +63,7 @@ cd beaconrunner
 
 ###
 # Optional: use a virtual environment
+# Python 3.8 is required
 python3.8 -m venv venv
 
 # Unix
