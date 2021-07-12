@@ -106,7 +106,7 @@ def disseminate_attestations(network: Network, items: Sequence[Tuple[ValidatorIn
     ask_to_check_backlog(network, broadcast_validators)
 
 def disseminate_sync_committees(network: Network, items: Sequence[Tuple[ValidatorIndex, SyncCommitteeBundle]]) -> None:
-    # We get a set of attestations and disseminate them over the network
+    # We get a set of sync committees and disseminate them over the network
 
     # Finding out who receives a new attestation
     broadcast_validators = set()

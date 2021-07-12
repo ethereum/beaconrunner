@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Beacon Runner 2050: Agent-based model of PoS Ethereum</title>
+  
+  
+  
+  
+  <meta property="og:title" content="Beacon Runner 2050: Agent-based model of PoS Ethereum" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner/notebooks/beaconrunner2050/br2050.html" />
+  <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
+  <meta property="og:description" content="A demo of ABM for protocol analysis" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Beacon Runner 2050: Agent-based model of PoS Ethereum">
+  <meta name="twitter:description" content="A demo of ABM for protocol analysis">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js" type="text/javascript"></script>
+  <script src="https://ethereum.github.io/rig/static/react.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/react-dom.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/component-library.js"></script>
+  <script src="https://ethereum.github.io/rig/static/header.js"></script>
+  <script src="https://ethereum.github.io/rig/static/footer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+
+
+
+
+
+<style type="text/css">
+    pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: var(--jp-cell-editor-active-background) }
+.highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
+.highlight .c { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment */
+.highlight .err { color: var(--jp-mirror-editor-error-color) } /* Error */
+.highlight .k { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword */
+.highlight .o { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator */
+.highlight .p { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation */
+.highlight .ch { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Single */
+.highlight .cs { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Special */
+.highlight .kc { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Pseudo */
+.highlight .kr { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Type */
+.highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
+.highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
+.highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
+.highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
+.highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
+.highlight .mh { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Hex */
+.highlight .mi { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer */
+.highlight .mo { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Oct */
+.highlight .sa { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Affix */
+.highlight .sb { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Backtick */
+.highlight .sc { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Char */
+.highlight .dl { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Delimiter */
+.highlight .sd { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Doc */
+.highlight .s2 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Double */
+.highlight .se { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Escape */
+.highlight .sh { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Heredoc */
+.highlight .si { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Interpol */
+.highlight .sx { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Other */
+.highlight .sr { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Regex */
+.highlight .s1 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Single */
+.highlight .ss { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Symbol */
+.highlight .il { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer.Long */
+  </style>
+
+
+
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/jupyter.css"/>
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/theme-light.css"/>
+<style type="text/css">
+a.anchor-link {
+   display: none;
+}
+.highlight  {
+    margin: 0.4em;
+}
+
+/* Input area styling */
+.jp-InputArea {
+    overflow: hidden;
+}
+
+.jp-InputArea-editor {
+    overflow: hidden;
+}
+
+@media print {
+  body {
+    margin: 0;
+  }
+}
+</style>
+<!-- Load mathjax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML-full,Safe"> </script>
+    <!-- MathJax configuration -->
+    <script type="text/x-mathjax-config">
+    init_mathjax = function() {
+        if (window.MathJax) {
+        // MathJax loaded
+            MathJax.Hub.Config({
+                TeX: {
+                    equationNumbers: {
+                    autoNumber: "AMS",
+                    useLabelIds: true
+                    }
+                },
+                tex2jax: {
+                    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                displayAlign: 'center',
+                CommonHTML: {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                },
+                "HTML-CSS": {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                }
+            });
+        
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        }
+    }
+    init_mathjax();
+    </script>
+    <!-- End of mathjax configuration -->
+  <link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/index.css"/>
+</head>
+<body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
+
+  <div id="header"></div>
+  <script>
+    ReactDOM.render(
+      e(Header, null),
+      document.querySelector("#header")
+    );
+    const hamburger = document.querySelector(".hamburger");
+    const navMenu = document.querySelector(".nav-menu");
+
+    function mobileMenu() {
+        hamburger.classList.toggle("active");
+        navMenu.classList.toggle("active");
+    }
+
+    function closeMenu() {
+        hamburger.classList.remove("active");
+        navMenu.classList.remove("active");
+    }
+
+    hamburger.addEventListener("click", mobileMenu);
+
+    const navLink = document.querySelectorAll(".nav-link");
+
+    navLink.forEach(n => n.addEventListener("click", closeMenu));
+  </script>
+  <div class="article-container">
+    <div class="document-container">
+      <div class="title-container">
+        <div class="title">
+          Beacon Runner 2050: An agent-based model of eth2
+        </div>
+
+        <div class="sub-title">
+          
+        </div>
+      </div>
+
+      <div id="toc-author-block">
+        <div id="authors"></div>
+        <div id="toc"></div>
+      </div>
+      
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <blockquote><p>Note: All code used in this notebook is contained in the <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner2050">notebooks/beaconrunner2050</a> folder of the Beacon runner repo, and does not use current eth2.0 specs. Most of the content here remains applicable.</p>
+</blockquote>
+<h2 id="TL;DR">TL;DR<a class="anchor-link" href="#TL;DR">&#182;</a></h2><ul>
+<li>We improve upon our second <a href="../beaconrunner2049/br2049.html"><em>Beacon Runner 2049</em></a>, an economics-focused simulation environment for eth2.</li>
+<li>Validators are placed on an <a href="https://decentralizedthoughts.github.io/2019-06-01-2019-5-31-models/">asynchronous</a> P2P network, with each validator storing their current view of the chain, incoming blocks and attestations in a <code>Store</code> object, as defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/fork-choice.md#store">specs</a>.</li>
+<li>Validator behaviours are fully modular and can be plugged into the simulation as long as they follow a simple API, to produce rich agent-based models. Try it yourself!</li>
+</ul>
+<hr>
+<p>We want to understand how validator behaviours map to rewards, penalties and chain outcomes. Ideally, validators who are rational are also honest, i.e., they run the eth2 protocol the way it "should" be run. But apart from how incentives are designed, there is no guarantee that this will indeed the case. And as we will see, honesty may not always have a unique instantiation.</p>
+<p>In this notebook, we improve upon the <a href="../beaconrunner/br.html">first</a> and <a href="../beaconrunner2049/br2049.html">second</a> Beacon Runners by introducing a more full-fledged simulation environment. If you haven't read the previous two, that's OK! Let's catch up now.</p>
+<h2 id="Previously,-on..."><em>Previously, on...</em><a class="anchor-link" href="#Previously,-on...">&#182;</a></h2><p>In the <a href="../beaconrunner/br.html">first notebook</a>, we introduced the possibility of "wrapping" the current specs in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> simulation environment. We defined simple <em>strategies</em> for validators that allowed them to produce blocks and attest too. The implementation was centralised in the sense that all validators shared a common view of the chain at all times -- a situation akin to being on a network with <em>perfect information</em> and <em>zero latency</em>.</p>
+<p>The natural next step was to relax this assumption, and allow different views of the chain to coexist. In the simplest case, these views have an empty intersection: this is the case when the network is perfectly <em>partitioned</em>, and each side of the partition works independently. <a href="../beaconrunner2049/br2049.html">We explored in the second notebook</a> how the <em>inactivity leak</em>, which decreases the stake of inactive validators, eventually allows for finalisation to resume. But what if this intersection is not empty? In other words, what if some validators see both sides of the partition? More generally, what if each validator has their own view of the chain, governed by the messages they have received from other validators on the network?</p>
+<p>These are the conditions we explore here. They are sufficient to represent a realistic p2p network, where validators receive updates from each other after some (random) delay. We'll reuse the network model introduced in the previous notebook, reintroduced in the next section with a brief introduction to the validator API.</p>
+<h2 id="Getting-started">Getting started<a class="anchor-link" href="#Getting-started">&#182;</a></h2><p><a href="../beaconrunner2049/br2049.html">Once again</a>, we import the specs loaded with a custom configuration file, <code>fast</code>, where epochs are only 4 slots long (for demonstration purposes).</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">specs</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">eth2spec.config.config_util</span> <span class="kn">import</span> <span class="n">prepare_config</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+
+<span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fast.yaml&quot;</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">specs</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>&lt;module &#39;specs&#39; from &#39;/Users/barnabe/Documents/Research/Projects/beaconrunner/notebooks/beaconrunner2050/specs.py&#39;&gt;</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We import our network library, seen in <a href="https://github.com/ethereum/beaconrunner/tree/master/notebooks/beaconrunner2050/network.py">network.py</a>, as well as a library of helper functions for our Beacon Runners, <a href="https://github.com/ethereum/beaconrunner/tree/master/notebooks/beaconrunner2050/brlib.py">brlib.py</a>. Open them up! The code is not that scary.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">network</span> <span class="k">as</span> <span class="nn">nt</span>
+<span class="kn">import</span> <span class="nn">brlib</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Now on to the new stuff. We've moved <code>honest_attest</code> and <code>honest_propose</code> to a new <a href="https://github.com/ethereum/beaconrunner/tree/master/notebooks/beaconrunner2050/validatorlib.py">validatorlib.py</a> file. This file also defines a very important class, the <code>BRValidator</code>, intended to be an abstract superclass to custom validator implementations. <code>BRValidator</code> comes packaged with a <code>Store</code>, a nifty little helper class defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/fork-choice.md#store">specs</a> and a bunch more logic to record past actions and current parameters. We'll get to them in a short while.</p>
+<p>We intend <code>BRValidator</code> to be an abstract superclass, meaning that though it is not supposed to be instantiated, it is friendly to inheritance. Subclasses of <code>BRValidator</code> inherit its attributes and methods, and are themselves intended to follow a simple API. Subclasses of <code>BRValidator</code> must expose a <code>propose()</code> and an <code>attest()</code> method which return, respectively, a block or an attestation when queried (or <code>None</code> when they are shy and don't want to return anything yet). We provide an example implementation in <a href="https://github.com/ethereum/beaconrunner/tree/master/notebooks/beaconrunner2050/ASAPValidator.py">ASAPValidator.py</a>, a very nice validator who always proposes and attests as soon as they can, and honestly too.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">validatorlib</span> <span class="k">as</span> <span class="nn">vlib</span>
+<span class="kn">from</span> <span class="nn">ASAPValidator</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's talk about cadCAD once more. Our simulations are now stochastic, since the latency of the network means that some updates are random. cadCAD makes it easy to organise and run any number of instances as well as define the steps that take place in each instance. But our simulation state is pretty large: there are <em>n</em> validators and for each validator, a certain amount of data to keep track of, including chain states and current unincluded blocks and attestations. So we are using <a href="https://github.com/cadCAD-edu/radCAD">radCAD</a>, a cadCAD extension which supports disabling deep copies of the state at each step, in addition to performance improvements.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We can now import the radCAD classes and methods we'll use here.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">radcad</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">Simulation</span><span class="p">,</span> <span class="n">Experiment</span>
+<span class="kn">from</span> <span class="nn">radcad.engine</span> <span class="kn">import</span> <span class="n">Engine</span><span class="p">,</span> <span class="n">Backend</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Are we all set? It seems so!</p>
+<h2 id="Discovering-the-validator-and-network-APIs">Discovering the validator and network APIs<a class="anchor-link" href="#Discovering-the-validator-and-network-APIs">&#182;</a></h2><p>We'll start slow, as we have done in previous notebooks, before moving to a bigger simulation. We loaded a specs configuration with 4 slots per epoch, so we'll instantiate 4 <code>ASAPValidator</code>s, one to attest in each slot.</p>
+<h3 id="Genesis">Genesis<a class="anchor-link" href="#Genesis">&#182;</a></h3><p>First, we obtain a genesis state with 4 deposits registered. Second, we instantiate our validators from this state. A <code>Store</code> is created in each of them that records the genesis state root and a couple other things. Finally we ask our validators to skip the genesis block -- it is a special block at slot 0 that no one is supposed to suggest. The first block from a validator is expected at slot 1.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">genesis_state</span> <span class="o">=</span> <span class="n">brlib</span><span class="o">.</span><span class="n">get_genesis_state</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="s2">&quot;riggerati&quot;</span><span class="p">)</span>
+<span class="n">validators</span> <span class="o">=</span> <span class="p">[</span><span class="n">ASAPValidator</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+<span class="n">brlib</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Note that the current store time is exactly <code>SECONDS_PER_SLOT</code> ahead of <code>genesis_time</code> (in our configuration, and the current canonical specs, 12 seconds). We've fast-forwarded beyond the first block at 0 to the start of slot 1.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Genesis time =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">,</span> <span class="s2">&quot;seconds&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Store time =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="s2">&quot;seconds&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Current slot =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Genesis time = 1578182400 seconds
+Store time = 1578182412 seconds
+Current slot = 1
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's now reuse the network we had in <a href="../beaconrunner2049/br2049.html">the second notebook</a>. The four validators are arranged along a chain, <code>0</code> peering with <code>1</code>, <code>1</code> peering with <code>2</code>, and <code>2</code> peering with <code>3</code>. We create information sets (who peers with who) to represent the chain.</p>
+<p><img src="img/infosets.jpeg" alt=""></p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">set_a</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+<span class="n">set_b</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]))</span>
+<span class="n">set_c</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]))</span>
+
+<span class="n">net</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">,</span> <span class="n">set_b</span><span class="p">,</span> <span class="n">set_c</span><span class="p">]))</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Proposer-duties">Proposer duties<a class="anchor-link" href="#Proposer-duties">&#182;</a></h3><p>When we instantiate new validators, as we have done with <code>ASAPValidator(genesis_state, validator_index)</code>, their constructor preloads a few things. First, each validator checks their proposer duties for all slots of the current epoch.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">proposer_views</span> <span class="o">=</span> <span class="p">[(</span><span class="n">validator_index</span><span class="p">,</span> <span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_proposer_duties</span><span class="p">)</span> \
+                  <span class="k">for</span> <span class="n">validator_index</span><span class="p">,</span> <span class="n">validator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">)]</span> 
+<span class="n">proposer_views</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>[(0, [False, False, False, False]),
+ (1, [True, True, False, False]),
+ (2, [False, False, False, True]),
+ (3, [False, False, True, False])]</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>The array above shows for each validator index (0, 1, 2, 3) whether they are expected to propose a block in either of the 4 slots. Notice that the randomness means the same validator could be called twice in an epoch. This is distinct from attestation duties, where each validator is expected to attest once, and only once, in each epoch.</p>
+<p>Since we are at slot 1, we see that validator 1 is expected to propose here. Let's ping them by calling their <code>propose</code> method, which expects a dictionary of "known items": blocks and attestations communicated over the network which may not yet have been included in the chain.</p>
+<p>Let's take a brief look at the <code>propose</code> method of the ASAP validator:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">specs</span><span class="o">.</span><span class="n">SignedBeaconBlock</span><span class="p">]:</span>
+    <span class="c1"># Not supposed to propose for current slot</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_proposer_duties</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Already proposed for this slot</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_proposed</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># honest propose</span>
+    <span class="k">return</span> <span class="n">vlib</span><span class="o">.</span><span class="n">honest_propose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span>
+</pre></div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Each validator has a <code>data</code> attribute, its "internals", maintained and updated by the <code>BRValidator</code> class. By exposing the current slot, whether the validator is supposed to propose (in <code>current_proposer_duties</code>) and whether the validator proposed something already (<code>last_slot_proposed</code>), one can build fairly sophisticated strategies already.</p>
+<p>Validator 1 is the first to do anything here, so we'll leave the <code>known_items</code> attributes empty.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">block</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">propose</span><span class="p">({</span> <span class="s2">&quot;attestations&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;blocks&quot;</span><span class="p">:</span> <span class="p">[]</span> <span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;There are&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">attestations</span><span class="p">),</span> <span class="s2">&quot;attestations in the block&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>1 proposes block for slot 1
+There are 0 attestations in the block
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Unsurprisingly, the new block produced does not contain any attestations.</p>
+<p>Now validator 1 communicates its block to the information sets it belongs to. Since it belongs to $\{ 0, 1 \}$ and $\{ 1, 2 \}$, validators 0 and 2 receive the block at this point.</p>
+<p><img src="img/propose.jpeg" alt=""></p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">nt</span><span class="o">.</span><span class="n">disseminate_block</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">block</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>In addition to the <code>data</code> attribute, our validators maintain a <code>store</code> which records current beacon chain states. We can access the blocks in those states or the states themselves from the hash of the block. Let's check if validators 0 and 3 have recorded the current block.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_root</span> <span class="o">=</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">block_root</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;0: there is a block&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;0: no block&quot;</span><span class="p">)</span>
+    
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="n">block_root</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;3: there is a block&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;3: no block&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>0: there is a block
+3: no block
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>This confirms that validator 3 has not seen the block yet. In the next network update, triggered when <code>update_network</code> is called on the current <code>network</code> object, validator 2 communicates the block to validator 3. But let's not do that just yet, and instead fast-forward a little more to slot number 2.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">:</span>
+    <span class="n">validator</span><span class="o">.</span><span class="n">forward_by</span><span class="p">(</span><span class="n">specs</span><span class="o">.</span><span class="n">SECONDS_PER_SLOT</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validator 0 says this is slot number&quot;</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Validator 0 says this is slot number 2
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Attester-duties">Attester duties<a class="anchor-link" href="#Attester-duties">&#182;</a></h3><p>Let's check who is expected to attest at slot 2. Our <code>BRValidator</code> superclass records the slot of the current epoch where validators are expected to attest (their <em>committee slot</em>), in the <code>current_attest_slot</code> attribute of their <code>data</code>. In general, computing attester or proposer duties is expensive, so we try to cache it when we can and recompute it only when necessary.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">committee_slots</span> <span class="o">=</span> <span class="p">[</span><span class="n">validator</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">]</span> 
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span> <span class="s2">&quot;validator_index&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;committee_slot&quot;</span><span class="p">:</span> <span class="n">committee_slots</span><span class="p">})</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>validator_index</th>
+      <th>committee_slot</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>3</td>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>According to the schedule here, at slot 2, validator 2 is expected to attest. Let's check what items they currently know about.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">known_items</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">knowledge_set</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validator 2 knows&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]),</span> <span class="s2">&quot;block&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;This block was proposed by validator&quot;</span><span class="p">,</span> <span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">proposer_index</span><span class="p">,</span>
+      <span class="s2">&quot;in slot&quot;</span><span class="p">,</span> <span class="n">known_items</span><span class="p">[</span><span class="s2">&quot;blocks&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Validator 2 knows 1 block
+This block was proposed by validator 1 in slot 1
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Validator 2 knows about the block that validator 1 sent in slot 1! All is well here. Validator 2's attestation will set this block as the current head of the chain and the heat goes on.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">attestation</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">attest</span><span class="p">(</span><span class="n">known_items</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">attestation</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>None
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Woah, what happened here? Validator 2 refused to attest.</p>
+<p>Let's back up a bit and see why. Validator 2 is expected to attest during slot 2. Honest validators however are supposed to leave a bit of time for block proposers to communicate their blocks. We are indeed in slot 2, but we are early into it, at the very start. Meanwhile, slots last for about 12 seconds and validators are only expected to attest a third of the way into the slot, i.e., 4 seconds in. This leaves 4 seconds for the block proposer of slot 2 to produce their block and communicate it (in reality, a bit more since producers can start producing before the end of the previous slot, at the risk of missing incoming attestations).</p>
+<p>We can also look at the <code>attest</code> code in <code>ASAPValidator</code> to see this:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">specs</span><span class="o">.</span><span class="n">Attestation</span><span class="p">]:</span> 
+    <span class="c1"># Not the moment to attest</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Too early in the slot</span>
+    <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">specs</span><span class="o">.</span><span class="n">SECONDS_PER_SLOT</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Already attested for this slot</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_attested</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># honest attest</span>
+    <span class="k">return</span> <span class="n">vlib</span><span class="o">.</span><span class="n">honest_attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span>
+</pre></div>
+<p>Alright. Let's assume that no one wants to propose anything yet for this slot. We'll forward everyone by 4 seconds and see if validator 2 is ready to attest then.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">:</span>
+    <span class="n">validator</span><span class="o">.</span><span class="n">forward_by</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validator 2 says this is slot number&quot;</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time is now&quot;</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;We are now&quot;</span><span class="p">,</span>
+      <span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">specs</span><span class="o">.</span><span class="n">SECONDS_PER_SLOT</span><span class="p">,</span> <span class="s2">&quot;seconds into the slot&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Validator 2 says this is slot number 2
+Time is now 1578182428
+We are now 4 seconds into the slot
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Ready to attest now?</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">attestation</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">attest</span><span class="p">(</span><span class="n">known_items</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">attestation</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Attestation(Container)
+    aggregation_bits: SpecialBitlistView = Bitlist[2048](1 bits: 1)
+    data: AttestationData = AttestationData(Container)
+                                slot: Slot = 2
+                                index: CommitteeIndex = 0
+                                beacon_block_root: Root = 0x204c3c90f89e27ef085dfbd38e81c07036e637d4742d5d76705a6133243204b3
+                                source: Checkpoint = Checkpoint(Container)
+                                                         epoch: Epoch = 0
+                                                         root: Root = 0x0000000000000000000000000000000000000000000000000000000000000000
+                                target: Checkpoint = Checkpoint(Container)
+                                                         epoch: Epoch = 0
+                                                         root: Root = 0x838fb6c5f9b6e8ae5005b16fed7da017452a8bd9d7ed2eda6434b69db123485c
+    signature: BLSSignature = 0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Yes! Validator 2 returned a well-formed attestation. ASAP validators are in a hurry, sure, but not in such a hurry that they would attest too early in the slot.</p>
+<p><em>What are the dangers of attesting too early?</em> Simply put, validators are rewarded for attesting to the correct head of the chain from the perspective of their committee slot. Suppose a validator is expected to attest for slot 2. They send their attestation out before receiving the block for slot 2. In their attestation, they attested for the head of the chain they knew about, i.e., the block at slot 1. Later on, the block for slot 2 is included in the canonical chain. The head in the attestation is now incorrect!</p>
+<p><img src="img/earlyattest.jpeg" alt=""></p>
+<p><em>But shouldn't a validator attest as late as possible then?</em> We are dipping our toes in the waters of game theory here. I like it. Maybe! Though attesting too late means that the reward obtained for being included early decreases, and if you are <em>really</em> too late, like an epoch late, then you cannot be included at all. So pick your poison here.</p>
+<p>We'll define (or you can try it yourself!) a different validator behaviour, attesting <em>as soon as a block is received in the slot, or slightly before the end of the slot if no block comes in</em>. This is much unlike the current validator, who attests four seconds in no matter what. Let's look at this in <a href="../thunderdome/thunderdome.html">a different notebook</a>!</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We need to forward a bit more for validators to record the new attestation. By default, validators ignore incoming attestations for the slot they are currently in. This is because an attestation for slot 2 can <em>at the earliest</em> be included in a block for slot 3. So let's jump to slot 3 by forwarding by 8 seconds.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">validator</span> <span class="ow">in</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">:</span>
+    <span class="n">validator</span><span class="o">.</span><span class="n">forward_by</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validator 2 says this is slot number&quot;</span><span class="p">,</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Validator 2 says this is slot number 3
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's have validator 2 disseminate their attestation. In the next section we'll see how other validators react to it.</p>
+<p><img src="img/attest.jpeg" alt=""></p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">nt</span><span class="o">.</span><span class="n">disseminate_attestations</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="p">[(</span><span class="mi">2</span><span class="p">,</span> <span class="n">attestation</span><span class="p">)])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Final-state">Final state<a class="anchor-link" href="#Final-state">&#182;</a></h3><p>We'll check the state of each validator in turn. The <code>store</code> records in its <code>latest_messages</code> attribute the latest message received from every other validator (message being "attestation" here). This is the <em>LMD</em> of <em>LMD</em>-GHOST, Latest Message-Driven fork choice!</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">latest_messages</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>{}
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Validator 0 has an empty <code>latest_messages</code> attribute. Remember that validator 0 is not peering with validator 2. Since the network was not updated, the recent attestation from validator 2 did not make its way to validator 0.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">latest_messages</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>{2: LatestMessage(epoch=0, root=0x204c3c90f89e27ef085dfbd38e81c07036e637d4742d5d76705a6133243204b3)}
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Validator 1 has seen the attestation from validator 2, since they are peering together. This makes sense.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">latest_messages</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>{2: LatestMessage(epoch=0, root=0x204c3c90f89e27ef085dfbd38e81c07036e637d4742d5d76705a6133243204b3)}
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Obviously, validator 2 also knows about its own attestation.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">latest_messages</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>{}
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Hmm, this is trickier. Validator 3 received validator 2's attestation, since they are peering together. But why isn't it showing here in the <code>latest_messages</code>?</p>
+<p>The reason is simple: validator 2's attestation vouches for <em>validator 1's block</em> as the current head of the chain. But validator 3 doesn't yet know about this block! From the point of view of validator 3, the attestation might as well be vouching for an nonexistent head. In our <code>net</code> object, the attestation is recorded as "known" by validator 3, but it cannot participate in validator 3's fork choice, until validator 3 knows about validator 1's block.</p>
+<p>Now that we have some intuition for what’s going on behind the scenes, let’s take a look at a larger-scale simulation!</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Simulating-a-complete-chain">Simulating a complete chain<a class="anchor-link" href="#Simulating-a-complete-chain">&#182;</a></h2><p>First up, we need to reload our libraries as we'll be using a different specs configuration; the <code>medium</code> config now has 16 slots per epoch (see the <a href="../beaconrunner2049/br2049.html">second notebook</a> where we used the same configuration).</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;medium.yaml&quot;</span><span class="p">)</span>
+
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">specs</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">nt</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">brlib</span><span class="p">)</span>
+<span class="n">importlib</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">vlib</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">ASAPValidator</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We'll start with 100 validators, divided into two sets, with a small overlap.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">num_validators</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">genesis_state</span> <span class="o">=</span> <span class="n">brlib</span><span class="o">.</span><span class="n">get_genesis_state</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)</span>
+<span class="n">validators</span> <span class="o">=</span> <span class="p">[</span><span class="n">ASAPValidator</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">validator_index</span><span class="p">)</span> <span class="k">for</span> <span class="n">validator_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)]</span>
+<span class="n">brlib</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+
+<span class="n">set_a</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">))))</span>
+<span class="n">set_b</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span> <span class="n">num_validators</span><span class="p">)))</span>
+
+<span class="n">network</span> <span class="o">=</span> <span class="n">nt</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span><span class="o">=</span><span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">,</span> <span class="n">set_b</span><span class="p">]))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Set A = &quot;</span><span class="p">,</span> <span class="n">set_a</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Set B = &quot;</span><span class="p">,</span> <span class="n">set_b</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Set A =  NetworkSet(validators=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65])
+Set B =  NetworkSet(validators=[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99])
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Notice that validators 50 to 65 belong to both sets. If the intersection was completely empty, we'd be back to the partition case we saw in the <a href="../beaconrunner2049/br2049.html">previous notebook</a>.</p>
+<p>Same as before, we set our <code>initial_conditions</code> to only contain the <code>network</code> object we just defined.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">network</span>
+<span class="p">}</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>How does the simulation proceed? We change the rules significantly here. In previous notebooks, we kept the pattern one simulation step = one slot. But to model the effects of network latency or timeliness of validator moves, this is not fine-grained enough. A <code>frequency</code> parameter (in Hertz) controls <em>how many times per second</em> we update the simulation.</p>
+<p>Here is what happens at each update:</p>
+<ol>
+<li><strong>(Policy)</strong> All validators are queried to check if they want to attest at this time.</li>
+<li><strong>(State update)</strong> If attestations were made, we disseminate them over the network.</li>
+<li><strong>(Policy)</strong> All validators are queried to check if they want to propose a block at this time.</li>
+<li><strong>(State update)</strong> If blocks were proposed, we disseminate them over the network.</li>
+<li><strong>(State update)</strong> We call <code>tick</code> to move the clock by one step (= a second if <code>frequency</code> is 1, a tenth of a second if <code>frequency</code> is 10 etc). When <code>tick</code> moves the clock past the start of a new slot, validators update their internals, checking for instance their new attester or proposer duties if this tick coincides with a new epoch.</li>
+</ol>
+<p>Whenever <code>tick</code> is called, we also check whether we want the network to update or not, by flipping a biased coin. By "updating the network", we mean "peers exchange messages". In the chain example above, with 4 validators arranged as 0 &lt;-&gt; 1 &lt;-&gt; 2 &lt;-&gt; 3, it takes two network updates for a message from validator 3 to reach validator 0 (when validator 3 sends their message, we assume that it reaches all their peers instantly).</p>
+<p>The update frequency of the network is represented by the <code>network_update_rate</code> simulation parameter, also in Hertz. A <code>network_update_rate</code> of 1 means that messages spread one step further on the network each second.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="s2">&quot;network_update_rate&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>As usual, we have our partial state update blocks which represent the substep in the simulation steps.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">psubs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">brlib</span><span class="o">.</span><span class="n">attest_policy</span> <span class="c1"># step 1</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">brlib</span><span class="o">.</span><span class="n">disseminate_attestations</span> <span class="c1"># step 2</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">brlib</span><span class="o">.</span><span class="n">propose_policy</span> <span class="c1"># step 3</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">brlib</span><span class="o">.</span><span class="n">disseminate_blocks</span> <span class="c1"># step 4</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">brlib</span><span class="o">.</span><span class="n">tick</span> <span class="c1"># step 5</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We'll now set the parameters for our run. We want to run it for <code>number_slots</code>, meaning that we need <code>steps</code> timesteps, as given by the formula below. Notice that we feed our <code>parameters</code> dictionary to the <code>M</code> key of <code>simulation_parameters</code>. This exposes the <code>frequency</code> and <code>network_update_rate</code> parameters to all state update functions in our simulation (here we only use it for <code>tick</code>, which updates the clock of all validators and potentially the network too).</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">number_epochs</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">number_slots</span> <span class="o">=</span> <span class="n">number_epochs</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="n">number_slots</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SECONDS_PER_SLOT</span> <span class="o">*</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;will simulate&quot;</span><span class="p">,</span> <span class="n">number_epochs</span><span class="p">,</span> <span class="s2">&quot;epochs (&quot;</span><span class="p">,</span> <span class="n">number_slots</span><span class="p">,</span> <span class="s2">&quot;slots ) at frequency&quot;</span><span class="p">,</span> <span class="n">vlib</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="s2">&quot;moves/second&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">steps</span><span class="p">,</span> <span class="s2">&quot;simulation steps&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>will simulate 6 epochs ( 96 slots ) at frequency 1 moves/second
+total 1152 simulation steps
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>One last thing: we discussed before the use of a cadCAD fork that doesn't record a complete copy of the simulation state at each step. This is critical because when we set a very high <code>frequency</code>, during many steps nothing really happens: no one is proposing or attesting, but we still should ping validators to check if they want to do either. Recording the full state every step is quite wasteful! So instead, we'll define <em>observers</em>, or <em>metrics</em>: functions of the state that record a simple value at each step, such as the average balance of validators or the current slot. Let's write an observer for the current slot first:</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">current_slot</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>That was quite easy. Our state only includes the <code>network</code> object and since we assume all validators share a clock (or at least they are all synced to the same time) any validator's current slot will do.</p>
+<p>Now let's think about how to get the average balance. Of course, this depends on <em>which</em> beacon chain state we are looking at. Each validator maintains their own current state, which is made up of all the blocks and attestations they have seen until now. All validators may not agree on the current balances of everyone! In the extreme case of a partition, which we discussed in the <a href="../beaconrunner2049/br2049.html">previous notebook</a>, the two sides of the partition had completely different accounts of the current distribution.</p>
+<p><img src="img/partitionspydey.png" alt="My Spydey sense is partitioned"></p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>There is no one single correct answer. If we believe our network is fully connected (i.e., no partition) with reasonable latency, it follows that all validators eventually receive any given message in a reasonable amount of time. Under these assumptions, to get a good idea of the distribution (of average balances) over all validators, it's probably enough to sample the distribution of any one validator.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">eth2</span> <span class="kn">import</span> <span class="n">gwei_to_eth</span>
+
+<span class="k">def</span> <span class="nf">average_balance</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">number_validators</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">gwei_to_eth</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">number_validators</span><span class="p">))</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We now have a couple of custom functions to add our two observers, <code>current_slot</code> and <code>average_balance</code>, to the simulation proceedings. In the background, we record the current slot and the average balance in the state of the simulation, so we need to add them to the initial conditions as well as to the state update blocks defined above.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">cadCADsupSUP</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">observers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;current_slot&quot;</span><span class="p">:</span> <span class="n">current_slot</span><span class="p">,</span>
+    <span class="s2">&quot;average_balance&quot;</span><span class="p">:</span> <span class="n">average_balance</span>
+<span class="p">}</span>
+
+<span class="n">observed_ic</span> <span class="o">=</span> <span class="n">get_observed_initial_conditions</span><span class="p">(</span><span class="n">initial_conditions</span><span class="p">,</span> <span class="n">observers</span><span class="p">)</span>
+<span class="n">observed_psubs</span> <span class="o">=</span> <span class="n">get_observed_psubs</span><span class="p">(</span><span class="n">psubs</span><span class="p">,</span> <span class="n">observers</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's run it!</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span>
+    <span class="n">initial_state</span><span class="o">=</span><span class="n">observed_ic</span><span class="p">,</span>
+    <span class="n">state_update_blocks</span><span class="o">=</span><span class="n">observed_psubs</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">timesteps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span> <span class="n">runs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">experiment</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">([</span><span class="n">simulation</span><span class="p">])</span>
+<span class="n">experiment</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="n">deepcopy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">Backend</span><span class="o">.</span><span class="n">SINGLE_PROCESS</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>This takes a little time (despite a lot of caching behind the scenes), but executes and returns a simulation transcript with our observers, in <code>df</code>.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>network</th>
+      <th>current_slot</th>
+      <th>average_balance</th>
+      <th>simulation</th>
+      <th>subset</th>
+      <th>run</th>
+      <th>substep</th>
+      <th>timestep</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Network(validators=[&lt;ASAPValidator.ASAPValidat...</td>
+      <td>1</td>
+      <td>32.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Network(validators=[&lt;ASAPValidator.ASAPValidat...</td>
+      <td>1</td>
+      <td>32.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Network(validators=[&lt;ASAPValidator.ASAPValidat...</td>
+      <td>1</td>
+      <td>32.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Network(validators=[&lt;ASAPValidator.ASAPValidat...</td>
+      <td>1</td>
+      <td>32.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Network(validators=[&lt;ASAPValidator.ASAPValidat...</td>
+      <td>1</td>
+      <td>32.0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's plot the average balance over time, taking slots as our time unit.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="s2">&quot;average_balance&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>&lt;AxesSubplot:xlabel=&#39;current_slot&#39;&gt;</pre>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedImage jp-OutputArea-output ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYQAAAESCAYAAAD9gqKNAAAAOXRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjQuMiwgaHR0cHM6Ly9tYXRwbG90bGliLm9yZy8rg+JYAAAACXBIWXMAAAsTAAALEwEAmpwYAAAeQUlEQVR4nO3df5xVdb3v8deb4VeIAgJaAjqYKI6WPxqR0k4ooVjd8Adeh+4x6kHqNSjrnPM4R689Mk0eZvnQ1DAlNcxMQNIcDdNDSOfmVZjBkB8D6Ch2GUNBUBBjgIHP/WN/4e6GGWYzvzaz5/18PPaDtb7r+137+91r2O+911p7LUUEZmZmXfLdATMzOzg4EMzMDHAgmJlZ4kAwMzPAgWBmZokDwczMgAILBEk/lLRU0hJJz0k6qoE6p0p6UdKKVPeyrGVDJS2UVC1plqTuqbxHmq9Oy4uz2lyXyldLOj+rfGwqq5Z07cHwHPt53Yan12S7pH/L/RU3s4ISER3yAYwCZtQrOyxr+tvAvQ20Ox4YlqaPAtYBfdP8bKAsTd8LXJ2mv7lnXUAZMCtNlwCvAD2AocDrQFF6vA4cC3RPdUry/Rz7eS2PAM4ApgL/lu9t64cffuTnUVDfECJiS9bsIcA+v7qLiFcj4rU0/TdgPTBQkoBzgTmp6kPAhWl6XJonLR+d6o8DZkbE9ohYA1QDI9KjOiLeiIgdwExgXL6fQ9JASb+VVJEeZ6XXYX1EVAA79/8Km1kh65rvDrQ2SVOBrwKbgXOaqDuCzKfr14H+wPsRUZcW1wCD0vQgYC1ARNRJ2pzqDwJeylpldpu19crPPAie407gjoj4s6SjgWeBExt7fcysc+lwgSBpIZndJ72BwyUtSYv+IyKejYjrgeslXQdMAW5oZD0fAx4GJkbE7swH64L3eaAka6yHSeodEVvz2CczO0h0uECIiDMBJI0CvhYRX2uk6iPAXBoIBEmHAb8Hro+IPZ++NwJ9JXVNn64HA2+lZW8BQ4AaSV2BPqn+nvI9sts0VJ7v5+gCjIyI2n1fLjPr7ArqGIKkYVmz44BVDdTpDjwB/Coi9uxnJyICeB4Yn4omAk+m6fI0T1o+P9UvB8rSGUJDgWHAIqACGJbO9ulO5iBx+UHwHM8B38p6LU5t8IU0s84p30e1m/ug4bOMfgssB5YCTwGDUnkpcH+a/mcyB0+XZD1OTcuOJfNmWw08BvRI5T3TfHVafmzWc15P5hjEauCCrPIvAK+mZddnlefzOQYAs9LrU8X/P6vpo2SONWwB3k/Th+W6Lfzww4/CeCjCl782M7MC22VkZmbN16EOKg8YMCCKi4vz3Q0zsw5j8eLF70bEwFzqdqhAKC4uprKyMt/dMDPrMCT9Nde63mVkZmaAA8HMzBIHgpmZAR3sGEJDdu7cSU1NDbW1/vFtIerZsyeDBw+mW7du+e6KWcHr8IFQU1PDoYceSnFxMZ3kekSdRkSwceNGampqGDp0aL67Y1bwOvwuo9raWvr37+8wKECS6N+/v7/9mbWTDh8IgMOggHnbmrWfDr/LyMys0Kx6ewsVazbtne/RrYj/XjpkPy1ahwPBzOwgc2N5FS++sXHv/IDePdolEApil5EdmAULFvClL33pgNqMGjXKvxI3ayd1u3dzRnE/Kr/3eSq/93me++4/tcvz+hvCQWjXrl0UFRXluxtmlkfdirowoHePdn3OggqEG59aQdXftrTqOkuOOowb/ttJ+61z4YUXsnbtWmpra7nmmmvYvXs3r7/+Oj/5yU8AmDFjBpWVlfzsZz/j17/+NXfddRc7duzgzDPP5J577qGoqIjevXtz1VVXMW/ePKZNm8b8+fN56qmn2LZtG5/5zGe47777kERFRQWTJk2iS5cujBkzhmeeeYbly5eza9curr32WhYsWMD27duZPHkyV111VaN93rJlC1/84heprq7mnHPO4Z577qFLly5cffXVVFRUsG3bNsaPH8+NN964T9vG6hQXFzNx4kSeeuopdu7cyWOPPcbw4cPZunUr3/rWt6isrEQSN9xwA5dccgnPPfccN9xwA9u3b+fjH/84v/zlL+ndu3cLtpaZtYR3GbWCBx98kMWLF1NZWcldd93FRRddxBNPPLF3+axZsygrK2PlypXMmjWLF154gSVLllBUVMQjjzwCwIcffsiZZ57JK6+8wtlnn82UKVOoqKhg+fLlbNu2jaeffhqAr3/969x333172+/xwAMP0KdPHyoqKqioqOAXv/gFa9asabTPixYt4u6776aqqorXX3+dxx9/HICpU6dSWVnJ0qVL+dOf/sTSpUv3abu/OgMGDODll1/m6quv5rbbbgPghz/8IX369GHZsmUsXbqUc889l3fffZebb76ZefPm8fLLL1NaWsrtt9/egq1gZi1VUN8Qmvok31buuuuuvQGwdu1a1qxZw7HHHstLL73EsGHDWLVqFWeddRbTpk1j8eLFnHHGGQBs27aNI444AoCioiIuueSSvet8/vnn+fGPf8zf//53Nm3axEknncRnP/tZPvjgAz796U8D8JWvfGVvUDz33HMsXbqUOXMydwXdvHkzr732WqM/6BoxYgTHHnssABMmTODPf/4z48ePZ/bs2UyfPp26ujrWrVtHVVUVn/zkJ/+h7f7qXHzxxQB86lOf2hsy8+bNY+bMmXvb9+vXj6effpqqqirOOussAHbs2LF3XGaWHwUVCPmwYMEC5s2bx4svvkivXr0YNWoUtbW1lJWVMXv2bIYPH85FF12EJCKCiRMncsstt+yznp49e+79xF9bW8s3v/lNKisrGTJkCD/4wQ+a/HFWRHD33Xdz/vnn59Tv+uf3S2LNmjXcdtttVFRU0K9fP772ta/t87xN1enRI7PPs6ioiLq6uv32d8yYMTz66KM59dfM2p53GbXQ5s2b6devH7169WLVqlW89NJLAFx00UU8+eSTPProo5SVlQEwevRo5syZw/r16wHYtGkTf/3rvpcq3/MGO2DAALZu3br3U3/fvn059NBDWbhwIcA/fOo+//zz+fnPf87OnTsBePXVV/nwww8b7feiRYtYs2YNu3fvZtasWZx99tls2bKFQw45hD59+vDOO+/wzDPP7NMulzr1jRkzhmnTpu2df++99xg5ciQvvPAC1dXVQGaX2auvvtrkusys7fgbQguNHTuWe++9lxNPPJETTjiBkSNHApndIieeeCJVVVWMGDECgJKSEm6++WbOO+88du/eTbdu3Zg2bRrHHHPMP6yzb9++XHHFFZx88sl89KMf3buLCTLHCq644gq6dOnC5z73Ofr06QPAN77xDd58801OP/10IoKBAwfyu9/9rtF+n3HGGUyZMmXvQeWLLrqILl26cNpppzF8+HCGDBmyd3dOtlNOOaXJOvV973vfY/LkyZx88skUFRVxww03cPHFFzNjxgwmTJjA9u3bAbj55ps5/vjjm1yfmbUNRUS++5Cz0tLSqH8u/MqVKznxxBPz1KP2t3Xr1r1n4vzoRz9i3bp13HnnnXnuVdvqbNvY7NJ7/w/dirrwmytGtnhdkhZHRGkudf0NoYP5/e9/zy233EJdXR3HHHMMM2bM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
+"
+>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>It increases! Remember that our epochs are 16 slots long here. Validators are behaving well, the network latency is small enough that no message is delayed too much, it's all good!</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Arrival">Arrival<a class="anchor-link" href="#Arrival">&#182;</a></h2><p>So what have we done here?</p>
+<ul>
+<li>We have a group of validators who are all individually keeping track of their view of the beacon state.</li>
+<li>Validators are on a network and communicate with each other, keeping track of known (but perhaps unincluded) attestations and blocks.</li>
+<li>Whenever something changes, e.g., the beginning of a new slot/epoch or a new block/attestation received on-the-wire (as in, from the p2p network), validators update their internals to parameterise their strategies.</li>
+<li>Each step, the simulation pings all validators and asks whether they want to propose or attest at this point in time. Based on their current data and past actions, they either return a block and/or an attestation, or nothing.</li>
+</ul>
+<p>Now that we have this nice playground for validators to roam around, we are getting close to a full-fledged <em>agent-based model</em>. But we need more agents! Who expects here that all validators will be ASAP always? And is ASAP the only "good" behaviour? Probably not!</p>
+<p>We'll use the framework developed in this notebook to explore these questions, with a series of smaller "case studies" looking at specific questions. Note that our simulation environment is still incomplete: validators should do more than just proposing and attesting.</p>
+<ul>
+<li>Up until now we assumed proposers were taking on the responsibility of aggregating their known attestations to record them in their proposed blocks. In eth2, aggregators are functionally different, and are validators chosen randomly for each slot.</li>
+<li>We also haven't given our validators the power to slash malicious validators. With a few tweaks here and there we can do that simply enough. </li>
+</ul>
+
+</div>
+
+
+
+
+    </div>
+  </div>
+  <script>
+  // References + footnotes
+
+// Authors
+let authorData = ["barnabe"];
+  </script>
+
+  
+</body>
+
+  <div id="footer"></div>
+    <script>
+    ReactDOM.render(
+      e(
+        Footer, {
+          acknowledgements: 'Many thanks once more to Sacha Saint-Leger for his edits and suggestions; Danny Ryan and Protolambda for their help and inputs.',
+        }
+      ),
+      document.querySelector("#footer")
+    )
+
+    const copyToClipboard = str => {
+      const el = document.createElement("textarea") // Create a <textarea> element
+      el.value = str // Set its value to the string that you want copied
+      el.setAttribute("readonly", "") // Make it readonly to be tamper-proof
+      el.style.position = "absolute"
+      el.style.left = "-9999px" // Move outside the screen to make it invisible
+      document.body.appendChild(el) // Append the <textarea> element to the HTML document
+      const selected =
+        document.getSelection().rangeCount > 0 // Check if there is any content selected previously
+          ? document.getSelection().getRangeAt(0) // Store selection if found
+          : false // Mark as false to know no selection existed before
+      el.select() // Select the <textarea> content
+      document.execCommand("copy") // Copy - only works as a result of a user action (e.g. click events)
+      document.body.removeChild(el) // Remove the <textarea> element
+      if (selected) {
+        // If a selection existed before copying
+        document.getSelection().removeAllRanges() // Unselect everything on the HTML document
+        document.getSelection().addRange(selected) // Restore the original selection
+      }
+    }
+    function handleCopyClick(evt) {
+      // get the children of the parent element
+      const { children } = evt.target.parentElement
+      // grab the first element (we append the copy button on afterwards, so the first will be the code element)
+      // destructure the innerText from the code block
+      const { innerText } = Array.from(children)[0]
+      // copy all of the code to the clipboard
+      copyToClipboard(innerText)
+    }
+
+    const highlights = document.querySelectorAll(".jp-InputArea-editor .highlight")
+
+    highlights.forEach(div => {
+      // create the copy button
+      const copy = document.createElement("button")
+      copy.innerHTML = "Copy"
+      // add the event listener to each click
+      copy.addEventListener("click", handleCopyClick)
+      // append the copy button to each code block
+      div.append(copy)
+    })
+    </script>
+  </div>
+  <script src="https://ethereum.github.io/rig/static/authorFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/sectionFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/referencesFormatting.js"></script>
+
+
+
+
+
+
+
+</html>

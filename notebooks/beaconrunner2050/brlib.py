@@ -33,8 +33,8 @@ def skip_genesis_block(validators):
 
 def tick(_params, step, sL, s, _input):
     # Move the simulation by one step
-    frequency = _params[0]["frequency"]
-    network_update_rate = _params[0]["network_update_rate"]
+    frequency = _params["frequency"]
+    network_update_rate = _params["network_update_rate"]
     
     # Probably overkill
     assert frequency >= network_update_rate

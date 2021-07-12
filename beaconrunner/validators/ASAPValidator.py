@@ -1,9 +1,11 @@
 from typing import Optional, Sequence
 
 from ..specs import (
-    Attestation, SignedBeaconBlock,
-    SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+    Attestation, SignedBeaconBlock, config,
+    SLOTS_PER_EPOCH,
 )
+SECONDS_PER_SLOT = config.SECONDS_PER_SLOT
+
 from ..validatorlib import (
     BRValidator, SyncCommitteeBundle,
     honest_attest, honest_sync_committee, honest_propose

@@ -3,15 +3,19 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>altair_incentives</title>
+<title>Altair incentives check</title>
   
   
   
   
-  <meta property="og:title" content="altair_incentives" />
-  <meta property="og:url" content="https://ethereum.github.io//" />
+  <meta property="og:title" content="Altair incentives check" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner/notebooks/altair_incentives.html" />
   <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
-  <meta property="og:description" content="" />
+  <meta property="og:description" content="Checking incentive soundness in Altair" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Altair incentives check">
+  <meta name="twitter:description" content="Checking incentive soundness in Altair">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
 
   <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js" type="text/javascript"></script>
   <script src="https://ethereum.github.io/rig/static/react.development.js"></script>
@@ -190,30 +194,32 @@ a.anchor-link {
       </div>
       
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="How-to-use">How to use<a class="anchor-link" href="#How-to-use">&#182;</a></h2><p>In this noteboook we test the rewards given out by the protocol to different types of validators. Our <code>fast</code> config reduces the size of most constants to avoid allocating more memory than necessary (we'll only test with a few validators). We also reduce the number of slots per epoch to speed things up. All these changes are without loss of generality.</p>
-<p>You may test various spec versions by renaming either of the <code>specs_*.py</code> files in the <code>beaconrunner</code> folder to <code>specs.py</code>. Current version tested is v1.1.0-alpha.5-PR2453.</p>
+  <h2 id="How-to-use">How to use<a class="anchor-link" href="#How-to-use">&#182;</a></h2><p>In this noteboook we test the rewards given out by the protocol to different types of validators. Our <code>fast</code> config reduces the size of most constants to avoid allocating more memory than necessary (we'll only test with a few validators). We also reduce the number of slots per epoch to speed things up. All these changes are without loss of generality.</p>
+<p>You may test various spec versions by renaming either of the <code>specs_*.py</code> files in the <code>beaconrunner</code> folder to <code>specs.py</code>. Current version tested is v1.1.0-alpha.7.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<details><summary>Input 1 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[1]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">importlib</span>
-<span class="kn">import</span> <span class="nn">types</span>
-<span class="kn">from</span> <span class="nn">eth2spec.config.config_util</span> <span class="kn">import</span> <span class="n">prepare_config</span>
-<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
-
-<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="c1"># Load current beacon runner specs (v1.1.0-alpha.3)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">))</span>
-
 <span class="kn">import</span> <span class="nn">beaconrunner</span> <span class="k">as</span> <span class="nn">br</span>
 
-<span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fast.yaml&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
 
-<span class="n">br</span><span class="o">.</span><span class="n">reload_package</span><span class="p">(</span><span class="n">br</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">cadCAD_tools.profiling.visualizations</span> <span class="kn">import</span> <span class="n">visualize_substep_impact</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">plotly.io</span> <span class="k">as</span> <span class="nn">pio</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="s2">&quot;plotly&quot;</span>
+<span class="n">pio</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;plotly_mimetype+notebook_connected&quot;</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
 </pre></div>
 
      </div>
@@ -221,17 +227,18 @@ a.anchor-link {
 </div>
 </div>
 
-</details>
+  </details>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Below are metrics extracted from the state of the simulation. We don't really care about most of them except for <code>get_current_validator_state</code>, but they are left here for future use/reference.</p>
+  <p>Below are metrics extracted from the state of the simulation. We don't really care about most of them except for <code>get_current_validator_state</code>, but they are left here for future use/reference.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<details><summary>Input 2 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
@@ -270,9 +277,10 @@ a.anchor-link {
 <span class="k">def</span> <span class="nf">get_sync_committee</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
     <span class="n">current_state</span> <span class="o">=</span> <span class="n">extract_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
     <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
-    <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">current_sync_committee</span>
-    <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_sync_committee_indices</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;sync_committee&quot;</span><span class="p">,</span> <span class="n">sync_committee</span><span class="p">)</span>
+    <span class="n">sync_committee</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">current_sync_committee</span><span class="o">.</span><span class="n">pubkeys</span>
+    <span class="n">val_pubkeys</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">pubkey</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">current_state</span><span class="o">.</span><span class="n">validators</span><span class="p">]</span>
+    <span class="n">sync_committee_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">val_pubkeys</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pubkey</span><span class="p">)</span> <span class="k">for</span> <span class="n">pubkey</span> <span class="ow">in</span> <span class="n">sync_comittee</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;sync_committee&quot;</span><span class="p">,</span> <span class="n">sync_committee_indices</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">get_head</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
     <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
@@ -311,23 +319,24 @@ a.anchor-link {
 </div>
 </div>
 
-</details>
+  </details>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Run the simulation.</p>
+  <p>Run the simulation.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 3 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
 <span class="kn">from</span> <span class="nn">beaconrunner.validators.ASAPValidator</span> <span class="kn">import</span> <span class="n">ASAPValidator</span>
 
-<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">20</span>
 
 <span class="c1"># Initiate validators</span>
 <span class="n">validators</span> <span class="o">=</span> <span class="p">[]</span>
@@ -343,6 +352,7 @@ a.anchor-link {
 
 <span class="c1"># We skip the genesis block</span>
 <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+<span class="c1"># print(genesis_state)</span>
 
 <span class="c1"># Create the network</span>
 <span class="n">set_a</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)))</span>
@@ -365,7 +375,7 @@ a.anchor-link {
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -375,113 +385,41 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>INFO:root:Starting simulation 0 / run 0 / subset 0
+</pre>
+</div>
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
 <pre>will simulate 4 epochs ( 16 slots ) at frequency 1 moves/second
 total 192 simulation steps
-
-                  ___________    ____
-  ________ __ ___/ / ____/   |  / __ \
- / ___/ __` / __  / /   / /| | / / / /
-/ /__/ /_/ / /_/ / /___/ ___ |/ /_/ /
-\___/\__,_/\__,_/\____/_/  |_/_____/
-by cadCAD
-
-Execution Mode: local_proc
-Configuration Count: 1
-Dimensions of the first simulation: (Timesteps, Params, Runs, Vars) = (192, 2, 1, 8)
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-
-
-
-
-
-<div id="df33156a-6f53-4abf-95f6-b79c39beb608" class="jupyter-widgets jp-OutputArea-output ">
-<script type="text/javascript">
-var element = document.getElementById('df33156a-6f53-4abf-95f6-b79c39beb608');
-</script>
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id": "71b79bedc8164a18baca505589cd5c0e", "version_major": 2, "version_minor": 0}
-</script>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Execution Method: local_simulations
-SimIDs   : [0]
-SubsetIDs: [0]
-Ns       : [0]
-ExpIDs   : [0]
-Execution Mode: single_threaded
-11 proposing block for slot 1
-11 proposing block for slot 2
-6 proposing block for slot 3
-5 proposing block for slot 4
+19 proposing block for slot 1
+6 proposing block for slot 2
+7 proposing block for slot 3
+14 proposing block for slot 4
 9 proposing block for slot 5
-0 proposing block for slot 6
+10 proposing block for slot 6
 0 proposing block for slot 7
-12 proposing block for slot 8
-7 proposing block for slot 9
+10 proposing block for slot 8
+13 proposing block for slot 9
 timestep 100 of run 1
-13 proposing block for slot 10
-10 proposing block for slot 11
-2 proposing block for slot 12
-0 proposing block for slot 13
-4 proposing block for slot 14
-9 proposing block for slot 15
-4 proposing block for slot 16
-</pre>
-</div>
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-
-
-
-
-
-<div id="10b55a1a-f845-4207-ada1-32fee381e5c0" class="jupyter-widgets jp-OutputArea-output ">
-<script type="text/javascript">
-var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
-</script>
-<script type="application/vnd.jupyter.widget-view+json">
-{"model_id": "b66178347d49482c8bc7503907ce4103", "version_major": 2, "version_minor": 0}
-</script>
-</div>
-
-</div>
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>Total execution time: 90.05s
+18 proposing block for slot 10
+3 proposing block for slot 11
+0 proposing block for slot 12
+2 proposing block for slot 13
+3 proposing block for slot 14
+12 proposing block for slot 15
+11 proposing block for slot 16
 </pre>
 </div>
 </div>
@@ -491,13 +429,14 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<details><summary>Input 4 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="s1">&#39;simulation&#39;</span><span class="p">,</span> <span class="s1">&#39;subset&#39;</span><span class="p">,</span> <span class="s1">&#39;run&#39;</span><span class="p">])</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">])</span>
 </pre></div>
 
      </div>
@@ -505,29 +444,21 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>We collect the validator state data in a separate dataframe, of schema <code>(slot, validator_index, balance, block_proposer, attester, sync_committee)</code>. We ignore the first few epochs (rewards aren't given out, or imperfectly) and make sure the key <code>(slot, validator_index)</code> is unique.</p>
+  <p>We collect the validator state data in a separate dataframe, of schema <code>(slot, validator_index, balance, block_proposer, attester, sync_committee)</code>. We ignore the first few epochs (rewards aren't given out, or imperfectly) and make sure the key <code>(slot, validator_index)</code> is unique.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 5 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">itertools</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">validator_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-    <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">df</span><span class="p">[((</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">&gt;</span> <span class="mi">11</span><span class="p">)][</span><span class="s2">&quot;current_validator_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:])</span>
-<span class="p">)</span>
-<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;validator_index&quot;</span><span class="p">])[[</span><span class="s2">&quot;balance&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">shift</span><span class="p">()</span>
-<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span>
-<span class="n">validator_df</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">&gt;</span> <span class="mi">12</span><span class="p">]</span>
-<span class="n">validator_df</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span>
 </pre></div>
 
      </div>
@@ -535,7 +466,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -545,7 +476,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+  <div></div>
 
 
 
@@ -568,723 +499,213 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
   <thead>
     <tr style="text-align: right;">
       <th></th>
-      <th>slot</th>
-      <th>validator_index</th>
-      <th>balance</th>
+      <th>current_slot</th>
+      <th>total_balance_asap</th>
+      <th>base_reward</th>
       <th>block_proposer</th>
-      <th>attester</th>
-      <th>sync_committee</th>
-      <th>previous_balance</th>
-      <th>balance_diff</th>
+      <th>block_proposer_balance</th>
+      <th>head</th>
+      <th>current_validator_state</th>
+      <th>run_time</th>
+      <th>simulation</th>
+      <th>subset</th>
+      <th>run</th>
+      <th>substep</th>
+      <th>timestep</th>
+      <th>substep_label</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <th>16</th>
-      <td>13</td>
+      <th>0</th>
+      <td>1</td>
+      <td>640000000000</td>
+      <td>2560000</td>
+      <td>19</td>
+      <td>32000000000</td>
+      <td>168f82</td>
+      <td>[{'slot': 1, 'validator_index': 0, 'balance': ...</td>
+      <td>0.000000e+00</td>
       <td>0</td>
-      <td>32009011262</td>
+      <td>0</td>
       <td>1</td>
       <td>0</td>
-      <td>1</td>
-      <td>3.200754e+10</td>
-      <td>1475787.0</td>
+      <td>0</td>
+      <td>Initial State</td>
     </tr>
     <tr>
-      <th>17</th>
-      <td>13</td>
+      <th>1</th>
       <td>1</td>
-      <td>32000626094</td>
+      <td>640000000000</td>
+      <td>2560000</td>
+      <td>19</td>
+      <td>32000000000</td>
+      <td>168f82</td>
+      <td>[{'slot': 1, 'validator_index': 0, 'balance': ...</td>
+      <td>1.626053e+09</td>
+      <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>0.0</td>
+      <td>1</td>
+      <td>1</td>
+      <td>Initial measure runtime</td>
     </tr>
     <tr>
-      <th>18</th>
-      <td>13</td>
+      <th>2</th>
+      <td>1</td>
+      <td>640000000000</td>
+      <td>2560000</td>
+      <td>19</td>
+      <td>32000000000</td>
+      <td>168f82</td>
+      <td>[{'slot': 1, 'validator_index': 0, 'balance': ...</td>
+      <td>1.626053e+09</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
       <td>2</td>
-      <td>32005657199</td>
-      <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
+      <td>Attestations</td>
     </tr>
     <tr>
-      <th>19</th>
-      <td>13</td>
+      <th>3</th>
+      <td>1</td>
+      <td>640000000000</td>
+      <td>2560000</td>
+      <td>19</td>
+      <td>32000000000</td>
+      <td>168f82</td>
+      <td>[{'slot': 1, 'validator_index': 0, 'balance': ...</td>
+      <td>1.626053e+09</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
       <td>3</td>
-      <td>32004718064</td>
+      <td>1</td>
+      <td>Measure runtime 0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1</td>
+      <td>640000000000</td>
+      <td>2560000</td>
+      <td>19</td>
+      <td>32000000000</td>
+      <td>168f82</td>
+      <td>[{'slot': 1, 'validator_index': 0, 'balance': ...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200467e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>20</th>
-      <td>13</td>
       <td>4</td>
-      <td>32000626094</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>21</th>
-      <td>13</td>
-      <td>5</td>
-      <td>32005657199</td>
-      <td>0</td>
       <td>1</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
+      <td>Sync committee</td>
     </tr>
     <tr>
-      <th>22</th>
-      <td>13</td>
-      <td>6</td>
-      <td>32002057160</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>0.0</td>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
     </tr>
     <tr>
-      <th>23</th>
-      <td>13</td>
-      <td>7</td>
-      <td>32006149130</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200610e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>24</th>
-      <td>13</td>
-      <td>8</td>
-      <td>32001118025</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200107e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>25</th>
-      <td>13</td>
-      <td>9</td>
-      <td>32006149130</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200610e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>26</th>
-      <td>13</td>
-      <td>10</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>27</th>
-      <td>13</td>
+      <th>1724</th>
+      <td>16</td>
+      <td>640132299955</td>
+      <td>2560000</td>
       <td>11</td>
-      <td>32006149130</td>
+      <td>32004319997</td>
+      <td>0aea1b</td>
+      <td>[{'slot': 16, 'validator_index': 0, 'balance':...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200610e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>28</th>
-      <td>13</td>
-      <td>12</td>
-      <td>32006149130</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200610e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>29</th>
-      <td>13</td>
-      <td>13</td>
-      <td>32006149130</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200610e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>30</th>
-      <td>13</td>
-      <td>14</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>31</th>
-      <td>13</td>
-      <td>15</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>32</th>
-      <td>14</td>
-      <td>0</td>
-      <td>32009055983</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200901e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>33</th>
-      <td>14</td>
-      <td>1</td>
-      <td>32000626094</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>34</th>
-      <td>14</td>
-      <td>2</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>35</th>
-      <td>14</td>
-      <td>3</td>
-      <td>32004762785</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200472e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>36</th>
-      <td>14</td>
-      <td>4</td>
-      <td>32002057160</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>1431066.0</td>
-    </tr>
-    <tr>
-      <th>37</th>
-      <td>14</td>
       <td>5</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
+      <td>192</td>
+      <td>Measure runtime 1</td>
     </tr>
     <tr>
-      <th>38</th>
-      <td>14</td>
-      <td>6</td>
-      <td>32002057160</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>39</th>
-      <td>14</td>
-      <td>7</td>
-      <td>32006193851</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200615e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>40</th>
-      <td>14</td>
-      <td>8</td>
-      <td>32001162746</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200112e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>41</th>
-      <td>14</td>
-      <td>9</td>
-      <td>32006193851</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200615e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>42</th>
-      <td>14</td>
-      <td>10</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>43</th>
-      <td>14</td>
+      <th>1725</th>
+      <td>16</td>
+      <td>640132299955</td>
+      <td>2560000</td>
       <td>11</td>
-      <td>32006193851</td>
+      <td>32004319997</td>
+      <td>0aea1b</td>
+      <td>[{'slot': 16, 'validator_index': 0, 'balance':...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200615e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>44</th>
-      <td>14</td>
-      <td>12</td>
-      <td>32006193851</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200615e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>45</th>
-      <td>14</td>
-      <td>13</td>
-      <td>32006193851</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200615e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>46</th>
-      <td>14</td>
-      <td>14</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>47</th>
-      <td>14</td>
-      <td>15</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>48</th>
-      <td>15</td>
-      <td>0</td>
-      <td>32009100704</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200906e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>49</th>
-      <td>15</td>
-      <td>1</td>
-      <td>32000626094</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>50</th>
-      <td>15</td>
-      <td>2</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>51</th>
-      <td>15</td>
-      <td>3</td>
-      <td>32004807506</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200476e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>52</th>
-      <td>15</td>
-      <td>4</td>
-      <td>32002057160</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>53</th>
-      <td>15</td>
-      <td>5</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>54</th>
-      <td>15</td>
       <td>6</td>
-      <td>32002057160</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>0.0</td>
+      <td>192</td>
+      <td>Block proposals</td>
     </tr>
     <tr>
-      <th>55</th>
-      <td>15</td>
-      <td>7</td>
-      <td>32006238572</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200619e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>56</th>
-      <td>15</td>
-      <td>8</td>
-      <td>32001207467</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200116e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>57</th>
-      <td>15</td>
-      <td>9</td>
-      <td>32007669638</td>
-      <td>1</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200619e+10</td>
-      <td>1475787.0</td>
-    </tr>
-    <tr>
-      <th>58</th>
-      <td>15</td>
-      <td>10</td>
-      <td>32005657199</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>59</th>
-      <td>15</td>
+      <th>1726</th>
+      <td>16</td>
+      <td>640132299955</td>
+      <td>2560000</td>
       <td>11</td>
-      <td>32006238572</td>
+      <td>32004319997</td>
+      <td>0aea1b</td>
+      <td>[{'slot': 16, 'validator_index': 0, 'balance':...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200619e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>60</th>
-      <td>15</td>
-      <td>12</td>
-      <td>32006238572</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200619e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>61</th>
-      <td>15</td>
-      <td>13</td>
-      <td>32006238572</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200619e+10</td>
-      <td>44721.0</td>
-    </tr>
-    <tr>
-      <th>62</th>
-      <td>15</td>
-      <td>14</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>63</th>
-      <td>15</td>
-      <td>15</td>
-      <td>32004226133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>0.0</td>
-    </tr>
-    <tr>
-      <th>64</th>
-      <td>16</td>
-      <td>0</td>
-      <td>32011560359</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200910e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>65</th>
-      <td>16</td>
-      <td>1</td>
-      <td>32003041028</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200063e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>66</th>
-      <td>16</td>
-      <td>2</td>
-      <td>32008072133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>67</th>
-      <td>16</td>
-      <td>3</td>
-      <td>32007267161</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200481e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>68</th>
-      <td>16</td>
-      <td>4</td>
-      <td>32005903160</td>
-      <td>1</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>3846000.0</td>
-    </tr>
-    <tr>
-      <th>69</th>
-      <td>16</td>
-      <td>5</td>
-      <td>32008072133</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>70</th>
-      <td>16</td>
-      <td>6</td>
-      <td>32004472094</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200206e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>71</th>
-      <td>16</td>
       <td>7</td>
-      <td>32008698227</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200624e+10</td>
-      <td>2459655.0</td>
+      <td>192</td>
+      <td>Measure runtime 2</td>
     </tr>
     <tr>
-      <th>72</th>
-      <td>16</td>
-      <td>8</td>
-      <td>32003667122</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200121e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>73</th>
-      <td>16</td>
-      <td>9</td>
-      <td>32010129293</td>
-      <td>0</td>
-      <td>0</td>
-      <td>1</td>
-      <td>3.200767e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>74</th>
-      <td>16</td>
-      <td>10</td>
-      <td>32008072133</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3.200566e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>75</th>
-      <td>16</td>
+      <th>1727</th>
+      <td>17</td>
+      <td>640132299955</td>
+      <td>2560000</td>
       <td>11</td>
-      <td>32008698227</td>
+      <td>32004319997</td>
+      <td>0aea1b</td>
+      <td>[{'slot': 17, 'validator_index': 0, 'balance':...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200624e+10</td>
-      <td>2459655.0</td>
+      <td>8</td>
+      <td>192</td>
+      <td>Simulation tick</td>
     </tr>
     <tr>
-      <th>76</th>
-      <td>16</td>
-      <td>12</td>
-      <td>32008698227</td>
-      <td>0</td>
-      <td>1</td>
-      <td>1</td>
-      <td>3.200624e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>77</th>
-      <td>16</td>
-      <td>13</td>
-      <td>32008698227</td>
+      <th>1728</th>
+      <td>17</td>
+      <td>640132299955</td>
+      <td>2560000</td>
+      <td>11</td>
+      <td>32004319997</td>
+      <td>0aea1b</td>
+      <td>[{'slot': 17, 'validator_index': 0, 'balance':...</td>
+      <td>1.626053e+09</td>
       <td>0</td>
       <td>0</td>
       <td>1</td>
-      <td>3.200624e+10</td>
-      <td>2459655.0</td>
-    </tr>
-    <tr>
-      <th>78</th>
-      <td>16</td>
-      <td>14</td>
-      <td>32006641067</td>
-      <td>0</td>
-      <td>1</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>2414934.0</td>
-    </tr>
-    <tr>
-      <th>79</th>
-      <td>16</td>
-      <td>15</td>
-      <td>32006641067</td>
-      <td>0</td>
-      <td>0</td>
-      <td>0</td>
-      <td>3.200423e+10</td>
-      <td>2414934.0</td>
+      <td>9</td>
+      <td>192</td>
+      <td>Measure runtime 3</td>
     </tr>
   </tbody>
 </table>
+<p>1729 rows × 14 columns</p>
 </div>
 </div>
 
@@ -1293,16 +714,157 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 
 </div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">visualize_substep_impact</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">relative</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+
+
+
+<div id="7c0e3d61-4e9f-4b38-81f0-46a4c5a731d3" class="jupyter-widgets jp-OutputArea-output ">
+<script type="text/javascript">
+var element = document.getElementById('7c0e3d61-4e9f-4b38-81f0-46a4c5a731d3');
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id": "f3788357dc2d4964b4074d2d254def02", "version_major": 2, "version_minor": 0}
+</script>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+        <script type="text/javascript">
+        window.PlotlyConfig = {MathJaxConfig: 'local'};
+        if (window.MathJax) {MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}
+        if (typeof require !== 'undefined') {
+        require.undef("plotly");
+        requirejs.config({
+            paths: {
+                'plotly': ['https://cdn.plot.ly/plotly-2.2.0.min']
+            }
+        });
+        require(['plotly'], function(Plotly) {
+            window._Plotly = Plotly;
+        });
+        }
+        </script>
+        
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div>                            <div id="157a134c-f1c8-443b-ac1c-5506dc887c16" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("157a134c-f1c8-443b-ac1c-5506dc887c16")) {                    Plotly.newPlot(                        "157a134c-f1c8-443b-ac1c-5506dc887c16",                        [{"alignmentgroup":"True","hovertemplate":"substep_label=%{x}<br>psub_time=%{y}<extra></extra>","legendgroup":"","marker":{"color":"#636efa"},"name":"","notched":false,"offsetgroup":"","orientation":"v","showlegend":false,"type":"box","x":["Block proposals","Simulation tick","Sync committee","Simulation tick","Simulation tick","Simulation tick","Simulation tick","Simulation tick","Attestations","Simulation tick","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Simulation tick","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick","Attestations","Sync committee","Block proposals","Simulation tick"],"x0":" ","xaxis":"x","y":[0.5006756782531738,0.003384113311767578,0.6486208438873291,0.003383636474609375,0.0033462047576904297,0.0032660961151123047,0.0036389827728271484,0.003399372100830078,0.0034668445587158203,0.004308938980102539,0.009482145309448242,0.5765600204467773,0.0077550411224365234,0.008651018142700195,0.007802248001098633,0.007639646530151367,0.007735252380371094,0.008363008499145508,0.007658243179321289,0.007681608200073242,0.007686138153076172,0.008404016494750977,0.007776975631713867,0.0076999664306640625,0.007659196853637695,0.00832509994506836,0.007773876190185547,0.00762176513671875,0.0077130794525146484,0.00824117660522461,0.007664203643798828,0.007593870162963867,0.007606029510498047,0.00824594497680664,0.0076351165771484375,0.007642984390258789,0.007777214050292969,0.008579730987548828,0.007602214813232422,0.007727861404418945,0.007426023483276367,0.008227109909057617,0.007555723190307617,0.007503032684326172,0.0075337886810302734,0.008280277252197266,0.007591962814331055,0.007487058639526367,0.007682085037231445,0.008273839950561523,0.007669925689697266,0.007588863372802734,0.0077860355377197266,0.010276079177856445,0.0076100826263427734,0.007657051086425781,0.020263195037841797,0.6660580635070801,0.020942211151123047,0.021417856216430664,0.020035982131958008,0.020340919494628906,0.02233719825744629,0.021701812744140625,0.02112412452697754,0.018985986709594727,0.019010066986083984,0.01995992660522461,0.018466949462890625,0.01839280128479004,0.018479108810424805,0.019215822219848633,0.018362760543823242,0.0183560848236084,0.018110990524291992,0.018522977828979492,0.018438339233398438,0.01842975616455078,0.02002406120300293,0.02057194709777832,0.024194955825805664,0.020698070526123047,0.01880192756652832,0.020262956619262695,0.019002914428710938,0.01881885528564453,0.01927924156188965,0.020550966262817383,0.02109980583190918,0.020255327224731445,0.01945972442626953,0.018779277801513672,0.01809406280517578,0.018262863159179688,0.01825714111328125,0.01895880699157715,0.018834829330444336,0.018531084060668945,0.01848316192626953,0.2277078628540039,0.021222829818725586,0.0208282470703125,0.034555912017822266,0.6348268985748291,0.04213309288024902,0.03796219825744629,0.04065108299255371,0.037275075912475586,0.036705732345581055,0.040342092514038086,0.03781557083129883,0.03757333755493164,0.03712582588195801,0.04042792320251465,0.03833174705505371,0.03749823570251465,0.03999471664428711,0.039277076721191406,0.038176774978637695,0.03776192665100098,0.0380401611328125,0.03858685493469238,0.03685617446899414,0.03585696220397949,0.035858154296875,0.03676486015319824,0.03654003143310547,0.03501129150390625,0.035065650939941406,0.034742116928100586,0.037229061126708984,0.034889936447143555,0.034110069274902344,0.034564971923828125,0.03422999382019043,0.033766984939575195,0.034111976623535156,0.03426194190979004,0.03335714340209961,0.03334307670593262,0.033516883850097656,0.03419017791748047,0.03445887565612793,0.033556222915649414,0.03388381004333496,0.03590989112854004,0.034934043884277344,0.03375887870788574,0.049349308013916016,0.05070996284484863,0.051399946212768555,0.05392265319824219,0.058054208755493164,0.05726480484008789,0.05424618721008301,0.054357051849365234,0.05443882942199707,0.05426812171936035,0.05660080909729004,0.05933713912963867,0.05705666542053223,0.05970311164855957,0.057935237884521484,0.05524015426635742,0.058004140853881836,0.05862283706665039,0.05983304977416992,0.05713200569152832,0.05605578422546387,0.05519509315490723,0.057034969329833984,0.054610252380371094,0.06806683540344238,0.07334017753601074,0.07398176193237305,0.07065486907958984,0.05191493034362793,0.05119490623474121,0.05173134803771973,0.06346297264099121,0.07848906517028809,0.06292390823364258,0.054125070571899414,0.051339149475097656,0.05169105529785156,0.04920601844787598,0.05065274238586426,0.04919004440307617,0.04995012283325195,0.04900193214416504,0.05149483680725098,0.05078887939453125,0.05200624465942383,0.06989812850952148,0.08089804649353027,0.0794677734375,0.07692885398864746,0.07883214950561523,0.08530497550964355,0.07874011993408203,0.07719802856445312,0.07343173027038574,0.07103633880615234,0.0699608325958252,0.07450985908508301,0.07565021514892578,0.07635784149169922,0.0784749984741211,0.07537722587585449,0.0701141357421875,0.06987786293029785,0.07552480697631836,0.07723784446716309,0.07697415351867676,0.07813096046447754,0.11046099662780762,0.0802910327911377,0.07478094100952148,0.07249093055725098,0.07027721405029297,0.0724799633026123,0.07114124298095703,0.07020688056945801,0.06996297836303711,0.06888127326965332,0.06922292709350586,0.07111191749572754,0.07117581367492676,0.0804738998413086,0.08263015747070312,0.0821230411529541,0.08425593376159668,0.08316993713378906,0.07734084129333496,0.07416605949401855,0.07947301864624023,0.08184289932250977,0.08352899551391602,0.10326194763183594,0.1132810115814209,0.09916901588439941,0.09951400756835938,0.09948897361755371,0.10133099555969238,0.10099291801452637,0.09852790832519531,0.10324692726135254,0.10360503196716309,0.10103487968444824,0.10156989097595215,0.10406994819641113,0.10292196273803711,0.10004711151123047,0.09830904006958008,0.11003398895263672,0.11750102043151855,0.12026691436767578,0.11635184288024902,0.1199641227722168,0.1156158447265625,0.11007118225097656,0.10174083709716797,0.10889816284179688,0.13919687271118164,0.13023900985717773,0.1116187572479248,0.12258195877075195,0.1158599853515625,0.10593914985656738,0.1041259765625,0.10638713836669922,0.0997917652130127,0.10558700561523438,0.10772204399108887,0.10323405265808105,0.10210204124450684,0.10088610649108887,0.10013484954833984,0.09921813011169434,0.09995102882385254,0.42305874824523926,0.0995938777923584,0.10299897193908691,0.13343501091003418,0.1477823257446289,0.13959479331970215,0.15384507179260254,0.15556693077087402,0.15269684791564941,0.14051222801208496,0.14161205291748047,0.15376591682434082,0.1575610637664795,0.15788698196411133,0.15476775169372559,0.15255308151245117,0.1408381462097168,0.13346409797668457,0.1307220458984375,0.1318361759185791,0.14861297607421875,0.13754892349243164,0.13892507553100586,0.14728593826293945,0.1483139991760254,0.14754199981689453,0.15167999267578125,0.1358630657196045,0.14437389373779297,0.1485130786895752,0.14888691902160645,0.14793992042541504,0.14078807830810547,0.14123797416687012,0.14727377891540527,0.13341212272644043,0.13680410385131836,0.13532495498657227,0.13357782363891602,0.1431560516357422,0.14489126205444336,0.1535327434539795,0.15723299980163574,0.15817499160766602,0.15954375267028809,0.1536240577697754,0.13733291625976562,0.1338648796081543,0.1547698974609375,0.152144193649292,0.15096497535705566,0.1493380069732666,0.1485729217529297,0.14925909042358398,0.14853405952453613,0.15372705459594727,0.14873290061950684,0.1501622200012207,0.15543079376220703,0.15442919731140137,0.16051483154296875,0.1516883373260498,0.15272760391235352,0.15076088905334473,0.15104889869689941,0.15297818183898926,0.15148591995239258,0.17088890075683594,0.16849994659423828,0.15317296981811523,0.14887094497680664,0.1493210792541504,0.15115904808044434,0.14750075340270996,0.148529052734375,0.1549088954925537,0.1492922306060791,0.15168309211730957,0.15044593811035156,0.14739203453063965,0.14829707145690918,0.14676809310913086,0.1503736972808838,0.14676785469055176,0.1488339900970459,0.14802813529968262,0.14761686325073242,0.14847683906555176,0.15067291259765625,0.14930295944213867,0.1517651081085205,0.1595158576965332,0.15996909141540527,0.18496203422546387,0.20804929733276367,0.1860647201538086,0.19019722938537598,0.19412684440612793,0.198408842086792,0.20637226104736328,0.21270322799682617,0.21237564086914062,0.24486303329467773,0.21277213096618652,0.20176196098327637,0.18400788307189941,0.18198013305664062,0.18532013893127441,0.21007990837097168,0.20698285102844238,0.1826181411743164,0.1775810718536377,0.18432402610778809,0.18524789810180664,0.19888901710510254,0.20618200302124023,0.19242215156555176,0.1893150806427002,0.19738507270812988,0.19178271293640137,0.18526697158813477,0.19756197929382324,0.1929471492767334,0.18465089797973633,0.2293381690979004,0.21919894218444824,0.22818207740783691,0.21564602851867676,0.19618988037109375,0.1938190460205078,0.20199179649353027,0.19516706466674805,0.19672775268554688,0.20511889457702637,0.1861870288848877,0.19268393516540527,0.18406462669372559,0.19245529174804688,0.228621244430542,0.22177791595458984,0.2269909381866455,0.23616504669189453,0.21870708465576172,0.21634984016418457,0.22622013092041016,0.21985197067260742,0.21900010108947754,0.2349388599395752,0.23062610626220703,0.22699499130249023,0.22220897674560547,0.22353816032409668,0.22306466102600098,0.21784281730651855,0.21549105644226074,0.22767281532287598,0.252988338470459,0.2534821033477783,0.24201393127441406,0.22431206703186035,0.21678900718688965,0.23297905921936035,0.22649693489074707,0.22580194473266602,0.2177720069885254,0.21526384353637695,0.21971511840820312,0.2183370590209961,0.2156519889831543,0.21649885177612305,0.2167670726776123,0.21550726890563965,0.21654295921325684,0.21187400817871094,0.21495509147644043,0.21431493759155273,0.21312379837036133,0.21309685707092285,0.21528410911560059,0.21715784072875977,0.5416288375854492,0.21557307243347168,0.21553707122802734,0.040766000747680664,0.6211960315704346,0.041297197341918945,0.04198002815246582,0.04033207893371582,0.04181814193725586,0.04296398162841797,0.04424881935119629,0.04873490333557129,0.04825711250305176,0.047873735427856445,0.048619985580444336,0.04415106773376465,0.0433199405670166,0.04326486587524414,0.04218912124633789,0.04206371307373047,0.04246926307678223,0.04276585578918457,0.04378008842468262,0.04350996017456055,0.04231595993041992,0.043122053146362305,0.04382205009460449,0.04384112358093262,0.04342198371887207,0.044200897216796875,0.043485164642333984,0.04183197021484375,0.04244804382324219,0.042670249938964844,0.04249382019042969,0.04253506660461426,0.04280686378479004,0.04281020164489746,0.048477888107299805,0.046460866928100586,0.04586625099182129,0.04680776596069336,0.04697608947753906,0.047507286071777344,0.04810285568237305,0.04866194725036621,0.060240983963012695,0.051818132400512695,0.047746896743774414,0.062161922454833984,0.6741600036621094,0.06928014755249023,0.0648047924041748,0.060899972915649414,0.06045889854431152,0.06016111373901367,0.06096005439758301,0.07474017143249512,0.07967686653137207,0.06309008598327637,0.06177186965942383,0.0622410774230957,0.06305718421936035,0.06531381607055664,0.0631551742553711,0.06412386894226074,0.06204509735107422,0.06093096733093262,0.06136012077331543,0.06001400947570801,0.06927704811096191,0.0818030834197998,0.06035304069519043,0.06045818328857422,0.06068778038024902,0.060233116149902344,0.060343027114868164,0.059149980545043945,0.059339046478271484,0.06318902969360352,0.0606689453125,0.06296706199645996,0.06056332588195801,0.0630347728729248,0.062371015548706055,0.06277990341186523,0.06322193145751953,0.06019306182861328,0.06148386001586914,0.06396889686584473,0.06087803840637207,0.06073808670043945,0.06516599655151367,0.06090688705444336,0.05988478660583496,0.0804901123046875,0.6760621070861816,0.07841086387634277,0.1147000789642334,0.12853384017944336,0.08433008193969727,0.08253002166748047,0.08289003372192383,0.10204696655273438,0.13377594947814941,0.10997414588928223,0.0852820873260498,0.08296990394592285,0.08354306221008301,0.0915062427520752,0.11606574058532715,0.08598899841308594,0.0825960636138916,0.08261489868164062,0.08191084861755371,0.08224081993103027,0.08061981201171875,0.0796811580657959,0.07967305183410645,0.07851696014404297,0.08108711242675781,0.08199691772460938,0.08597922325134277,0.09302091598510742,0.0835261344909668,0.08001589775085449,0.08866214752197266,0.0900568962097168,0.0905909538269043,0.08930325508117676,0.08824896812438965,0.08979916572570801,0.08753180503845215,0.09507513046264648,0.09073090553283691,0.09619307518005371,0.0867316722869873,0.08224105834960938,0.08551692962646484,0.08171796798706055,0.08049821853637695,0.1071469783782959,0.11063885688781738,0.11022520065307617,0.10664701461791992,0.10520815849304199,0.10491275787353516,0.10870504379272461,0.10749530792236328,0.10535502433776855,0.10438776016235352,0.10242199897766113,0.10334205627441406,0.10423707962036133,0.1049659252166748,0.10587811470031738,0.10551905632019043,0.1052401065826416,0.1048269271850586,0.10464191436767578,0.1034841537475586,0.1025698184967041,0.10961008071899414,0.10631704330444336,0.1058340072631836,0.10574221611022949,0.11649775505065918,0.1323690414428711,0.13402700424194336,0.12148308753967285,0.10827183723449707,0.10681605339050293,0.10763025283813477,0.10587596893310547,0.1058969497680664,0.10663700103759766,0.1070709228515625,0.10606122016906738,0.10560989379882812,0.10719680786132812,0.10376286506652832,0.1053309440612793,0.10512709617614746,0.4343249797821045,0.10788106918334961,0.10776591300964355,0.044139862060546875,0.6337518692016602,0.04373598098754883,0.042784929275512695,0.04297304153442383,0.043853044509887695,0.04313302040100098,0.042762041091918945,0.042983055114746094,0.04726290702819824,0.05011606216430664,0.05297493934631348,0.049488067626953125,0.04903674125671387,0.04797625541687012,0.054173946380615234,0.04879474639892578,0.04807400703430176,0.049471378326416016,0.04914093017578125,0.04762601852416992,0.04602694511413574,0.04579305648803711,0.044970035552978516,0.04350113868713379,0.047250986099243164,0.04675602912902832,0.04678487777709961,0.047728776931762695,0.04730391502380371,0.047765254974365234,0.04859781265258789,0.04752707481384277,0.04813194274902344,0.0444490909576416,0.04443979263305664,0.04435300827026367,0.053612709045410156,0.04917597770690918,0.04801797866821289,0.049330949783325195,0.04882407188415527,0.061213016510009766,0.08507418632507324],"y0":" ","yaxis":"y"}],                        {"boxmode":"group","legend":{"tracegroupgap":0},"margin":{"t":60},"template":{"data":{"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"substep_label"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"psub_time"}}},                        {"responsive": true}                    ).then(function(){
+                            
+var gd = document.getElementById('157a134c-f1c8-443b-ac1c-5506dc887c16');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })                };                });            </script>        </div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;display.max_rows&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">validator_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">df</span><span class="p">[((</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="nb">max</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span><span class="p">)))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">&gt;</span> <span class="mi">11</span><span class="p">)][</span><span class="s2">&quot;current_validator_state&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:])</span>
+<span class="p">)</span>
+<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;validator_index&quot;</span><span class="p">])[[</span><span class="s2">&quot;balance&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">shift</span><span class="p">()</span>
+<span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;balance&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">validator_df</span><span class="p">[</span><span class="s2">&quot;previous_balance&quot;</span><span class="p">]</span>
+<span class="n">validator_df</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">&gt;</span> <span class="mi">12</span><span class="p">]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Obtaining-rewards-per-duty">Obtaining rewards per duty<a class="anchor-link" href="#Obtaining-rewards-per-duty">&#182;</a></h2><p>We isolate validators who occupied a unique role over a slot to obtain the rewards for block proposers and sync committee members. When rewards are given out during the epoch transition, the minimum received by any validator is received by a validator who neither proposed a block for the whole epoch and was never part of the sync committee, giving us the attester reward received by one validator.</p>
+  <h2 id="Obtaining-rewards-per-duty">Obtaining rewards per duty<a class="anchor-link" href="#Obtaining-rewards-per-duty">&#182;</a></h2><p>We isolate validators who occupied a unique role over a slot to obtain the rewards for block proposers and sync committee members. When rewards are given out during the epoch transition, the minimum received by any validator is received by a validator who neither proposed a block for the whole epoch and was never part of the sync committee, giving us the attester reward received by one validator.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 6 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_proposer_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
@@ -1314,7 +876,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -1324,11 +886,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>block proposer reward = 1431066.0
+<pre>block proposer reward = 1599997.0
 </pre>
 </div>
 </div>
@@ -1338,10 +900,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 7 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[7]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">attester_reward</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">validator_df</span><span class="p">[</span><span class="n">validator_df</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span> <span class="o">==</span> <span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">])</span>
@@ -1353,7 +916,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -1363,11 +926,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>attester reward = 2414934.0
+<pre>attester reward = 2160000.0
 </pre>
 </div>
 </div>
@@ -1377,10 +940,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 8 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sync_committee_reward</span> <span class="o">=</span> <span class="n">validator_df</span><span class="p">[(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">block_proposer</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">validator_df</span><span class="o">.</span><span class="n">sync_committee</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;balance_diff&quot;</span><span class="p">]</span>
@@ -1392,7 +956,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -1402,11 +966,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>sync committee reward = 44721.0
+<pre>sync committee reward = 100000.0
 </pre>
 </div>
 </div>
@@ -1416,10 +980,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 9 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">base_reward</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;base_reward&quot;</span><span class="p">]</span>
@@ -1431,7 +996,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -1441,11 +1006,11 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>base reward = 2862144
+<pre>base reward = 2560000
 </pre>
 </div>
 </div>
@@ -1456,23 +1021,30 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 
 </div>
 <div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Make our checks.</p>
+  <p>Make our checks.</p>
 
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
-<details><summary>Input 10 (click to open)</summary>
-<div class="jp-Cell-inputWrapper">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[10]:</div>
+<div></div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">total_per_epoch</span> <span class="o">=</span> <span class="n">num_validators</span> <span class="o">*</span> <span class="n">base_reward</span>
 <span class="n">total_for_proposers</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">)</span> <span class="o">*</span> <span class="n">block_proposer_reward</span>
+<span class="n">expected_proposers</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">PROPOSER_WEIGHT</span><span class="p">)</span> <span class="o">/</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">WEIGHT_DENOMINATOR</span>
+
 <span class="n">total_for_attesters</span> <span class="o">=</span> <span class="n">num_validators</span> <span class="o">*</span> <span class="n">attester_reward</span>
+<span class="n">expected_attesters</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">TIMELY_SOURCE_WEIGHT</span> <span class="o">+</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">TIMELY_TARGET_WEIGHT</span> <span class="o">+</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">TIMELY_HEAD_WEIGHT</span><span class="p">)</span> <span class="o">/</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">WEIGHT_DENOMINATOR</span>
+
 <span class="n">total_for_sync_committee</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SYNC_COMMITTEE_SIZE</span><span class="p">)</span> <span class="o">*</span> <span class="n">sync_committee_reward</span>
+<span class="n">expected_sync</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">SYNC_REWARD_WEIGHT</span><span class="p">)</span> <span class="o">/</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">WEIGHT_DENOMINATOR</span>
+
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;expected total per epoch = </span><span class="si">{</span><span class="n">total_per_epoch</span><span class="si">}</span><span class="s2"> vs. realised total = </span><span class="si">{</span><span class="n">total_for_proposers</span> <span class="o">+</span> <span class="n">total_for_attesters</span> <span class="o">+</span> <span class="n">total_for_sync_committee</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of attester rewards = </span><span class="si">{</span><span class="n">total_for_attesters</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of sync committee rewards = </span><span class="si">{</span><span class="n">total_for_sync_committee</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of block proposer rewards = </span><span class="si">{</span><span class="n">total_for_proposers</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of attester rewards = </span><span class="si">{</span><span class="n">total_for_attesters</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected_attesters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of sync committee rewards = </span><span class="si">{</span><span class="n">total_for_sync_committee</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected_sync</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;percent of block proposer rewards = </span><span class="si">{</span><span class="n">total_for_proposers</span> <span class="o">/</span> <span class="n">total_per_epoch</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="n">expected_proposers</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -1480,7 +1052,7 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 </div>
 </div>
 
-</details>
+  </details>
 
 <div class="jp-Cell-outputWrapper">
 
@@ -1490,14 +1062,14 @@ var element = document.getElementById('10b55a1a-f845-4207-ada1-32fee381e5c0');
 <div class="jp-OutputArea-child">
 
     
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+  <div></div>
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
-<pre>expected total per epoch = 45794304 vs. realised total = 45794280.0
-percent of attester rewards = 0.84375
-percent of sync committee rewards = 0.03125
-percent of block proposer rewards = 0.12499947591735426
+<pre>expected total per epoch = 51200000 vs. realised total = 51199988.0
+percent of attester rewards = 0.84375, expected 0.84375
+percent of sync committee rewards = 0.03125, expected 0.03125
+percent of block proposer rewards = 0.124999765625, expected 0.125
 </pre>
 </div>
 </div>

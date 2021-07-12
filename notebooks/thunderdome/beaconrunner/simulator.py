@@ -5,16 +5,8 @@ import pandas as pd
 
 from typing import Dict, Callable, Any
 
-# cadCAD configuration modules
-from cadCAD.configuration.utils import config_sim
-from cadCAD.configuration import Experiment
-
-# cadCAD simulation engine modules
-from cadCAD.engine import ExecutionMode, ExecutionContext
-from cadCAD.engine import Executor
-
-from cadCAD import configs
-del configs[:]
+from radcad import Model, Simulation, Experiment
+from radcad.engine import Engine, Backend
 
 from .specs import (
     Deposit, DepositData, BeaconState,
@@ -204,41 +196,26 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
     num_slots = parameters.num_epochs * SLOTS_PER_EPOCH
     steps = int(num_slots * SECONDS_PER_SLOT * parameters.frequency)
 
-    params = {
-        "frequency": [parameters.frequency],
-        "network_update_rate": [parameters.network_update_rate],
-    }
-
     print("will simulate", parameters.num_epochs, "epochs (", num_slots, "slots ) at frequency", parameters.frequency, "moves/second")
     print("total", steps, "simulation steps")
 
     # Add our observers to the simulation
     observed_ic = get_observed_initial_conditions(initial_conditions, observers)
     observed_psubs = get_observed_psubs(psubs, observers)
-    # observed_params = add_loop_params(get_observed_params(params, observers))
 
-    sim_config = config_sim({
-        'T': range(steps),
-        'N': 1,
-        'M': {
-            'frequency': [parameters.frequency],
-            'network_update_rate': [parameters.network_update_rate],
-        }
-    })
+    params = {
+        'frequency': [parameters.frequency],
+        'network_update_rate': [parameters.network_update_rate],
+    }
 
-    from cadCAD import configs
-    del configs[:]
-
-    # Final simulation parameters and execution
-    experiment = Experiment()
-    experiment.append_configs(
-        initial_state = observed_ic,
-        partial_state_update_blocks = observed_psubs,
-        sim_configs = sim_config
+    model = Model(
+        initial_state=observed_ic,
+        state_update_blocks=observed_psubs,
+        params=params,
     )
+    simulation = Simulation(model=model, timesteps=steps, runs=1)
+    experiment = Experiment([simulation])
+    experiment.engine = Engine(deepcopy=False, backend=Backend.SINGLE_PROCESS)
+    result = experiment.run()
 
-    exec_context = ExecutionContext()
-    simulation = Executor(exec_context=exec_context, configs=configs)
-    raw_result, tensor, sessions = simulation.execute()
-
-    return pd.DataFrame(raw_result)
+    return pd.DataFrame(result)

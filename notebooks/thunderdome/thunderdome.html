@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Beacon Runner: Thunderdome</title>
+  
+  
+  
+  
+  <meta property="og:title" content="Beacon Runner: Thunderdome" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner/notebooks/thunderdome/thunderdome.html" />
+  <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
+  <meta property="og:description" content="Simulations of strategic validator behaviour" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Beacon Runner: Thunderdome">
+  <meta name="twitter:description" content="Simulations of strategic validator behaviour">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js" type="text/javascript"></script>
+  <script src="https://ethereum.github.io/rig/static/react.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/react-dom.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/component-library.js"></script>
+  <script src="https://ethereum.github.io/rig/static/header.js"></script>
+  <script src="https://ethereum.github.io/rig/static/footer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+
+
+
+
+
+<style type="text/css">
+    pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: var(--jp-cell-editor-active-background) }
+.highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
+.highlight .c { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment */
+.highlight .err { color: var(--jp-mirror-editor-error-color) } /* Error */
+.highlight .k { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword */
+.highlight .o { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator */
+.highlight .p { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation */
+.highlight .ch { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Single */
+.highlight .cs { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Special */
+.highlight .kc { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Pseudo */
+.highlight .kr { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Type */
+.highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
+.highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
+.highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
+.highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
+.highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
+.highlight .mh { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Hex */
+.highlight .mi { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer */
+.highlight .mo { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Oct */
+.highlight .sa { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Affix */
+.highlight .sb { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Backtick */
+.highlight .sc { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Char */
+.highlight .dl { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Delimiter */
+.highlight .sd { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Doc */
+.highlight .s2 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Double */
+.highlight .se { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Escape */
+.highlight .sh { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Heredoc */
+.highlight .si { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Interpol */
+.highlight .sx { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Other */
+.highlight .sr { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Regex */
+.highlight .s1 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Single */
+.highlight .ss { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Symbol */
+.highlight .il { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer.Long */
+  </style>
+
+
+
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/jupyter.css"/>
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/theme-light.css"/>
+<style type="text/css">
+a.anchor-link {
+   display: none;
+}
+.highlight  {
+    margin: 0.4em;
+}
+
+/* Input area styling */
+.jp-InputArea {
+    overflow: hidden;
+}
+
+.jp-InputArea-editor {
+    overflow: hidden;
+}
+
+@media print {
+  body {
+    margin: 0;
+  }
+}
+</style>
+<!-- Load mathjax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML-full,Safe"> </script>
+    <!-- MathJax configuration -->
+    <script type="text/x-mathjax-config">
+    init_mathjax = function() {
+        if (window.MathJax) {
+        // MathJax loaded
+            MathJax.Hub.Config({
+                TeX: {
+                    equationNumbers: {
+                    autoNumber: "AMS",
+                    useLabelIds: true
+                    }
+                },
+                tex2jax: {
+                    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                displayAlign: 'center',
+                CommonHTML: {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                },
+                "HTML-CSS": {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                }
+            });
+        
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        }
+    }
+    init_mathjax();
+    </script>
+    <!-- End of mathjax configuration -->
+  <link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/index.css"/>
+</head>
+<body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
+
+  <div id="header"></div>
+  <script>
+    ReactDOM.render(
+      e(Header, null),
+      document.querySelector("#header")
+    );
+    const hamburger = document.querySelector(".hamburger");
+    const navMenu = document.querySelector(".nav-menu");
+
+    function mobileMenu() {
+        hamburger.classList.toggle("active");
+        navMenu.classList.toggle("active");
+    }
+
+    function closeMenu() {
+        hamburger.classList.remove("active");
+        navMenu.classList.remove("active");
+    }
+
+    hamburger.addEventListener("click", mobileMenu);
+
+    const navLink = document.querySelectorAll(".nav-link");
+
+    navLink.forEach(n => n.addEventListener("click", closeMenu));
+  </script>
+  <div class="article-container">
+    <div class="document-container">
+      <div class="title-container">
+        <div class="title">
+          Beacon Runner: Thunderdome
+        </div>
+
+        <div class="sub-title">
+          Note: This post describes a result that was true in the v1 specs, but is fixed in the first major upgrade, v1.1, a.k.a. Altair. The table of rewards presented in Section 1. is also outdated. The value of the case study remains.
+        </div>
+      </div>
+
+      <div id="toc-author-block">
+        <div id="authors"></div>
+        <div id="toc"></div>
+      </div>
+      
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="TL;DR">TL;DR<a class="anchor-link" href="#TL;DR">&#182;</a></h2><ul>
+<li>We have an agent-based model of the consensus layer of Ethereum, where validator behaviours are specified with simple rules.</li>
+<li>In this notebook, we pit two behaviours against each other, to check whether the so-called "honest" behaviour is rational.</li>
+<li>We find that when the latency is bad enough, it may be rational to deviate from honest behaviour and delay the completion of validation duties.</li>
+</ul>
+<h2 id="Enter-the-Thunderdome">Enter the Thunderdome<a class="anchor-link" href="#Enter-the-Thunderdome">&#182;</a></h2><p>We really care (and want to check) that honest, protocol-following validators, reap the highest (in-protocol) rewards. We'll get a feel for what this means here by pitting different validator behaviours against each other.</p>
+<p>To introduce a bit of terminology, we are creating an <em>agent-based model</em> here. We do not explicitly code a scenario that agents follow, but program simple update and interaction rules, let them unfold for a while, and then look at the tape to infer conclusions.</p>
+<p>We'll distinguish between <em>strategies</em> and <em>behaviours</em>. A validator can do several things: attest, propose, or do nothing. We'll call <em>strategies</em> instantiations of these particular actions. For instance, a validator may employ the strategy of always attesting correctly, or flipping a coin and half the time attesting correctly, half the time not attesting at all (a pretty dumb strategy if you ask me).</p>
+<p>We use the word <em>behaviour</em> to describe the general articulation of these strategies: what to play and <em>when</em>. We explored in a <a href="../beaconrunner2050/br2050.html">previous notebook</a> the behaviour of the <a href="https://github.com/ethereum/beaconrunner/blob/master/notebooks/thunderdome/validators/ASAPValidator.py">ASAP validator</a>, who does something as early as possible according to the specs (at the beginning of the slot for a block proposal; a third of a slot, i.e., 4 seconds in <em>or</em> whenever the block for that slot is received for an attestation).</p>
+<p>In this notebook, we'll look at a different behaviour too: the <a href="https://github.com/ethereum/beaconrunner/blob/master/notebooks/thunderdome/validators/PrudentValidator.py">Prudent validator</a>. Although validators are expected to propose their block as early as possible, network delays could prevent attesters from receiving the block before a third of the slot has elapsed. ASAP validators would attest anyways, at the risk of voting on the wrong head, before receiving the block for that slot. Prudent validators hedge their bets a bit:</p>
+<ul>
+<li>If Prudent validators receive the block for their attesting slot, they publish their attestation with the head set to that block.</li>
+<li>If more than 8 seconds have elapsed into the slot, and they still haven't received a block, they attest for the head they know about.</li>
+</ul>
+<p>In other words, although prudent validators are willing to wait to see if the block will turn up, there is a limit to how long they will wait: they need to communicate their attestations in a timely manner after all! They only differ from ASAPs by how long they are willing to wait.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Rewards-under-consideration">Rewards under consideration<a class="anchor-link" href="#Rewards-under-consideration">&#182;</a></h3><p>To see how this behaviour impacts the payoff received by ASAP and prudent validators, let's dive into the rewards and penalties schedule for attesters (we won't look at rewards from block proposing here). Note first the following two things:</p>
+<ul>
+<li>Validators receive a bonus for attesting on the correct head. Attesting too early means possibly losing out on this bonus if the head specified in the attestation is incorrect.</li>
+<li>Validators receive a bonus for early inclusion of their attestation in a block. This means that they should attest relatively soon, and cannot wait forever to see if a missing block will turn up.</li>
+</ul>
+<p>You can see <a href="https://github.com/ethereum/eth2.0-specs/blob/579da6d2dc734b269dbf67aa1004b54bb9449784/specs/phase0/beacon-chain.md#get_attestation_deltas">here in the specs</a> how rewards and penalties are computed at the end of each epoch. Let's unpack the computations below.</p>
+<h3 id="Attester-rewards-in-PoS-Ethereum">Attester rewards in PoS Ethereum<a class="anchor-link" href="#Attester-rewards-in-PoS-Ethereum">&#182;</a></h3><p>A <em>base reward</em> $\texttt{BR}$ is computed that depends only on the validator's effective balance (maximum 32 ETH) and the current total active balance (the total effective balance of <em>all</em> active validators). Letting $i$ denote our validator,</p>
+$$ \texttt{BR[i]} = \texttt{balance[i]} \cdot \frac{\texttt{BRF}}{\sqrt{\texttt{total\_balance}} \cdot \texttt{BRPE}} $$<p>$\texttt{BRPE}$ stands for <em>base rewards per epoch</em>. A validator can be rewarded for</p>
+<ol>
+<li>Attesting to the correct source, yielding $\texttt{BR[i]}$.</li>
+<li>Attesting to the correct target, yielding $\texttt{BR[i]}$.</li>
+<li>Attesting to the correct head, yielding $\texttt{BR[i]}$.</li>
+<li>Early inclusion, yielding at most $\texttt{BR[i]} \Big( 1 - \frac{1}{\texttt{PRQ}} \Big)$ with $\texttt{PRQ}$ the <em>proposer reward quotient</em>.</li>
+</ol>
+<p>These four items are why $\texttt{BRPE}$ is set to 4 (at least in phase 0). $\texttt{BRF}$, the <em>base reward factor</em>, is a scaling constant currently set at $2^6 = 64$.</p>
+<p>For each of the first three items, we scale the base reward by the fraction of the active stake who correctly attested for the item. If $\rho_s$ is the fraction of the stake who attested correctly for the source, then a validator $i$ with a correct source receives $\rho_s \cdot \texttt{BR[i]}$. However, failure to attest or attesting for an incorrect source, target or head incurs the full $\texttt{BR[i]}$ as penalty.</p>
+<p>Now, let's dig deeper into item 4, early inclusion. Attestations may be included at least one slot after the slot they are attesting for, called the <em>committee slot</em>. If they are included in the block immediately following their committee slot, they receive the full base reward, minus the <em>proposer reward</em>, endowed to the block producer (see table below). If they are included in the block two slots after their committee slot, they receive half. Three blocks later, a third, etc. Attestations must be included at the latest one full epoch after their committee slot. This means the smallest inclusion reward is 1/32 of the base reward (assuming <code>SLOTS_PER_EPOCH</code> is equal to 32).</p>
+<p>These are the attester rewards in the best of times. Note however, that the penalties are not symmetric. Whenever a validator fails to attest for one of the first three items, or attests incorrectly, the penalty is equal to the whole base reward. No discount!</p>
+<p>What about the worst of times? From the perspective of rewards and penalities, this happens when the chain is not finalising epochs anymore (a situation we explored in a <a href="../beaconrunner2049/br2049.html">different notebook</a>). In this case, we want to "leak" the stake of inactive validators, who are preventing finalisation. A <a href="https://github.com/ethereum/eth2.0-specs/pull/1830">recent modification</a> ensures that validators who perform optimally (i.e., attest correctly to all three items <em>and</em> included in the block immediately following their committee slot) do not suffer any losses. Meanwhile, validators who are not attesting for the correct target (a key ingredient for finalisation) suffer increasingly painful consequences, as the <em>finality delay</em> (the gap between the current epoch and the last finalised epoch) grows.</p>
+<p>This is all synthesised in the following table. "IL" items refer to "Inactivity Leak": the rewards and penalties during these worst of times.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p><img src="img/rewardsv1.png" alt=""></p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's explore a few examples. We note at the end of the formula whether the result is positive (the validator makes a profit) or negative (the validator makes a loss).</p>
+<ul>
+<li>A validator who gets everything correct, and whose attestations are included 2 slots after their committee slot, while the chain is finalising, reaps:</li>
+</ul>
+$$ \Big( \rho_s + \rho_t + \rho_h + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) \Big) \texttt{BR[i]} &gt; 0 $$<ul>
+<li>A validator who gets everything correct, and whose attestations are included 2 slots after their committee slot, while the chain is <em>not finalising</em>, reaps:</li>
+</ul>
+$$ \Big(3 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \frac{1}{\texttt{PRQ}} \Big) \texttt{BR[i]} = \Big(-\frac{1}{2} + \frac{1}{2\texttt{PRQ}} \Big) \texttt{BR[i]} &lt; 0 $$<ul>
+<li>A validator who gets everything correct <em>except the target</em>, and whose attestations are included 2 slots after their committee slot, while the chain is <em>not finalising</em> with finality delay $f$, reaps:</li>
+</ul>
+$$ \Big(1 - 1 + 1 + \frac{1}{2} (1 - \frac{1}{\texttt{PRQ}}) - \texttt{BRPE} + \frac{1}{\texttt{PRQ}} \Big) \texttt{BR[i]} - \texttt{balance[i]} \cdot \frac{f}{\texttt{IPQ}} = \Big(-\frac{5}{2} + \frac{1}{2\texttt{PRQ}} \Big) \texttt{BR[i]} - \texttt{balance[i]} \cdot \frac{f}{\texttt{IPQ}} &lt; 0 $$
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Some-hypotheses-before-simulating">Some hypotheses before simulating<a class="anchor-link" href="#Some-hypotheses-before-simulating">&#182;</a></h3><p>In a network with perfect (or close to perfect) latency and honest proposers, we don't expect ASAP and prudent validator earnings to differ significantly. But under real-world conditions, the behaviour of prudent validators appears more <em>robust</em> than that of ASAP validators. By robust, we mean that prudent validators perform better under slight variations of the parameters, e.g., the average network latency.</p>
+<p>When network delays are high or block proposers are lazy (meaning they don't propagate their blocks in time, perhaps because they are being prudent in order to collect more incoming attestations), prudent validators stand to reap the "correct head" reward more often. On the other hand, when network delays are really, really high, perhaps proposing ASAP is a better strategy, as it ensures at least <em>something</em> goes through, even if it's possibly incorrect.</p>
+<h2 id="%22Two-nodes-enter!-One-node-leaves!%22"><em>"Two nodes enter! One node leaves!"</em><a class="anchor-link" href="#%22Two-nodes-enter!-One-node-leaves!%22">&#182;</a></h2><p>Let's pit <code>PrudentValidator</code>s against <code>ASAP</code>s and observe the result. In this simulation, we let <code>SLOTS_PER_EPOCH</code> equal 4 and simulate a small number of validators. Runs are now random: sometimes the network updates, sometimes it doesn't. We'll set it up later so that on average messages propagate one step further on the network every 4 seconds.</p>
+<p>We first load all the necessary packages. The remainder will look a lot like what we did in the <a href="../beaconrunner2050/br2050.html">previous notebook</a>, check it out for more background!</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">from</span> <span class="nn">eth2spec.config.config_util</span> <span class="kn">import</span> <span class="n">prepare_config</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">plotly.io</span> <span class="k">as</span> <span class="nn">pio</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="s2">&quot;plotly&quot;</span>
+<span class="n">pio</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;plotly_mimetype+notebook_connected&quot;</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">pardir</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/notebooks/thunderdome&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">beaconrunner</span> <span class="k">as</span> <span class="nn">br</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">prepare_config</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;fast.yaml&quot;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">br</span><span class="o">.</span><span class="n">reload_package</span><span class="p">(</span><span class="n">br</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We then create our <em>observers</em>, to allow us to record interesting metrics at each simulation step.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">current_slot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">average_balance_prudent</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">prudent_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_behaviour</span> <span class="o">==</span> <span class="s2">&quot;prudent&quot;</span><span class="p">]</span>
+    <span class="n">prudent_balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">prudent_indices</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">eth2</span><span class="o">.</span><span class="n">gwei_to_eth</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">prudent_balances</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prudent_indices</span><span class="p">))))</span>
+
+<span class="k">def</span> <span class="nf">average_balance_asap</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">asap_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">validator_behaviour</span> <span class="o">==</span> <span class="s2">&quot;asap&quot;</span><span class="p">]</span>
+    <span class="n">asap_balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">asap_indices</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;average_balance_asap&quot;</span><span class="p">,</span> <span class="n">br</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">eth2</span><span class="o">.</span><span class="n">gwei_to_eth</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">asap_balances</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">asap_indices</span><span class="p">))))</span>
+
+<span class="n">observers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;current_slot&quot;</span><span class="p">:</span> <span class="n">current_slot</span><span class="p">,</span>
+    <span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">:</span> <span class="n">average_balance_prudent</span><span class="p">,</span>
+    <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">:</span> <span class="n">average_balance_asap</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>And define a "main" function -- in this case, <code>simulate_thunderdome</code> -- to run the simulation. The function returns a <code>pandas</code> dataframe containing the metrics recorded throughout the run.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
+<span class="kn">from</span> <span class="nn">beaconrunner.validators.ASAPValidator</span> <span class="kn">import</span> <span class="n">ASAPValidator</span>
+<span class="kn">from</span> <span class="nn">beaconrunner.validators.PrudentValidator</span> <span class="kn">import</span> <span class="n">PrudentValidator</span>
+
+<span class="k">def</span> <span class="nf">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">):</span>
+    <span class="c1"># Half our validators are prudent, the others are ASAPs</span>
+    <span class="n">num_prudent</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># We sample the position on the p2p network of prudent validators randomly</span>
+    <span class="n">prudentset</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">sample</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">),</span> <span class="n">num_prudent</span><span class="p">))</span>
+
+    <span class="n">validators</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Initiate validators</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">prudentset</span><span class="p">:</span>
+            <span class="n">new_validator</span> <span class="o">=</span> <span class="n">PrudentValidator</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_validator</span> <span class="o">=</span> <span class="n">ASAPValidator</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">validators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_validator</span><span class="p">)</span>
+    
+    <span class="c1"># Create a genesis state</span>
+    <span class="n">genesis_state</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">get_genesis_state</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+    
+    <span class="c1"># Validators load the state</span>
+    <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span>
+
+    <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span><span class="o">=</span><span class="n">network_sets</span><span class="p">)</span>
+
+    <span class="n">parameters</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">SimulationParameters</span><span class="p">({</span>
+        <span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+        <span class="s2">&quot;num_run&quot;</span><span class="p">:</span> <span class="n">num_run</span><span class="p">,</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;network_update_rate&quot;</span><span class="p">:</span> <span class="n">network_update_rate</span><span class="p">,</span>
+    <span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">br</span><span class="o">.</span><span class="n">simulator</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">observers</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
+
+<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">12</span>
+
+<span class="c1"># Create the network peers</span>
+<span class="n">set_a</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">))))</span>
+<span class="n">set_b</span> <span class="o">=</span> <span class="n">br</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_validators</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span> <span class="n">num_validators</span><span class="p">)))</span>
+<span class="n">network_sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">,</span> <span class="n">set_b</span><span class="p">])</span>
+
+<span class="n">num_runs</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="n">network_update_rate</span> <span class="o">=</span> <span class="mf">0.25</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">num_run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_runs</span><span class="p">)])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>To do a fair amount of runs (40) simulating a good number of epochs (20), we set a low number of validators (12). Since we are more interested in comparing individual rewards between ASAP and prudent validators rather than macro-properties or even scalability of the chain, this is not a bad thing to do (and it speeds things up quite a bit).</p>
+<p>Note here that we keep the same network topology across all our runs. However, validator types are placed randomly over the network with each new run, with always 50% of them Prudent and the other 50% ASAPs.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Since we have 4 slots per epoch, and 20 epochs, let's read the average balances at slot 81, after the 20th epoch rewards and penalties were computed.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">==</span> <span class="mi">81</span><span class="p">][[</span><span class="s1">&#39;average_balance_prudent&#39;</span><span class="p">,</span> <span class="s1">&#39;average_balance_asap&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>average_balance_prudent</th>
+      <th>average_balance_asap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>40.000000</td>
+      <td>40.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>32.057473</td>
+      <td>32.054798</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>0.001144</td>
+      <td>0.001902</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>32.054446</td>
+      <td>32.049789</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>32.056928</td>
+      <td>32.053351</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>32.057639</td>
+      <td>32.054686</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>32.058213</td>
+      <td>32.056150</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>32.059678</td>
+      <td>32.058109</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>It doesn't seem like a big difference, yet on average prudent validators have higher earnings than ASAPs! Taking into account the <a href="https://en.wikipedia.org/wiki/Standard_error">standard error</a>, the difference between the means appears to be <a href="https://www.investopedia.com/terms/s/statistically_significant.asp">statistically significant</a>, meaning that even though the difference is small, it's not likely to be due to chance alone (while we won't go down this path here, there are statistical tests we could use to test this more precisely if we wished). To see if our intuition is correct, let's chart the ensemble mean over the 40 runs too:</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;current_slot&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+        <script type="text/javascript">
+        window.PlotlyConfig = {MathJaxConfig: 'local'};
+        if (window.MathJax) {MathJax.Hub.Config({SVG: {font: "STIX-Web"}});}
+        if (typeof require !== 'undefined') {
+        require.undef("plotly");
+        requirejs.config({
+            paths: {
+                'plotly': ['https://cdn.plot.ly/plotly-2.2.0.min']
+            }
+        });
+        require(['plotly'], function(Plotly) {
+            window._Plotly = Plotly;
+        });
+        }
+        </script>
+        
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div>                            <div id="af801630-c3be-43d8-a84e-0b1d25a7fc8b" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("af801630-c3be-43d8-a84e-0b1d25a7fc8b")) {                    Plotly.newPlot(                        "af801630-c3be-43d8-a84e-0b1d25a7fc8b",                        [{"hovertemplate":"variable=average_balance_prudent<br>current_slot=%{x}<br>value=%{y}<extra></extra>","legendgroup":"average_balance_prudent","line":{"color":"#636efa","dash":"solid"},"mode":"lines","name":"average_balance_prudent","orientation":"v","showlegend":true,"type":"scatter","x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81],"xaxis":"x","y":[32.0,32.0,32.0,32.0,32.0,32.0,32.0,32.000987819388676,32.00106714975418,32.00106714975418,32.00106714975418,32.00387820094669,32.00413505291646,32.00413505291646,32.00413505291646,32.00696766054862,32.007204318837246,32.007204318837246,32.007204318837246,32.00929061853773,32.01020014158961,32.01030191493748,32.01032902580831,32.01336104409091,32.0135483338085,32.0135483338085,32.0135483338085,32.0162648157561,32.01661975137624,32.01663567363318,32.01663567363318,32.019421614173,32.01979796274395,32.01981194850855,32.01981194850855,32.02199488543715,32.022833698658374,32.022886521816794,32.022886521816794,32.02566996410237,32.02598662812946,32.02598662812946,32.02598662812946,32.028357293077875,32.02913464464155,32.02913464464155,32.02913464464155,32.03125947693699,32.03226620105893,32.032295069112756,32.032295069112756,32.03475386237281,32.0354417946876,32.0354417946876,32.0354417946876,32.03763608358715,32.03846677229294,32.03851464664604,32.03851464664604,32.041442755855286,32.04164609533703,32.04164609533703,32.04164609533703,32.043950750200786,32.04477417306664,32.04477417306664,32.04477417306664,32.04764435894338,32.04797986590098,32.04798430070376,32.04798430070376,32.050847063376025,32.05110817084548,32.05111266541632,32.05111266541632,32.05398972461954,32.05431088720032,32.05431088720032,32.05431088720032,32.05724121189562,32.05747260260417],"yaxis":"y"},{"hovertemplate":"variable=average_balance_asap<br>current_slot=%{x}<br>value=%{y}<extra></extra>","legendgroup":"average_balance_asap","line":{"color":"#EF553B","dash":"solid"},"mode":"lines","name":"average_balance_asap","orientation":"v","showlegend":true,"type":"scatter","x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81],"xaxis":"x","y":[32.0,32.0,32.0,32.0,32.0,32.0,32.0,32.001277199216155,32.00137067672116,32.00137067672116,32.00137067672116,32.00401505827324,32.00424084272116,32.00424084272116,32.00424084272116,32.00690761339934,32.0071326686624,32.0071326686624,32.0071326686624,32.00910982355287,32.009982537281694,32.01008732293383,32.010115294463,32.013078894164146,32.013261661425,32.013261661425,32.013261661425,32.015838634352185,32.01618389747762,32.01620010662067,32.01620010662067,32.0188539494797,32.01920554007313,32.019219095508554,32.019219095508554,32.021297712980264,32.02207886181492,32.02212540931277,32.02212540931277,32.02471174793848,32.02500324954991,32.02500324954991,32.02500324954991,32.02713024743766,32.02784379442485,32.02784379442485,32.02784379442485,32.02986781757212,32.03081863045648,32.03084277283738,32.03084277283738,32.03317149638646,32.03379577752518,32.03379577752518,32.03379577752518,32.035877351518344,32.03666425804488,32.036712777891765,32.036712777891765,32.03951294734796,32.03970974818763,32.03970974818763,32.03970974818763,32.041826645278086,32.04258543684608,32.04258543684608,32.04258543684608,32.045350793291604,32.04566352457455,32.04566818649608,32.04566818649608,32.04834732524916,32.04858916344117,32.048593291433534,32.048593291433534,32.051361034627,32.051666286912216,32.051666286912216,32.051666286912216,32.054570062561005,32.05479823773333],"yaxis":"y"}],                        {"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60},"template":{"data":{"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"current_slot"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"value"}}},                        {"responsive": true}                    ).then(function(){
+                            
+var gd = document.getElementById('af801630-c3be-43d8-a84e-0b1d25a7fc8b');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })                };                });            </script>        </div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We see that, as we extend time, prudent validators definitely overtake ASAP validators. Even though 20 epochs is not that long -- at 12 seconds per slot, and 32 slots per epoch, 20 epochs is approximately 2 hours -- over time these differences accumulate.</p>
+<h2 id="Try-it-out!">Try it out!<a class="anchor-link" href="#Try-it-out!">&#182;</a></h2><p>We specified the ASAP and prudent validators as two very simple Python classes. For instance, this is how the prudent validator's attestation behaviour is implemented:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">specs</span><span class="o">.</span><span class="n">Attestation</span><span class="p">]:</span> 
+    <span class="c1"># Not the moment to attest</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_attest_slot</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">time_in_slot</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">)</span> <span class="o">%</span> <span class="n">SECONDS_PER_SLOT</span>
+
+    <span class="c1"># Too early in the slot / didn&#39;t receive block</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">received_block</span> <span class="ow">and</span> <span class="n">time_in_slot</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Already attested for this slot</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">last_slot_attested</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># honest attest</span>
+    <span class="k">return</span> <span class="n">honest_attest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">known_items</span><span class="p">)</span>
+</pre></div>
+<p>You too can specify your own agent behaviours following the simple validator API documented <a href="https://barnabemonnot.com/beaconrunner/build/html/validatorlib.html">here</a>, and have them attest and produce block in a simulated beacon chain environment following the steps outlined above.</p>
+<p>Validators consume information contained in their <code>data</code> attribute. If you find yourself requiring more inputs from the simulation to program your validators, try opening an issue in the <a href="https://github.com/barnabemonnot/beaconrunner">Beacon Runner repo</a>.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="(Bonus)-Better-network">(Bonus) Better network<a class="anchor-link" href="#(Bonus)-Better-network">&#182;</a></h2><p>When latency decreases (faster propagation), are the effects as strong? We set the network update rate to 0.9, meaning that objects propagate on the network almost definitely each step.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
+
+<span class="n">network_update_rate</span> <span class="o">=</span> <span class="mf">0.9</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">simulate_once</span><span class="p">(</span><span class="n">network_sets</span><span class="p">,</span> <span class="n">num_run</span><span class="p">,</span> <span class="n">num_validators</span><span class="p">,</span> <span class="n">network_update_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">num_run</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_runs</span><span class="p">)])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+INFO:root:Starting simulation 0 / run 0 / subset 0
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;current_slot&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;average_balance_prudent&quot;</span><span class="p">,</span> <span class="s2">&quot;average_balance_asap&quot;</span><span class="p">])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<div>                            <div id="87650d66-a3c7-4ac3-a3dc-62468d5adcdd" class="plotly-graph-div" style="height:525px; width:100%;"></div>            <script type="text/javascript">                require(["plotly"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("87650d66-a3c7-4ac3-a3dc-62468d5adcdd")) {                    Plotly.newPlot(                        "87650d66-a3c7-4ac3-a3dc-62468d5adcdd",                        [{"hovertemplate":"variable=average_balance_prudent<br>current_slot=%{x}<br>value=%{y}<extra></extra>","legendgroup":"average_balance_prudent","line":{"color":"#636efa","dash":"solid"},"mode":"lines","name":"average_balance_prudent","orientation":"v","showlegend":true,"type":"scatter","x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81],"xaxis":"x","y":[32.0,32.0,32.0,32.0,32.0,32.0,32.0,32.00121845901161,32.001290133071116,32.001290133071116,32.001290133071116,32.00440049567685,32.00458345818308,32.00458345818308,32.00458345818308,32.007702355651176,32.00788582020812,32.00788582020812,32.00788582020812,32.01088253950978,32.0111778543338,32.0111778543338,32.0111778543338,32.01428455914169,32.01446730648334,32.01446730648334,32.01446730648334,32.017578888355686,32.01776192258347,32.01776192258347,32.01776192258347,32.02088203931744,32.02106557559592,32.02106557559592,32.02106557559592,32.02407004075556,32.02438084749621,32.02438084749621,32.02438084749621,32.02750706055968,32.02769095544576,32.02769095544576,32.02769095544576,32.03068627607702,32.03100364537074,32.03100364537074,32.03100364537074,32.03401574893961,32.034312462333375,32.034312462333375,32.034312462333375,32.03733177394901,32.03762127929589,32.03762127929589,32.03762127929589,32.04061444828112,32.040931387245685,32.040931387245685,32.040931387245685,32.04405638104351,32.04424020420809,32.04424020420809,32.04424020420809,32.04723315799601,32.04755805808357,32.04755805808357,32.04755805808357,32.05067329775336,32.050856547145706,32.050856547145706,32.050856547145706,32.05397910241173,32.054162782133254,32.054162782133254,32.054162782133254,32.057285337399115,32.057469017120646,32.057469017120646,32.057469017120646,32.060587914589156,32.060771379145834],"yaxis":"y"},{"hovertemplate":"variable=average_balance_asap<br>current_slot=%{x}<br>value=%{y}<extra></extra>","legendgroup":"average_balance_asap","line":{"color":"#EF553B","dash":"solid"},"mode":"lines","name":"average_balance_asap","orientation":"v","showlegend":true,"type":"scatter","x":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81],"xaxis":"x","y":[32.0,32.0,32.0,32.0,32.0,32.0,32.0,32.001415168238715,32.00149841342923,32.00149841342923,32.00149841342923,32.004630722823016,32.004814976316766,32.004814976316766,32.004814976316766,32.007938750848396,32.008122502291435,32.008122502291435,32.008122502291435,32.01114353519017,32.01144035616619,32.01144035616619,32.01144035616619,32.01457632335816,32.01476079201652,32.01476079201652,32.01476079201652,32.01789188214449,32.01807606391672,32.01807606391672,32.01807606391672,32.021198619182464,32.02138229890398,32.02138229890398,32.02138229890398,32.024368044745216,32.024676915004655,32.024676915004655,32.024676915004655,32.027793373940256,32.027976695054114,32.027976695054114,32.027976695054114,32.0309578148228,32.03127389312907,32.03127389312907,32.03127389312907,32.03427954176039,32.03457496416664,32.03457496416664,32.03457496416664,32.03758717535116,32.0378760352043,32.0378760352043,32.0378760352043,32.04085930661901,32.041175815254434,32.041175815254434,32.041175815254434,32.044293493455946,32.044476886291335,32.044476886291335,32.044476886291335,32.04744660230436,32.04776892041691,32.04776892041691,32.04776892041691,32.050896352746655,32.051080319354284,32.051080319354284,32.051080319354284,32.05420043608804,32.054383972366495,32.054383972366495,32.054383972366495,32.05750408910064,32.05768762537912,32.05768762537912,32.05768762537912,32.06081139991117,32.06099515135418],"yaxis":"y"}],                        {"legend":{"title":{"text":"variable"},"tracegroupgap":0},"margin":{"t":60},"template":{"data":{"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"current_slot"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"value"}}},                        {"responsive": true}                    ).then(function(){
+                            
+var gd = document.getElementById('87650d66-a3c7-4ac3-a3dc-62468d5adcdd');
+var x = new MutationObserver(function (mutations, observer) {{
+        var display = window.getComputedStyle(gd).display;
+        if (!display || display === 'none') {{
+            console.log([gd, 'removed!']);
+            Plotly.purge(gd);
+            observer.disconnect();
+        }}
+}});
+
+// Listen for the removal of the full notebook cells
+var notebookContainer = gd.closest('#notebook-container');
+if (notebookContainer) {{
+    x.observe(notebookContainer, {childList: true});
+}}
+
+// Listen for the clearing of the current output cell
+var outputEl = gd.closest('.output');
+if (outputEl) {{
+    x.observe(outputEl, {childList: true});
+}}
+
+                        })                };                });            </script>        </div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>It is not as advantageous to be Prudent now, their payoffs are broadly similar to ASAPs. But it doesn't hurt either.</p>
+
+</div>
+
+
+
+
+    </div>
+  </div>
+  <script>
+  // References + footnotes
+
+// Authors
+let authorData = ["barnabe"];
+  </script>
+
+  
+</body>
+
+  <div id="footer"></div>
+    <script>
+    ReactDOM.render(
+      e(
+        Footer, {
+          acknowledgements: 'Many thanks to Sacha for his edits and suggestions; Danny, Protolambda and Terence for comments.',
+        }
+      ),
+      document.querySelector("#footer")
+    )
+
+    const copyToClipboard = str => {
+      const el = document.createElement("textarea") // Create a <textarea> element
+      el.value = str // Set its value to the string that you want copied
+      el.setAttribute("readonly", "") // Make it readonly to be tamper-proof
+      el.style.position = "absolute"
+      el.style.left = "-9999px" // Move outside the screen to make it invisible
+      document.body.appendChild(el) // Append the <textarea> element to the HTML document
+      const selected =
+        document.getSelection().rangeCount > 0 // Check if there is any content selected previously
+          ? document.getSelection().getRangeAt(0) // Store selection if found
+          : false // Mark as false to know no selection existed before
+      el.select() // Select the <textarea> content
+      document.execCommand("copy") // Copy - only works as a result of a user action (e.g. click events)
+      document.body.removeChild(el) // Remove the <textarea> element
+      if (selected) {
+        // If a selection existed before copying
+        document.getSelection().removeAllRanges() // Unselect everything on the HTML document
+        document.getSelection().addRange(selected) // Restore the original selection
+      }
+    }
+    function handleCopyClick(evt) {
+      // get the children of the parent element
+      const { children } = evt.target.parentElement
+      // grab the first element (we append the copy button on afterwards, so the first will be the code element)
+      // destructure the innerText from the code block
+      const { innerText } = Array.from(children)[0]
+      // copy all of the code to the clipboard
+      copyToClipboard(innerText)
+    }
+
+    const highlights = document.querySelectorAll(".jp-InputArea-editor .highlight")
+
+    highlights.forEach(div => {
+      // create the copy button
+      const copy = document.createElement("button")
+      copy.innerHTML = "Copy"
+      // add the event listener to each click
+      copy.addEventListener("click", handleCopyClick)
+      // append the copy button to each code block
+      div.append(copy)
+    })
+    </script>
+  </div>
+  <script src="https://ethereum.github.io/rig/static/authorFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/sectionFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/referencesFormatting.js"></script>
+
+
+
+
+
+
+
+</html>

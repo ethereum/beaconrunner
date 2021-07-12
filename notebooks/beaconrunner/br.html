@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Beacon Runner</title>
+  
+  
+  
+  
+  <meta property="og:title" content="Beacon Runner" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner/notebooks/beaconrunner/br.html" />
+  <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
+  <meta property="og:description" content="Wrapping PoS Ethereum specs in a simulation environment" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Beacon Runner">
+  <meta name="twitter:description" content="Wrapping PoS Ethereum specs in a simulation environment">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js" type="text/javascript"></script>
+  <script src="https://ethereum.github.io/rig/static/react.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/react-dom.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/component-library.js"></script>
+  <script src="https://ethereum.github.io/rig/static/header.js"></script>
+  <script src="https://ethereum.github.io/rig/static/footer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+
+
+
+
+
+<style type="text/css">
+    pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: var(--jp-cell-editor-active-background) }
+.highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
+.highlight .c { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment */
+.highlight .err { color: var(--jp-mirror-editor-error-color) } /* Error */
+.highlight .k { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword */
+.highlight .o { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator */
+.highlight .p { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation */
+.highlight .ch { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Single */
+.highlight .cs { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Special */
+.highlight .kc { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Pseudo */
+.highlight .kr { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Type */
+.highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
+.highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
+.highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
+.highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
+.highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
+.highlight .mh { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Hex */
+.highlight .mi { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer */
+.highlight .mo { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Oct */
+.highlight .sa { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Affix */
+.highlight .sb { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Backtick */
+.highlight .sc { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Char */
+.highlight .dl { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Delimiter */
+.highlight .sd { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Doc */
+.highlight .s2 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Double */
+.highlight .se { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Escape */
+.highlight .sh { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Heredoc */
+.highlight .si { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Interpol */
+.highlight .sx { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Other */
+.highlight .sr { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Regex */
+.highlight .s1 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Single */
+.highlight .ss { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Symbol */
+.highlight .il { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer.Long */
+  </style>
+
+
+
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/jupyter.css"/>
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/theme-light.css"/>
+<style type="text/css">
+a.anchor-link {
+   display: none;
+}
+.highlight  {
+    margin: 0.4em;
+}
+
+/* Input area styling */
+.jp-InputArea {
+    overflow: hidden;
+}
+
+.jp-InputArea-editor {
+    overflow: hidden;
+}
+
+@media print {
+  body {
+    margin: 0;
+  }
+}
+</style>
+<!-- Load mathjax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML-full,Safe"> </script>
+    <!-- MathJax configuration -->
+    <script type="text/x-mathjax-config">
+    init_mathjax = function() {
+        if (window.MathJax) {
+        // MathJax loaded
+            MathJax.Hub.Config({
+                TeX: {
+                    equationNumbers: {
+                    autoNumber: "AMS",
+                    useLabelIds: true
+                    }
+                },
+                tex2jax: {
+                    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                displayAlign: 'center',
+                CommonHTML: {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                },
+                "HTML-CSS": {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                }
+            });
+        
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        }
+    }
+    init_mathjax();
+    </script>
+    <!-- End of mathjax configuration -->
+  <link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/index.css"/>
+</head>
+<body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
+
+  <div id="header"></div>
+  <script>
+    ReactDOM.render(
+      e(Header, null),
+      document.querySelector("#header")
+    );
+    const hamburger = document.querySelector(".hamburger");
+    const navMenu = document.querySelector(".nav-menu");
+
+    function mobileMenu() {
+        hamburger.classList.toggle("active");
+        navMenu.classList.toggle("active");
+    }
+
+    function closeMenu() {
+        hamburger.classList.remove("active");
+        navMenu.classList.remove("active");
+    }
+
+    hamburger.addEventListener("click", mobileMenu);
+
+    const navLink = document.querySelectorAll(".nav-link");
+
+    navLink.forEach(n => n.addEventListener("click", closeMenu));
+  </script>
+  <div class="article-container">
+    <div class="document-container">
+      <div class="title-container">
+        <div class="title">
+          Beacon Runner: A BeaconState cadCAD wrap
+        </div>
+
+        <div class="sub-title">
+          
+        </div>
+      </div>
+
+      <div id="toc-author-block">
+        <div id="authors"></div>
+        <div id="toc"></div>
+      </div>
+      
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <blockquote><p>Note: All code used in this notebook is contained in the <a href="https://github.com/barnabemonnot/beaconrunner/tree/master/notebooks/beaconrunner">notebooks/beaconrunner</a> folder of the Beacon runner repo, and does not use current PoS specs. Most of the content here remains applicable.</p>
+</blockquote>
+<p>Our goal in this document is to get the specs running in a <a href="https://github.com/BlockScience/cadCAD">cadCAD</a> simulation environment, using the <code>BeaconState</code> object defined in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">Ethereum consensus layer specs</a>. cadCAD is a cool new framework to simulate complex dynamics, in particular in stochastic environments. This makes it ideal to simulate the models of token economics and more generally any system that is controlled by state updates and user interactions. You can learn more about cadCAD by following <a href="https://twitter.com/markusbkoch">Markus Koch</a>'s <a href="https://github.com/BlockScience/cadCAD/tree/master/tutorials">tutorials</a>, especially <a href="https://github.com/BlockScience/cadCAD/blob/master/tutorials/robot-marbles-part-5/robot-marbles-part-5.ipynb">part 5</a> on using class objects as a state variable. More specifically, we'll use <a href="https://github.com/cadCAD-edu/radCAD">radCAD</a>, a cadCAD implementation which introduces neat features and performance improvements.</p>
+<p>In this notebook, we present the dynamics of block proposers on the beacon chain first, to get a feel of how the chain evolves over time. Then, we introduce validation proper, where validators cast votes to finalise the chain. If we think in game-theoretic terms, here we really just want to understand the basic space of decision-making of the several players in the protocol, as well as the information available to them when such decisions are made. We simplify the presentation by assuming there is no latency and all validators can always access the latest state. A more detailed model will relax these assumptions.</p>
+<p>We'll introduce basic building blocks of Proof-of-Stake (PoS) in Ethereum as we go along, but there is a ton of resources out there to learn more (<a href="https://hackmd.io/@benjaminion/By6gV_dXS">Ben Edgington's portal</a> is an excellent place to start for instance).</p>
+<p>Let's start! We first need to load a bunch of stuff.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">constants</span> <span class="kn">import</span> <span class="n">SECONDS_PER_DAY</span><span class="p">,</span> <span class="n">GENESIS_EPOCH</span><span class="p">,</span> <span class="n">SLOTS_PER_HISTORICAL_ROOT</span><span class="p">,</span> <span class="n">MAX_VALIDATORS_PER_COMMITTEE</span>
+<span class="kn">from</span> <span class="nn">specs</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BeaconState</span><span class="p">,</span> <span class="n">BeaconBlock</span><span class="p">,</span> <span class="n">BeaconBlockHeader</span><span class="p">,</span> <span class="n">BeaconBlockBody</span><span class="p">,</span> <span class="n">SignedBeaconBlock</span><span class="p">,</span>
+    <span class="n">Deposit</span><span class="p">,</span> <span class="n">DepositData</span><span class="p">,</span> <span class="n">Checkpoint</span><span class="p">,</span> <span class="n">AttestationData</span><span class="p">,</span> <span class="n">Attestation</span><span class="p">,</span>
+    <span class="n">initialize_beacon_state_from_eth1</span><span class="p">,</span> <span class="n">get_block_root</span><span class="p">,</span> <span class="n">get_block_root_at_slot</span><span class="p">,</span>
+    <span class="n">process_slots</span><span class="p">,</span> <span class="n">process_block</span><span class="p">,</span>
+    <span class="n">get_current_epoch</span><span class="p">,</span> <span class="n">get_previous_epoch</span><span class="p">,</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">,</span>
+    <span class="n">get_total_active_balance</span><span class="p">,</span> <span class="n">get_committee_assignment</span><span class="p">,</span> <span class="n">get_active_validator_indices</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">ssz_impl</span> <span class="kn">import</span> <span class="p">(</span><span class="n">hash_tree_root</span><span class="p">,</span> <span class="n">signing_root</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">ssz_typing</span> <span class="kn">import</span> <span class="n">Bitlist</span>
+<span class="kn">from</span> <span class="nn">hash_function</span> <span class="kn">import</span> <span class="nb">hash</span>
+<span class="kn">from</span> <span class="nn">eth2</span> <span class="kn">import</span> <span class="n">eth_to_gwei</span>
+
+<span class="kn">import</span> <span class="nn">secrets</span>
+
+<span class="kn">from</span> <span class="nn">radcad</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">Simulation</span><span class="p">,</span> <span class="n">Experiment</span>
+<span class="kn">from</span> <span class="nn">radcad.engine</span> <span class="kn">import</span> <span class="n">Engine</span><span class="p">,</span> <span class="n">Backend</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Genesis-state-and-genesis-block">Genesis state and genesis block<a class="anchor-link" href="#Genesis-state-and-genesis-block">&#182;</a></h2><p>Dynamical systems are usually rather compact to define. We need at the very least two things:</p>
+<ul>
+<li>Some initial state.</li>
+<li>The dynamics, or how state evolves over time.</li>
+</ul>
+<p>In this part we'll focus on the initial state. We create a dummy genesis state with a bunch of validators (10 of them) who deposit 32 ETH in the contract, the minimum required to start validating.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Create an array of `Deposit` objects</span>
+<span class="k">def</span> <span class="nf">get_initial_deposits</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">Deposit</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">DepositData</span><span class="p">(</span>
+        <span class="n">amount</span><span class="o">=</span><span class="n">eth_to_gwei</span><span class="p">(</span><span class="mi">32</span><span class="p">),</span>
+        <span class="n">pubkey</span><span class="o">=</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_bytes</span><span class="p">(</span><span class="mi">48</span><span class="p">))</span>
+    <span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">hey</span> <span class="o">=</span> <span class="s2">&quot;hello&quot;</span>
+<span class="n">block_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">hey</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+<span class="n">eth1_timestamp</span> <span class="o">=</span> <span class="mi">1578009600</span>
+
+<span class="n">genesis_state</span> <span class="o">=</span> <span class="n">initialize_beacon_state_from_eth1</span><span class="p">(</span><span class="n">block_hash</span><span class="p">,</span> <span class="n">eth1_timestamp</span><span class="p">,</span> <span class="n">get_initial_deposits</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>0
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's check the current <em>active</em> balance! (returned here in ETH). We have 10 validators so this should tally up to 320.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">get_total_active_balance</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000000000</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>320.0</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>In the specs, the first block is not proposed by a validator but obtained from the genesis state. We define a function to process the genesis block from the genesis state.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">process_genesis_block</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">):</span>
+    <span class="n">genesis_block</span> <span class="o">=</span> <span class="n">SignedBeaconBlock</span><span class="p">(</span>
+        <span class="n">message</span><span class="o">=</span><span class="n">BeaconBlock</span><span class="p">(</span>
+            <span class="n">state_root</span><span class="o">=</span><span class="n">hash_tree_root</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">),</span>
+            <span class="n">parent_root</span><span class="o">=</span><span class="n">hash_tree_root</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">latest_block_header</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">process_block</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">,</span> <span class="n">genesis_block</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+    
+<span class="n">process_genesis_block</span><span class="p">(</span><span class="n">genesis_state</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Finally, set the genesis state as the initial condition to our cadCAD execution. We'll also record the latest block root, more on this later.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">genesis_state</span><span class="p">,</span>
+    <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="State-evolution-with-block-proposals">State evolution with block proposals<a class="anchor-link" href="#State-evolution-with-block-proposals">&#182;</a></h2><p>We move on to defining the dynamics. Simple dynamical systems follow some rules to update their state, e.g., the orbits of planets are given by laws derived from attraction. More complex systems are <em>controlled</em>: decisions made by agents in the system influence the state evolution.</p>
+<p>In our setting, these agents are validators. State evolution is governed by the rules of the virtual machine, while validators get to decide on blocks and transactions. The resulting state is a combination of agent decisions and state updates. How validators make these decisions is embodied by <em>policy functions</em>: given a state, make a decision.</p>
+<p>In eth2, time is subdivided in <em>epochs</em>, themselves divided in <em>slots</em>. At most one block should be proposed at each slot, while accounting for votes and doling out rewards and penalties is done at the end of each epoch. Note that to speed things up in this document, we set the <code>SLOTS_PER_EPOCH</code> constant to 4 in the <code>constants.py</code> file. This is 8x faster than the value in the current specs. (ICO when???)</p>
+<p>We now define policies and state updates to run the simulation. Let's take a moment to understand how state transitions work in the <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/phase0/beacon-chain.md">PoS specs</a>, with notation we introduce here to clarify the different states.</p>
+<ol>
+<li>Given a slot $s$, define $\omega^-[s]$ as the <em>pre-state</em> of $s$. Once a block $b_s$ is proposed for slot $s$, the specs-defined <code>process_block</code> obtains state $\omega^+[s]$ from $\omega^-[s]$ and $b_s$.</li>
+<li>To go from $\omega^+[s]$ to $\omega^-[s+1]$, the specs-defined <code>process_slots</code> caches the block root of $b_s$ and the state root. If $s+1$ is the first slot of a new epoch, <code>process_epoch</code> is called which checks for justification and finalisation of checkpoints as well as attribute rewards and punishments to active validators and process exits and new entries.</li>
+<li>From $\omega^-[s+1]$, we repeat the first two steps.</li>
+</ol>
+<p>Let's talk about the start of this process. The <code>genesis_state</code> object defined above really is $\omega^-[0]$. When we call <code>process_genesis_block</code>, we move to $\omega^+[0]$. This is the <strong>initial condition</strong> of our simulations.</p>
+<p>In our simulation, we move the state ahead given a block $b_s$ for slot $s$ from $\omega^+[s-1]$ to $\omega^+[s]$. We will break it down in three steps:</p>
+<ol>
+<li><strong>(State update)</strong> Process slot <code>s-1</code>, moving from $\omega^+[s-1]$ to $\omega^-[s]$. If a block was proposed during slot $s-1$, the root of the block is cached in the <code>block_roots</code> attribute of $\omega^-[s]$, at index <code>s-1</code>. Otherwise, the root of the most recent block is cached. Additionally, if <code>s-1</code> is the last slot of an epoch, <code>process_epoch</code> is called.</li>
+<li><strong>(Policy)</strong> A policy for block proposers to propose a new block $b_s$ at slot $s$.</li>
+<li><strong>(State update)</strong> Process block $b_s$, taking $\omega^-[s]$ to $\omega^+[s]$.</li>
+</ol>
+<p>Let's do this step by step:</p>
+<h3 id="Process-slot">Process slot<a class="anchor-link" href="#Process-slot">&#182;</a></h3><p>The arguments of this function are given to us by the cadCAD execution environment. <code>s</code> holds the current state of the simulation, where <code>s['beacon_state']</code> returns the current beacon state. Remember that we had set the initial state $\omega^+[0]$ as the <code>beacon_state</code> attribute of the <code>initial_conditions</code> dictionary.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">state_update_slot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="c1"># Given state w+[s], transition to w-[s+1]</span>
+    
+    <span class="c1"># state is w+[s]</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    
+    <span class="n">process_slots</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Propose-a-block">Propose a block<a class="anchor-link" href="#Propose-a-block">&#182;</a></h3><p>We have more latitude to define what happens at this step. We can for instance make the difference between an honest validator who returns a block when they are the block proposer, given the most current state, and an offline validator who just does not produce anything. Given a state, each will return a different item.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">honest_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># State is w-[s], block will be proposed for slot s</span>
+    
+    <span class="c1"># Later on, we populate the `BeaconBlockBody`. For now, our validators merely produce empty blocks.</span>
+    <span class="n">beacon_block_body</span> <span class="o">=</span> <span class="n">BeaconBlockBody</span><span class="p">()</span>
+    
+    <span class="n">beacon_block</span> <span class="o">=</span> <span class="n">BeaconBlock</span><span class="p">(</span>
+        <span class="n">slot</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">,</span>
+        <span class="c1"># the parent root is accessed from the state</span>
+        <span class="n">parent_root</span><span class="o">=</span><span class="n">get_block_root_at_slot</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+        <span class="n">body</span><span class="o">=</span><span class="n">beacon_block_body</span>
+    <span class="p">)</span>
+    <span class="n">signed_beacon_block</span> <span class="o">=</span> <span class="n">SignedBeaconBlock</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">beacon_block</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;honest propose a block for slot&quot;</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">signed_beacon_block</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">offline_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;offline propose nothing for slot&quot;</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We now define the policy function of step 2, again using the arguments that the cadCAD environment gives us. In this simulation, we'll assume that an honest and an offline validator propose in turn, so we only have blocks on even slots.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">propose_block</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="c1"># Given state w-[s], propose a block for slot s</span>
+    
+    <span class="c1"># `state` is w-[s]</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">honest_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="n">offline_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="p">({</span> <span class="s1">&#39;block&#39;</span><span class="p">:</span> <span class="n">block</span> <span class="p">})</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Process-the-block">Process the block<a class="anchor-link" href="#Process-the-block">&#182;</a></h3><p>Given a block, we can run the state transition by calling <code>process_block</code>. We get the block proposed in step 2 as the <code>block</code> attribute of <code>_input</code>.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">state_update_block</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="n">_input</span><span class="p">[</span><span class="s1">&#39;block&#39;</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="n">block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># No change to the state</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    
+    <span class="c1"># Otherwise we process the block first and return the state</span>
+    <span class="n">process_block</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Record-latest-block-root">Record latest block root<a class="anchor-link" href="#Record-latest-block-root">&#182;</a></h3><p>We also add a step to record the latest block root in our state object.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">record_latest_block_root</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;latest_block_root&#39;</span><span class="p">,</span> <span class="n">hash_tree_root</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">latest_block_header</span><span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Putting-it-all-together">Putting it all together<a class="anchor-link" href="#Putting-it-all-together">&#182;</a></h2><p>The previous three steps are recorded in the <code>block_proposal_psub</code> array. <code>psub</code> stands for <em>partial state updates blocks</em>, the building blocks of a cadCAD simulation.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_proposal_psub</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">state_update_slot</span><span class="p">,</span> <span class="c1"># step 1</span>
+            <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="n">record_latest_block_root</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">propose_block</span> <span class="c1"># step 2</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">state_update_block</span><span class="p">,</span> <span class="c1"># step 3</span>
+            <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="n">record_latest_block_root</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Execution">Execution<a class="anchor-link" href="#Execution">&#182;</a></h3><p>We set up a radCAD experiment simulating 15 slots</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span>
+    <span class="n">initial_state</span><span class="o">=</span><span class="n">initial_conditions</span><span class="p">,</span>
+    <span class="n">state_update_blocks</span><span class="o">=</span><span class="n">block_proposal_psub</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+<span class="p">)</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">timesteps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">runs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">experiment</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">([</span><span class="n">simulation</span><span class="p">])</span>
+<span class="n">experiment</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="n">deepcopy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">Backend</span><span class="o">.</span><span class="n">SINGLE_PROCESS</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>offline propose nothing for slot 1
+honest propose a block for slot 2
+offline propose nothing for slot 3
+START PROCESS EPOCH 0
+not processing justification and finalization
+END PROCESS EPOCH
+honest propose a block for slot 4
+offline propose nothing for slot 5
+honest propose a block for slot 6
+offline propose nothing for slot 7
+START PROCESS EPOCH 1
+not processing justification and finalization
+END PROCESS EPOCH
+honest propose a block for slot 8
+offline propose nothing for slot 9
+honest propose a block for slot 10
+offline propose nothing for slot 11
+START PROCESS EPOCH 2
+old_previous 0
+old_current 0
+justification bits Bitvector[boolean, 4](0, 0, 0, 0)
+finalised checkpoint 0
+END PROCESS EPOCH
+honest propose a block for slot 12
+offline propose nothing for slot 13
+honest propose a block for slot 14
+offline propose nothing for slot 15
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>The historical sequence of states is held in the <code>df</code> dataframe, let's take a look.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>latest_block_root</th>
+      <th>timestep</th>
+      <th>substep</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>None</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>9ce1e0</td>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>9ce1e0</td>
+      <td>1</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>9ce1e0</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>54b82e</td>
+      <td>2</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>5827e1</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>5827e1</td>
+      <td>3</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>5827e1</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>02da23</td>
+      <td>4</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>7ec27d</td>
+      <td>5</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>7ec27d</td>
+      <td>5</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>7ec27d</td>
+      <td>6</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>6e7e30</td>
+      <td>6</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>76646e</td>
+      <td>7</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>76646e</td>
+      <td>7</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>76646e</td>
+      <td>8</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>143021</td>
+      <td>8</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>4f58bc</td>
+      <td>9</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>4f58bc</td>
+      <td>9</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>4f58bc</td>
+      <td>10</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>8a7130</td>
+      <td>10</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>9b5654</td>
+      <td>11</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>9b5654</td>
+      <td>11</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>9b5654</td>
+      <td>12</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>e023d2</td>
+      <td>12</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>a624cd</td>
+      <td>13</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>26</th>
+      <td>a624cd</td>
+      <td>13</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>27</th>
+      <td>a624cd</td>
+      <td>14</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>19ac31</td>
+      <td>14</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>29</th>
+      <td>bf01be</td>
+      <td>15</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>30</th>
+      <td>bf01be</td>
+      <td>15</td>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We give the last few bytes of the latest block header root in the state. Timesteps virtually represent slots of the beacon chain. For each timestep, we have two substeps since we have two partial state update blocks.</p>
+<ul>
+<li>At timestep <code>s</code> and substep 1, the state is $\omega^-[s]$.</li>
+<li>At timestep <code>s</code> and substep 2, the state is $\omega^+[s]$.</li>
+</ul>
+<p><em>Note:</em> The block root does not change during odd timesteps. This is because we have offline validators who do not propose blocks then.</p>
+<p><em>Also note:</em> The latest block root in substep 2 of even timesteps is unique. Before we process the slot, the <code>state_root</code> attribute of the latest block header saved in the state is not set. When we process the slot, this state root is set and this changes the <code>latest_block_root</code> hash.</p>
+<p>Finally, we can check whether checkpoints (i.e., blocks between epochs) are being finalised, which is why we care about the beacon chain in the first place.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">30</span><span class="p">][</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">finalized_checkpoint</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>{&#39;epoch&#39;: 0, &#39;root&#39;: b&#39;\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Nope! The last finalised checkpoint is still the genesis block (<code>epoch == 0</code>). The blocks are empty since we restricted validators to their block proposer roles. Time to have them vote on the canonical chain and start finalising!</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Once-more-with-attestations">Once more with attestations<a class="anchor-link" href="#Once-more-with-attestations">&#182;</a></h2><p>We create new policies to make validators attest on the blocks of the beacon chain. Attestations are "votes" in the FFG gadget, committing to checkpoints and beacon chain blocks. <em>All</em> active validators are called on to produce one attestation during each epoch. Each validator is assigned to <em>one</em> slot to make the attestation at, preferably right after they have received the block proposed for that slot.</p>
+<p>So attestations should contain:</p>
+<ul>
+<li>A <em>source</em> attribute: the last justified checkpoint the validator knows about.</li>
+<li>A <em>target</em> attribute: the last non-justified checkpoint the validator knows about.</li>
+<li>A <em>head</em> attribute: what the validator sees as the current tip of the beacon chain, preferably the block proposed for their assigned slot.</li>
+<li>A <em>slot</em> attribute: the slot assigned to the validator.</li>
+</ul>
+<p>Admittedly, we are cheating a bit here. Since we assume our validators are honest and there is no latency, they are instantly up-to-date with the latest chain state, so we can use the <code>BeaconState</code> attributes to form validator attestations. In reality, validators should run the fork choice to decide which is the head of the beacon chain.</p>
+<p>We start at some state $\omega^+[s-1]$, i.e., the post-state of slot $s-1$.</p>
+<ol>
+<li><strong>(State update)</strong> We move the state from $\omega^+[s-1]$ to $\omega^-[s]$.</li>
+<li><strong>(Policy)</strong> Validators at state $\omega^-[s]$ make attestations for slot $s-1$. These attestations contain a source and target for their FFG vote and the head of the chain according to their view of the beacon chain (in this case, $b_{s-1}$).</li>
+<li><strong>(State update)</strong> These attestations are kept in the simulation state space as <code>current_slot_attestations</code>.</li>
+<li><strong>(Policy)</strong> Someone proposes a block $b_s$ at slot $s$. Note that $b_s$ contains attestations made by validators in committees at slot $s-1$, which are kept in <code>current_slot_attestations</code>.</li>
+<li><strong>(State update)</strong> The state transitions to $\omega^+[s]$ when the block is processed.</li>
+</ol>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Process-slot">Process slot<a class="anchor-link" href="#Process-slot">&#182;</a></h3><p>We already have a state transition function for that, our previously defined <code>state_update_slot</code>.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Attestation-policy">Attestation policy<a class="anchor-link" href="#Attestation-policy">&#182;</a></h3><p>Let's focus on the new step here, step #2. We first need to create honest attestations from validators.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">honest_attest</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">):</span>
+    <span class="c1"># Given state w-[s], validators in committees of slot `s-1` form their attestations</span>
+    <span class="c1"># In several places here, we need to check whether `s` is the first slot of a new epoch.</span>
+    
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">get_current_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">previous_epoch</span> <span class="o">=</span> <span class="n">get_previous_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    
+    <span class="c1"># Since everyone is honest, we can assume that validators attesting during some epoch e</span>
+    <span class="c1"># choose the first block of e as their target, and the first block of e-1 as their source</span>
+    <span class="c1"># checkpoint.</span>
+    <span class="c1">#</span>
+    <span class="c1"># So let&#39;s assume the validator here is making an attestation at slot s in epoch e:</span>
+    <span class="c1">#</span>
+    <span class="c1"># - If the `state` variable is at epoch e, then the first block of epoch e-1 is</span>
+    <span class="c1"># a checkpoint held in `state.current_justified_checkpoint`.</span>
+    <span class="c1"># The target checkpoint root is obtained by calling</span>
+    <span class="c1"># `get_block_root(state, current_epoch)` (since current_epoch = e).</span>
+    <span class="c1">#</span>
+    <span class="c1"># - If the `state` variable is at epoch e+1, then the first block of epoch e-1</span>
+    <span class="c1"># is a checkpoint held in `state.previous_justified_checkpoint`,</span>
+    <span class="c1"># since in the meantime the first block of e was justified.</span>
+    <span class="c1"># This is the case when s is the last slot of epoch e.</span>
+    <span class="c1"># The target checkpoint root is obtained by calling</span>
+    <span class="c1"># `get_block_root(state, previous_epoch)` (since current_epoch = e+1).</span>
+    <span class="c1">#</span>
+    <span class="c1"># ... still here?</span>
+    
+    <span class="c1"># If `state` is already at the start of a new epoch e+1</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span> <span class="o">==</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">current_epoch</span><span class="p">):</span>
+        <span class="c1"># `committee_slot` is equal to s-1</span>
+        <span class="p">(</span><span class="n">committee</span><span class="p">,</span> <span class="n">committee_index</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_committee_assignment</span><span class="p">(</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">previous_epoch</span><span class="p">,</span> <span class="n">validator_index</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Since we are at state w-[s], we can get the block root of the block at slot s-1.</span>
+        <span class="n">block_root</span> <span class="o">=</span> <span class="n">get_block_root_at_slot</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span>
+        
+        <span class="n">src_checkpoint</span> <span class="o">=</span> <span class="n">Checkpoint</span><span class="p">(</span>
+            <span class="n">epoch</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">previous_justified_checkpoint</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">previous_justified_checkpoint</span><span class="o">.</span><span class="n">root</span>
+        <span class="p">)</span>
+        
+        <span class="n">tgt_checkpoint</span> <span class="o">=</span> <span class="n">Checkpoint</span><span class="p">(</span>
+            <span class="n">epoch</span><span class="o">=</span><span class="n">previous_epoch</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">get_block_root</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">previous_epoch</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="c1"># Otherwise, if `state` is at epoch e</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># `committee_slot` is equal to s-1</span>
+        <span class="p">(</span><span class="n">committee</span><span class="p">,</span> <span class="n">committee_index</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_committee_assignment</span><span class="p">(</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">,</span> <span class="n">validator_index</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Since we are at state w-[s], we can get the block root of the block at slot s-1.</span>
+        <span class="n">block_root</span> <span class="o">=</span> <span class="n">get_block_root_at_slot</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span>
+        
+        <span class="n">src_checkpoint</span> <span class="o">=</span> <span class="n">Checkpoint</span><span class="p">(</span>
+            <span class="n">epoch</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">current_justified_checkpoint</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">current_justified_checkpoint</span><span class="o">.</span><span class="n">root</span>
+        <span class="p">)</span>
+        
+        <span class="n">tgt_checkpoint</span> <span class="o">=</span> <span class="n">Checkpoint</span><span class="p">(</span>
+            <span class="n">epoch</span><span class="o">=</span><span class="n">current_epoch</span><span class="p">,</span>
+            <span class="n">root</span><span class="o">=</span><span class="n">get_block_root</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+    <span class="n">att_data</span> <span class="o">=</span> <span class="n">AttestationData</span><span class="p">(</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">committee_index</span><span class="p">,</span>
+        <span class="n">slot</span> <span class="o">=</span> <span class="n">committee_slot</span><span class="p">,</span>
+        <span class="n">beacon_block_root</span> <span class="o">=</span> <span class="n">block_root</span><span class="p">,</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">src_checkpoint</span><span class="p">,</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">tgt_checkpoint</span>
+    <span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;attestation for source&quot;</span><span class="p">,</span> <span class="n">src_checkpoint</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span> <span class="s2">&quot;and target&quot;</span><span class="p">,</span> <span class="n">tgt_checkpoint</span><span class="o">.</span><span class="n">epoch</span><span class="p">)</span>
+    
+    <span class="c1"># For now we disregard aggregation of attestations.</span>
+    <span class="c1"># Some validators are chosen as aggregators: they take a bunch of identical attestations</span>
+    <span class="c1"># and join them together in one object,</span>
+    <span class="c1"># with `aggregation_bits` identifying which validators are part of the aggregation.</span>
+    <span class="n">committee_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">committee</span><span class="p">)</span>
+    <span class="n">index_in_committee</span> <span class="o">=</span> <span class="n">committee</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">validator_index</span><span class="p">)</span>
+    <span class="n">aggregation_bits</span> <span class="o">=</span> <span class="n">Bitlist</span><span class="p">[</span><span class="n">MAX_VALIDATORS_PER_COMMITTEE</span><span class="p">](</span><span class="o">*</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">committee_size</span><span class="p">))</span>
+    <span class="n">aggregation_bits</span><span class="p">[</span><span class="n">index_in_committee</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># set the aggregation bits of the validator to True</span>
+    <span class="n">attestation</span> <span class="o">=</span> <span class="n">Attestation</span><span class="p">(</span>
+        <span class="n">aggregation_bits</span><span class="o">=</span><span class="n">aggregation_bits</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">att_data</span>
+    <span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">attestation</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We can use this <code>honest_attest</code> function in our policy function for step #2, <code>honest_attest_policy</code>.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">honest_attest_policy</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="c1"># Collect all attestations formed for slot s-1.</span>
+    
+    <span class="c1"># `state` is at w-[s]</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">get_current_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">previous_epoch</span> <span class="o">=</span> <span class="n">get_previous_epoch</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    
+    <span class="c1"># `validator_epoch` is the epoch of slot s-1.</span>
+    <span class="c1"># - If the state is already ahead by one epoch, this is given by `previous_epoch`</span>
+    <span class="c1"># - Otherwise it is `current_epoch`</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span> <span class="o">==</span> <span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">current_epoch</span><span class="p">):</span>
+        <span class="n">validator_epoch</span> <span class="o">=</span> <span class="n">previous_epoch</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">validator_epoch</span> <span class="o">=</span> <span class="n">current_epoch</span>
+        
+    <span class="n">active_validator_indices</span> <span class="o">=</span> <span class="n">get_active_validator_indices</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">validator_epoch</span><span class="p">)</span>
+    <span class="n">slot_attestations</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">validator_index</span> <span class="ow">in</span> <span class="n">active_validator_indices</span><span class="p">:</span>
+        <span class="c1"># For each validator, check which committee they belong to</span>
+        <span class="p">(</span><span class="n">committee</span><span class="p">,</span> <span class="n">committee_index</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span> <span class="o">=</span> <span class="n">get_committee_assignment</span><span class="p">(</span>
+            <span class="n">state</span><span class="p">,</span> <span class="n">validator_epoch</span><span class="p">,</span> <span class="n">validator_index</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># If they belong to a committee attesting for slot s-1, we ask them to form an attestation</span>
+        <span class="c1"># using `honest_attest` defined above.</span>
+        <span class="k">if</span> <span class="n">committee_slot</span><span class="o">+</span><span class="mi">1</span> <span class="o">==</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;validator attesting&quot;</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">,</span> <span class="s2">&quot;for slot&quot;</span><span class="p">,</span> <span class="n">committee_slot</span><span class="p">)</span>
+            <span class="n">attestation</span> <span class="o">=</span> <span class="n">honest_attest</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">validator_index</span><span class="p">)</span>
+            <span class="n">slot_attestations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attestation</span><span class="p">)</span>
+            
+    <span class="k">return</span><span class="p">({</span> <span class="s1">&#39;slot_attestations&#39;</span><span class="p">:</span> <span class="n">slot_attestations</span> <span class="p">})</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Keep-attestations-in-state">Keep attestations in state<a class="anchor-link" href="#Keep-attestations-in-state">&#182;</a></h3><p>Step #3 is easily handled with one single state update.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">update_current_slot_attestations</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="c1"># Take the output of `honest_attest_policy` and set it as `current_slot_attestations`</span>
+    <span class="k">return</span><span class="p">(</span><span class="s1">&#39;current_slot_attestations&#39;</span><span class="p">,</span> <span class="n">_input</span><span class="p">[</span><span class="s1">&#39;slot_attestations&#39;</span><span class="p">])</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Block-proposal-policy">Block proposal policy<a class="anchor-link" href="#Block-proposal-policy">&#182;</a></h3><p>We must update our block proposal policy to include latest attestations. This time, we do not include offline block proposers.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">honest_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">attestations</span><span class="p">):</span>
+    <span class="c1"># State is w-[s], block will be proposed for slot s</span>
+    
+    <span class="n">beacon_block_body</span> <span class="o">=</span> <span class="n">BeaconBlockBody</span><span class="p">(</span>
+        <span class="n">attestations</span><span class="o">=</span><span class="n">attestations</span>
+    <span class="p">)</span>
+    
+    <span class="n">beacon_block</span> <span class="o">=</span> <span class="n">BeaconBlock</span><span class="p">(</span>
+        <span class="n">slot</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">,</span>
+        <span class="c1"># the parent root is accessed from the state</span>
+        <span class="n">parent_root</span><span class="o">=</span><span class="n">get_block_root_at_slot</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+        <span class="n">body</span><span class="o">=</span><span class="n">beacon_block_body</span>
+    <span class="p">)</span>
+    <span class="n">signed_beacon_block</span> <span class="o">=</span> <span class="n">SignedBeaconBlock</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">beacon_block</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;honest propose a block for slot&quot;</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">signed_beacon_block</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">propose_block</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="c1"># Given state w-[s], propose a block for slot s</span>
+    
+    <span class="c1"># `state` is w-[s]</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span>
+    <span class="c1"># We get the output of our honest attestation policy</span>
+    <span class="n">attestations</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;current_slot_attestations&#39;</span><span class="p">]</span>
+    
+    <span class="n">block</span> <span class="o">=</span> <span class="n">honest_block_proposal</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">attestations</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="p">({</span> <span class="s1">&#39;block&#39;</span><span class="p">:</span> <span class="n">block</span> <span class="p">})</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Process-block">Process block<a class="anchor-link" href="#Process-block">&#182;</a></h3><p>We also have a state update for this step, <code>state_update_block</code>, which we do not need to change.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Total-balance">Total balance<a class="anchor-link" href="#Total-balance">&#182;</a></h3><p>We'll record the total balance received by validators during the simulation.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">total_balance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;beacon_state&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">&quot;total_balance&quot;</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">balances</span><span class="p">)</span> <span class="o">-</span> <span class="n">eth_to_gwei</span><span class="p">(</span><span class="mi">32</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">validators</span><span class="p">))</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Simulation-time!">Simulation time!<a class="anchor-link" href="#Simulation-time!">&#182;</a></h3><p>Our PSUB array becomes:</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">block_attestation_psub</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="c1"># Step 1</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:{</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">state_update_slot</span><span class="p">,</span>
+            <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="n">record_latest_block_root</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="c1"># Step 2+3</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">honest_attest_policy</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;current_slot_attestations&#39;</span><span class="p">:</span> <span class="n">update_current_slot_attestations</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="c1"># Step 4+5</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;policies&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">propose_block</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">state_update_block</span><span class="p">,</span>
+            <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="n">record_latest_block_root</span><span class="p">,</span>
+            <span class="s1">&#39;total_balance&#39;</span><span class="p">:</span> <span class="n">total_balance</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We need to change our initial conditions to add the <code>current_slot_attestations</code> state attribute, which starts out empty. To keep the overhead low, we set a low number of validators and run the simulation for 20 slots.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%%capture</span>
+
+<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">genesis_state</span> <span class="o">=</span> <span class="n">initialize_beacon_state_from_eth1</span><span class="p">(</span>
+    <span class="n">block_hash</span><span class="p">,</span> <span class="n">eth1_timestamp</span><span class="p">,</span> <span class="n">get_initial_deposits</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">initial_conditions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;beacon_state&#39;</span><span class="p">:</span> <span class="n">genesis_state</span><span class="p">,</span>
+    <span class="s1">&#39;current_slot_attestations&#39;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s1">&#39;latest_block_root&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s1">&#39;total_balance&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Here we leave the execution trace visible. Use a <code>%%capture</code> directive at the top of the following cell to hide it.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span>
+    <span class="n">initial_state</span><span class="o">=</span><span class="n">initial_conditions</span><span class="p">,</span>
+    <span class="n">state_update_blocks</span><span class="o">=</span><span class="n">block_attestation_psub</span><span class="p">,</span>
+    <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
+<span class="p">)</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">timesteps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">runs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">experiment</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">([</span><span class="n">simulation</span><span class="p">])</span>
+<span class="n">experiment</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">Engine</span><span class="p">(</span><span class="n">deepcopy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">Backend</span><span class="o">.</span><span class="n">SINGLE_PROCESS</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>validator attesting 3 for slot 0
+attestation for source 0 and target 0
+validator attesting 5 for slot 0
+attestation for source 0 and target 0
+honest propose a block for slot 1
+validator attesting 0 for slot 1
+attestation for source 0 and target 0
+validator attesting 6 for slot 1
+attestation for source 0 and target 0
+validator attesting 7 for slot 1
+attestation for source 0 and target 0
+honest propose a block for slot 2
+validator attesting 4 for slot 2
+attestation for source 0 and target 0
+validator attesting 8 for slot 2
+attestation for source 0 and target 0
+honest propose a block for slot 3
+START PROCESS EPOCH 0
+not processing justification and finalization
+END PROCESS EPOCH
+validator attesting 1 for slot 3
+attestation for source 0 and target 0
+validator attesting 2 for slot 3
+attestation for source 0 and target 0
+validator attesting 9 for slot 3
+attestation for source 0 and target 0
+honest propose a block for slot 4
+validator attesting 0 for slot 4
+attestation for source 0 and target 1
+validator attesting 3 for slot 4
+attestation for source 0 and target 1
+honest propose a block for slot 5
+validator attesting 2 for slot 5
+attestation for source 0 and target 1
+validator attesting 4 for slot 5
+attestation for source 0 and target 1
+validator attesting 8 for slot 5
+attestation for source 0 and target 1
+honest propose a block for slot 6
+validator attesting 6 for slot 6
+attestation for source 0 and target 1
+validator attesting 7 for slot 6
+attestation for source 0 and target 1
+honest propose a block for slot 7
+START PROCESS EPOCH 1
+not processing justification and finalization
+END PROCESS EPOCH
+validator attesting 1 for slot 7
+attestation for source 0 and target 1
+validator attesting 5 for slot 7
+attestation for source 0 and target 1
+validator attesting 9 for slot 7
+attestation for source 0 and target 1
+honest propose a block for slot 8
+validator attesting 4 for slot 8
+attestation for source 0 and target 2
+validator attesting 8 for slot 8
+attestation for source 0 and target 2
+honest propose a block for slot 9
+validator attesting 0 for slot 9
+attestation for source 0 and target 2
+validator attesting 2 for slot 9
+attestation for source 0 and target 2
+validator attesting 9 for slot 9
+attestation for source 0 and target 2
+honest propose a block for slot 10
+validator attesting 1 for slot 10
+attestation for source 0 and target 2
+validator attesting 6 for slot 10
+attestation for source 0 and target 2
+honest propose a block for slot 11
+START PROCESS EPOCH 2
+old_previous 0
+old_current 0
+new current justified checkpoint 1
+new current justified checkpoint 2
+justification bits Bitvector[boolean, 4](1, 1, 0, 0)
+finalised checkpoint 0
+END PROCESS EPOCH
+validator attesting 3 for slot 11
+attestation for source 0 and target 2
+validator attesting 5 for slot 11
+attestation for source 0 and target 2
+validator attesting 7 for slot 11
+attestation for source 0 and target 2
+honest propose a block for slot 12
+validator attesting 2 for slot 12
+attestation for source 2 and target 3
+validator attesting 3 for slot 12
+attestation for source 2 and target 3
+honest propose a block for slot 13
+validator attesting 0 for slot 13
+attestation for source 2 and target 3
+validator attesting 6 for slot 13
+attestation for source 2 and target 3
+validator attesting 7 for slot 13
+attestation for source 2 and target 3
+honest propose a block for slot 14
+validator attesting 8 for slot 14
+attestation for source 2 and target 3
+validator attesting 9 for slot 14
+attestation for source 2 and target 3
+honest propose a block for slot 15
+START PROCESS EPOCH 3
+old_previous 0
+old_current 2
+new current justified checkpoint 2
+new current justified checkpoint 3
+justification bits Bitvector[boolean, 4](1, 1, 1, 0)
+finalised checkpoint 2
+END PROCESS EPOCH
+validator attesting 1 for slot 15
+attestation for source 2 and target 3
+validator attesting 4 for slot 15
+attestation for source 2 and target 3
+validator attesting 5 for slot 15
+attestation for source 2 and target 3
+honest propose a block for slot 16
+validator attesting 0 for slot 16
+attestation for source 3 and target 4
+validator attesting 5 for slot 16
+attestation for source 3 and target 4
+honest propose a block for slot 17
+validator attesting 4 for slot 17
+attestation for source 3 and target 4
+validator attesting 6 for slot 17
+attestation for source 3 and target 4
+validator attesting 8 for slot 17
+attestation for source 3 and target 4
+honest propose a block for slot 18
+validator attesting 1 for slot 18
+attestation for source 3 and target 4
+validator attesting 3 for slot 18
+attestation for source 3 and target 4
+honest propose a block for slot 19
+START PROCESS EPOCH 4
+old_previous 2
+old_current 3
+new current justified checkpoint 3
+new current justified checkpoint 4
+justification bits Bitvector[boolean, 4](1, 1, 1, 1)
+finalised checkpoint 3
+END PROCESS EPOCH
+validator attesting 2 for slot 19
+attestation for source 3 and target 4
+validator attesting 7 for slot 19
+attestation for source 3 and target 4
+validator attesting 9 for slot 19
+attestation for source 3 and target 4
+honest propose a block for slot 20
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's check the dataframe to make sure our state updates are correct. Since we have several partial updates blocks, we will have several substeps at each timestep. We give the length of the number of attestations in column <code>num_attestations</code>. They add up to 10 over each epoch, as we have 10 validators.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;num_attestations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">current_slot_attestations</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">len</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">timestep</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="p">(</span><span class="n">ts</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>timestep</th>
+      <th>epoch</th>
+      <th>num_attestations</th>
+      <th>latest_block_root</th>
+      <th>total_balance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>65ccaf</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2</td>
+      <td>0</td>
+      <td>2</td>
+      <td>c33a18</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>3</td>
+      <td>0</td>
+      <td>3</td>
+      <td>6f7f5c</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>4</td>
+      <td>0</td>
+      <td>2</td>
+      <td>f21715</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>5</td>
+      <td>1</td>
+      <td>3</td>
+      <td>7399cc</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>6</td>
+      <td>1</td>
+      <td>2</td>
+      <td>39eb3c</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>7</td>
+      <td>1</td>
+      <td>3</td>
+      <td>ed2a7b</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>8</td>
+      <td>1</td>
+      <td>2</td>
+      <td>3fb1d1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>9</td>
+      <td>2</td>
+      <td>3</td>
+      <td>ab6c45</td>
+      <td>36203880</td>
+    </tr>
+    <tr>
+      <th>28</th>
+      <td>10</td>
+      <td>2</td>
+      <td>2</td>
+      <td>100552</td>
+      <td>36203880</td>
+    </tr>
+    <tr>
+      <th>31</th>
+      <td>11</td>
+      <td>2</td>
+      <td>3</td>
+      <td>54be85</td>
+      <td>36203880</td>
+    </tr>
+    <tr>
+      <th>34</th>
+      <td>12</td>
+      <td>2</td>
+      <td>2</td>
+      <td>a57a9a</td>
+      <td>36203880</td>
+    </tr>
+    <tr>
+      <th>37</th>
+      <td>13</td>
+      <td>3</td>
+      <td>3</td>
+      <td>cdb5f5</td>
+      <td>72407760</td>
+    </tr>
+    <tr>
+      <th>40</th>
+      <td>14</td>
+      <td>3</td>
+      <td>2</td>
+      <td>7d454f</td>
+      <td>72407760</td>
+    </tr>
+    <tr>
+      <th>43</th>
+      <td>15</td>
+      <td>3</td>
+      <td>3</td>
+      <td>d2aa6e</td>
+      <td>72407760</td>
+    </tr>
+    <tr>
+      <th>46</th>
+      <td>16</td>
+      <td>3</td>
+      <td>2</td>
+      <td>52ea61</td>
+      <td>72407760</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>17</td>
+      <td>4</td>
+      <td>3</td>
+      <td>f458e9</td>
+      <td>108611640</td>
+    </tr>
+    <tr>
+      <th>52</th>
+      <td>18</td>
+      <td>4</td>
+      <td>2</td>
+      <td>1f5d55</td>
+      <td>108611640</td>
+    </tr>
+    <tr>
+      <th>55</th>
+      <td>19</td>
+      <td>4</td>
+      <td>3</td>
+      <td>abbcc6</td>
+      <td>108611640</td>
+    </tr>
+    <tr>
+      <th>58</th>
+      <td>20</td>
+      <td>4</td>
+      <td>2</td>
+      <td>aeae3c</td>
+      <td>108611640</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We can check the balances of our validators.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">60</span><span class="p">][</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">balances</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>List[Gwei, 1099511627776](32014368415, 32014820963, 32014594689, 32014255278, 32014707826, 32014594689, 32014481552, 32014368415, 32014368415, 32014255278)</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Note that they are getting rewarded for attesting correctly, with balances greater than the initial 32 ETH they started with, but some are more rewarded than others: this is the randomness of the block proposal. If you picked a low <code>num_validators</code>, you will notice that rewards are quite high. This is due to the variable rate of reward, which increases when the supply of validators is low. In practice, for 1,000,000 ETH at stake, we ought to have about 30,000 validators.</p>
+<p>We can also check that we are finalising checkpoints.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">60</span><span class="p">][</span><span class="s1">&#39;beacon_state&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">finalized_checkpoint</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>{&#39;epoch&#39;: 3, &#39;root&#39;: b&#39;\xcd\xb5\xf5\x94Ork,\x90\x04\x87\n,\x80\xa94\xe4\xef\xa8\x17\x07\x01\xa1\xf5V\x13\x1d&gt;q\xe4G$&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Indeed, the latest finalised checkpoint is at epoch 3!</p>
+<p>Let's plot the total rewards given out to validators (the "issuance"). First we add a column to our dataframe holding the net profits from state balances.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">substep</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s1">&#39;timestep&#39;</span><span class="p">,</span> <span class="s1">&#39;total_balance&#39;</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>&lt;AxesSubplot:xlabel=&#39;timestep&#39;&gt;</pre>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedImage jp-OutputArea-output ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>It's kind of nice to see a small economy grow before your very eyes no? Like gardening.</p>
+<p>Now how can we extend this model?</p>
+<ul>
+<li>We can define very specific validation behaviour and test what happens under different scenarios. Here we have focused on the "honest" behaviour, which is hopefully what validators in PoS Ethereum will follow. But hope is not enough, so much like <a href="https://hackingresear.ch/diaries/anarchy-creta">mining in Proof-of-Work, it remains to prove that good behaviour in the protocol exactly corresponds to rational behaviour in the <em>game</em> defined by the protocol</a>.</li>
+<li>We can also tweak state updates to represent network delays and modify the information basis of validators, who we assumed here always have the latest data to make their attestations. This may be a good use case for cadCAD's support for stochastic simulations (where execution may depend on chance events).</li>
+</ul>
+<p>Some efforts should also be spent making the simulation lighter to execute, so that larger models can be tested, including stochastic events using Monte-Carlo methods which require repeating executions a significant amount of times.</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <hr>
+<p><em>Some other cool resources</em>:</p>
+<ul>
+<li><a href="https://github.com/BlockScience/uniswap/blob/master/simplified-uniswap.ipynb">Uniswap bonding curves with cadCAD</a></li>
+<li><a href="https://notes.ethereum.org/@hww/aggregation">Attestations and aggregators, a note by Hsiao-Wei Wang</a></li>
+</ul>
+
+</div>
+
+
+
+
+    </div>
+  </div>
+  <script>
+  // References + footnotes
+
+// Authors
+let authorData = ["barnabe"];
+  </script>
+
+  
+</body>
+
+  <div id="footer"></div>
+    <script>
+    ReactDOM.render(
+      e(
+        Footer, {
+          acknowledgements: 'Danny Ryan for answering my questions about the specs; Michael Zargham and Markus Koch for their work on cadCAD and introducing me to it; and v for all your help.',
+        }
+      ),
+      document.querySelector("#footer")
+    )
+
+    const copyToClipboard = str => {
+      const el = document.createElement("textarea") // Create a <textarea> element
+      el.value = str // Set its value to the string that you want copied
+      el.setAttribute("readonly", "") // Make it readonly to be tamper-proof
+      el.style.position = "absolute"
+      el.style.left = "-9999px" // Move outside the screen to make it invisible
+      document.body.appendChild(el) // Append the <textarea> element to the HTML document
+      const selected =
+        document.getSelection().rangeCount > 0 // Check if there is any content selected previously
+          ? document.getSelection().getRangeAt(0) // Store selection if found
+          : false // Mark as false to know no selection existed before
+      el.select() // Select the <textarea> content
+      document.execCommand("copy") // Copy - only works as a result of a user action (e.g. click events)
+      document.body.removeChild(el) // Remove the <textarea> element
+      if (selected) {
+        // If a selection existed before copying
+        document.getSelection().removeAllRanges() // Unselect everything on the HTML document
+        document.getSelection().addRange(selected) // Restore the original selection
+      }
+    }
+    function handleCopyClick(evt) {
+      // get the children of the parent element
+      const { children } = evt.target.parentElement
+      // grab the first element (we append the copy button on afterwards, so the first will be the code element)
+      // destructure the innerText from the code block
+      const { innerText } = Array.from(children)[0]
+      // copy all of the code to the clipboard
+      copyToClipboard(innerText)
+    }
+
+    const highlights = document.querySelectorAll(".jp-InputArea-editor .highlight")
+
+    highlights.forEach(div => {
+      // create the copy button
+      const copy = document.createElement("button")
+      copy.innerHTML = "Copy"
+      // add the event listener to each click
+      copy.addEventListener("click", handleCopyClick)
+      // append the copy button to each code block
+      div.append(copy)
+    })
+    </script>
+  </div>
+  <script src="https://ethereum.github.io/rig/static/authorFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/sectionFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/referencesFormatting.js"></script>
+
+
+
+
+
+
+
+</html>

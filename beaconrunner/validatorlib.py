@@ -7,7 +7,7 @@ from .specs import (
     Slot, Root, Epoch, CommitteeIndex, ValidatorIndex, Store,
     BeaconState, BeaconBlock, BeaconBlockBody, SignedBeaconBlock,
     Attestation, AttestationData, Checkpoint, BLSSignature, Eth1Data,
-    SyncCommitteeSignature, SyncCommitteeContribution, SyncAggregate,
+    SyncCommitteeMessage, SyncCommitteeContribution, SyncAggregate,
     MAX_VALIDATORS_PER_COMMITTEE, VALIDATOR_REGISTRY_LIMIT,
     SLOTS_PER_EPOCH, DOMAIN_RANDAO, DOMAIN_BEACON_PROPOSER,
     DOMAIN_BEACON_ATTESTER, DOMAIN_SYNC_COMMITTEE,
@@ -19,7 +19,7 @@ from .specs import (
     get_block_root_at_slot, get_beacon_proposer_index,
     get_domain, compute_signing_root, state_transition,
     on_block, on_attestation, process_sync_committee_contributions,
-    get_sync_committee_signature,
+    get_sync_committee_message,
 )
 
 # import milagro_bls_binding as bls
@@ -35,7 +35,7 @@ assert frequency in [1, 10, 100, 1000]
 class SyncCommitteeBundle(object):
     sync_committee_index: uint64
     sync_subcommittee_index: uint64
-    sync_committee_signature: SyncCommitteeSignature
+    sync_committee_signature: SyncCommitteeMessage
 
 class ValidatorMove(object):
     """
@@ -810,7 +810,7 @@ def honest_sync_committee(validator, known_items):
     if head_state.slot < validator.data.slot:
         process_slots(head_state, validator.data.slot)
 
-    sync_committee_signature = get_sync_committee_signature(head_state, block_root, validator.validator_index, validator.privkey)
+    sync_committee_signature = get_sync_committee_message(head_state, block_root, validator.validator_index, validator.privkey)
     sync_committee_signature.beacon_block_root = validator.get_head()
 
     sync_committee_signatures = []
@@ -824,7 +824,7 @@ def honest_sync_committee(validator, known_items):
 
 ### Sync committee aggregation helpers
 
-def get_sync_aggregate_signature(sync_committees: Sequence[SyncCommitteeSignature]) -> BLSSignature:
+def get_sync_aggregate_signature(sync_committees: Sequence[SyncCommitteeMessage]) -> BLSSignature:
     signatures = [sync_committee.signature for sync_committee in sync_committees]
     return bls.Aggregate(signatures)
 
@@ -910,7 +910,7 @@ def honest_propose(validator, known_items):
     sc_contributions = aggregate_sync_committees(
         [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot]
     )
-    
+
     beacon_block = BeaconBlock(
         slot=slot,
         parent_root=head,

@@ -5,22 +5,17 @@ import pandas as pd
 
 from typing import Dict, Callable, Any
 
-# cadCAD configuration modules
-from cadCAD.configuration.utils import config_sim
-from cadCAD.configuration import Experiment
-
-# cadCAD simulation engine modules
-from cadCAD.engine import ExecutionMode, ExecutionContext
-from cadCAD.engine import Executor
-
-from cadCAD import configs
-del configs[:]
+from radcad import Model, Simulation, Experiment
+from radcad.engine import Engine, Backend
 
 from .specs import (
     Deposit, DepositData, BeaconState, BeaconBlock,
-    SECONDS_PER_SLOT, SLOTS_PER_EPOCH, MIN_GENESIS_TIME,
+    config, SLOTS_PER_EPOCH,
     initialize_beacon_state_from_eth1, upgrade_to_altair,
 )
+SECONDS_PER_SLOT = config.SECONDS_PER_SLOT
+MIN_GENESIS_TIME = config.MIN_GENESIS_TIME
+
 from .network import (
     Network,
     update_network, disseminate_attestations,
@@ -206,12 +201,13 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
         pandas.DataFrame: Results of the simulation contained in a pandas data frame
     """
 
-    initial_conditions = {
-        'network': network
+    initial_state = {
+        'network': network,
     }
 
     psubs = [
         {
+            'label': 'Attestations',
             'policies': {
                 'action': attest_policy
             },
@@ -220,6 +216,7 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
             }
         },
         {
+            'label': 'Sync committee',
             'policies': {
                 'action': sync_committee_policy
             },
@@ -228,6 +225,7 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
             }
         },
         {
+            'label': 'Block proposals',
             'policies': {
                 'action': propose_policy
             },
@@ -236,6 +234,7 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
             }
         },
         {
+            'label': 'Simulation tick',
             'policies': {
             },
             'variables': {
@@ -257,32 +256,39 @@ def simulate(network: Network, parameters: SimulationParameters, observers: Dict
     print("total", steps, "simulation steps")
 
     # Add our observers to the simulation
-    observed_ic = get_observed_initial_conditions(initial_conditions, observers)
+    observed_ic = get_observed_initial_conditions(initial_state, observers)
     observed_psubs = get_observed_psubs(psubs, observers)
     # observed_params = add_loop_params(get_observed_params(params, observers))
 
-    sim_config = config_sim({
-        'T': range(steps),
-        'N': 1,
-        'M': {
-            'frequency': [parameters.frequency],
-            'network_update_rate': [parameters.network_update_rate],
-        }
-    })
+    params = {
+        'frequency': [parameters.frequency],
+        'network_update_rate': [parameters.network_update_rate],
+    }
 
-    from cadCAD import configs
-    del configs[:]
-
-    # Final simulation parameters and execution
-    experiment = Experiment()
-    experiment.append_configs(
-        initial_state = observed_ic,
-        partial_state_update_blocks = observed_psubs,
-        sim_configs = sim_config
+    model = Model(
+        initial_state=observed_ic,
+        state_update_blocks=observed_psubs,
+        params=params,
     )
+    simulation = Simulation(model=model, timesteps=steps, runs=1)
+    experiment = Experiment([simulation])
+    experiment.engine = Engine(deepcopy=False, backend=Backend.SINGLE_PROCESS)
+    result = experiment.run()
 
-    exec_context = ExecutionContext()
-    simulation = Executor(exec_context=exec_context, configs=configs)
-    raw_result, tensor, sessions = simulation.execute()
+    df = pd.DataFrame(result)
 
-    return pd.DataFrame(raw_result)
+    # Create a substep -> label mapping
+    # For each PSUB on the partial_state_update_blocks,
+    # we'll retrieve the 'label' key
+    # and associate it with the order on the PSUB.
+    psub_map = {order + 1: psub.get('label', '')
+                for (order, psub)
+                in enumerate(observed_psubs)}
+
+    # Set substep=0 as being the inital state
+    psub_map[0] = 'Initial State'
+
+    # Create a new column called "substep" label
+    df['substep_label'] = df.substep.map(psub_map)
+
+    return df
