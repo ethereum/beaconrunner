@@ -6,11 +6,7 @@ Notebooks using the current `beaconrunner` library.
 
 ### 05. [Altair incentives](notebooks/altair_incentives.html) + [source](notebooks/altair_incentives.ipynb)
 
-We check that Altair incentives provide the expected rewards per validator by simulating the protocol for a few epochs.
-
-### 04. [Beacon Runner: Thunderdome](notebooks/thunderdome/thunderdome.html) + [source](notebooks/thunderdome)
-
-We show that honest, protocol-following agents sometimes perform worse than agents who behave more prudently. This is the case when latency is bad enough that agents hedge their bets before taking action. Agents are modelled with the beacon runner validator API and simulated.
+Altair is a planned upgrade to the PoS consensus layer. We check that Altair incentives provide the expected rewards per validator by simulating the protocol for a few epochs.
 
 ## Early notebooks
 
@@ -27,6 +23,10 @@ The centralised client of the previous notebook was the only agent producing blo
 ### 03. [Beacon Runner 2050: An agent-based model of PoS Ethereum](notebooks/beaconrunner2050/br2050.html) + [source](notebooks/beaconrunner2050)
 
 We fully decentralise the model of the previous notebook by allowing each validator to have its own view of the chain. Additionally, we provide an interface to model the behaviour of validators, using a simple API. In this notebook, we implement honest validation and observe the progress of the chain.
+
+### 04. [Beacon Runner: Thunderdome](notebooks/thunderdome/thunderdome.html) + [source](notebooks/thunderdome)
+
+We show that honest, protocol-following agents sometimes perform worse than agents who behave more prudently. This is the case when latency is bad enough that agents hedge their bets before taking action. Agents are modelled with the beacon runner validator API and simulated.
 
 ## Starting up
 
