@@ -38,7 +38,8 @@ cd beaconrunner
 
 ###
 # Optional: use a virtual environment
-python -m venv venv
+# Python 3.8 is required
+python3.8 -m venv venv
 
 # Unix
 source venv/bin/activate
