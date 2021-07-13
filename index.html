@@ -73,10 +73,67 @@ source venv/bin/activate
 .\venv\Scripts\activate
 ###
 
-pip install -r requirements.txt
-                      </code></pre>
+pip install -r requirements.txt</code></pre>
                         <p>Once you enter the shell, you can type in</p>
                         <pre class="shell"><code>jupyter lab</code></pre>
+                        <h2 id="general-architecture">General architecture</h2>
+                        <p><img src="architecture.jpeg" /></p>
+                        <p>The architecture is layered to make it simpler to extend individual layers. The tl;dr is that <code>validatorlib</code> is an “intelligent” wrap of the <code>specs</code>, <code>network</code> instantiates validators from <code>validatorlib</code> to place them on its network and the <code>simulator</code> helps move the simulation along, by specifying simulation transitions.</p>
+                        <h3 id="specs"><a href="beaconrunner/specs.py"><code>specs</code></a></h3>
+                        <p>We take the <a href="https://github.com/ethereum/eth2.0-specs">eth2.0 specs</a> as our ground truth. We can export the specs to a python file using custom presets and configuration (mostly turning down the size of some of the data structures).</p>
+                        <h4 id="specs-modifications">Specs modifications</h4>
+                        <p>Although our principle is to take the code as is and only “wrap” it around in an execution environment, we have brought the following changes in <code>specs.py</code>:</p>
+                        <ul>
+                        <li>Turn off crypto operations for performance improvement:
+                        <ul>
+                        <li>Set <code>bls.bls_active = False</code></li>
+                        <li>Turn off <code>is_valid_indexed_attestation</code> everywhere</li>
+                        <li>Turn off <code>is_valid_merkle_branch</code> in <code>process_deposit</code></li>
+                        </ul></li>
+                        <li>Modify <code>on_block</code> to use store:
+                        <ul>
+                        <li>Add <code>state: BeaconState = None</code> to the arguments.</li>
+                        <li>Add the following code block in the body: <code>python       # Check the block is valid and compute the post-state       if state is None:           state = state_transition(pre_state, signed_block, True)       else:           process_block(state, signed_block.message)</code> in place of <code>python       # Check the block is valid and compute the post-state       state = state_transition(pre_state, signed_block, True)</code></li>
+                        </ul></li>
+                        </ul>
+                        <h3 id="validator-interface-validatorlib">Validator interface <a href="beaconrunner/validatorlib.py"><code>validatorlib</code></a></h3>
+                        <p>The specs obtained are mostly responsible for three tasks:</p>
+                        <ol type="1">
+                        <li>Defining the state transition (<code>beacon-chain.md</code>). This is where rewards and penalties are applied and where blocks are processed to apply the state transition.</li>
+                        <li>Defining the honest validator behaviour (<code>validator.md</code>). In particular, this holds useful functions such as <code>get_committee_assignment</code>, which we can use in our interface to feed data to the validator.</li>
+                        <li>Defining the fork choice rule (<code>fork-choice.md</code>). Validators have knowledge of existing blocks and attestations, some of which are already included in the beacon chain, some of which only broadcasted on the p2p network. Based on this knowledge, validators decide which is the correct head of the chain. We use the <code>Store</code> object defined in the <code>fork-choice.md</code> file to hold this knowledge.</li>
+                        </ol>
+                        <p>In the <code>beaconrunner</code> library, the <a href="beaconrunner/validatorlib.py"><code>validatorlib.py</code></a> file is the interface between our validator behaviours (held in <a href="beaconrunner/validators"><code>beaconrunner/validators</code></a>) and the environment.</p>
+                        <p>All validators inherit from <code>BRValidator</code>, defined in <a href="beaconrunner/validatorlib.py"><code>validatorlib.py</code></a>. This class has a <code>store</code> attribute, from which validators obtain the current head of the beacon chain, as well as a <code>data</code> attribute, which we use to store current validation information, such as their assignment to committees.</p>
+                        <p>The main role of this class is to provide up-to-date data to validator. For instance, in <code>update_data</code>, the validator reacts to a new event:</p>
+                        <ul>
+                        <li>Either a new block or a new attestation was received</li>
+                        <li>Or a new slot is reached</li>
+                        </ul>
+                        <p>In both cases, this warrants an update of the validator’s data. When a new block is received, either that block builds on the current head, or it is a fork of the existing chain. In the latter case, this sometimes means that the validator assignment to committees has changed. We check whether these conditions are satisfied in <code>update_data</code> and call for a refresh of the <code>get_committee_assignment</code>.</p>
+                        <p><code>BRValidator</code> also logs the history of play of validators, so that validators can refer back to it when performing their duties (“have I already attested in this slot? history says yes…”)</p>
+                        <p>We also define <code>honest_attest</code> and <code>honest_propose</code>, which can be used by validators to build their behaviours (see <a href="https://ethereum.github.com/ethereum/beaconrunner/notebooks/thunderdome/thunderdome.html">Thunderdome</a> for an example of how they are used).</p>
+                        <h3 id="validator-behaviours-beaconrunnervalidators">Validator behaviours <a href="beaconrunner/validators"><code>beaconrunner/validators</code></a></h3>
+                        <p>Validator behaviours (e.g., <a href="beaconrunner/validators/ASAPValidator.py">ASAPValidator</a>) follow a simple API.</p>
+                        <ul>
+                        <li><code>def &lt;duty&gt;(self, known_items)</code></li>
+                        </ul>
+                        <p>By calling <code>self.data</code>, a validator has access to its “environment knowledge”: did they perform the duty already? how far into the slot are they? which is the current epoch? are they supposed to perform the duty?</p>
+                        <p>We follow the principle that a validator should not introspect anything else than this <code>data</code> attribute, in particular, not its <code>store</code>. Whenever a validator needs access to additional info, a “translation” should be made in <code>BRValidator</code> to have this info accessible in <code>self.data</code> (for instance, we don’t want validator behaviours to call <code>get_committee_assignment</code>, they should be able to access up-to-date info in their <code>data</code> attribute instead). This makes for a cleaner separation as well as better performance, as we can cache results of expensive operations.</p>
+                        <p><code>known_items</code> is fed from the <code>network</code>, these are the blocks and attestations on the p2p network that the validator knows about. It is used in <code>honest_propose</code> for instance, where a validator takes latest attestations and packages them in a block.</p>
+                        <h3 id="network"><a href="beaconrunner/network.py"><code>network</code></a></h3>
+                        <p>The network object is populated with subclasses of <code>BRValidator</code> which define the behaviour of various types of validators (<code>ASAP</code> and <code>Prudent</code> behaviours are given in the current library). The network is responsible for propagating data over a simulated p2p network.</p>
+                        <p>Whenever a validator produces an item (a block, an attestation), it is sent on the network and disseminated over time to the other validators.</p>
+                        <h3 id="simulator"><a href="beaconrunner/simulator.py"><code>simulator</code></a></h3>
+                        <p>This class is responsible for implementing the simulation proper. It defines the steps in the <code>simulate</code> method:</p>
+                        <ol type="1">
+                        <li><code>tick</code>: move the environment “clock” by one step. We can the frequency is a parameter, with higher frequency =&gt; smaller time steps =&gt; more simulation steps.</li>
+                        <li><code>attest_policy</code>: responsible for “pinging” the validators for their attestations.</li>
+                        <li><code>update_attestations</code>: send the obtained attestations over the network.</li>
+                        <li><code>propose_policy</code>: responsible for “pinging” the validators for their block.</li>
+                        <li><code>update_blocks</code>: send the obtained blocks over the network.</li>
+                        </ol>
+                        <p>Most of the time, validators do not have anything to attest or propose, so the simulation proceeds.</p>
                         <h2 id="docs">Docs</h2>
                         <p>Some documentation is available <a href="https://ethereum.github.io/beaconrunner/docs/build/html/">here</a>.</p>
       </body>
