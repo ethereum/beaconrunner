@@ -111,6 +111,11 @@ class ValidatorData:
     Has the validator received a block for `self.slot`?
     """
 
+    is_slashed: bool
+    """
+    Has the validator been slashed?
+    """
+
 class HashableSpecStore(Container):
     """ We cache a map from current state of the `Store` to `head`, since `get_head`
     is computationally intensive. But `Store` is not hashable right off the bat.
@@ -196,6 +201,7 @@ class BRValidator:
         self.data.slot = get_current_slot(self.store)
         self.data.current_epoch = compute_epoch_at_slot(self.data.slot)
         self.data.head_root = self.get_head()
+        self.data.is_slashed = False
 
         current_state = state.copy()
         if current_state.slot < self.data.slot:
@@ -822,12 +828,6 @@ def honest_propose(validator, known_items):
     beacon_block.body = beacon_block_body
 
     process_block(processed_state, beacon_block)
-    # try:
-    #     process_block(processed_state, beacon_block)
-    # except AssertionError:
-    #     print("  -- slashed validator {} tried proposing, shut him up!".format(validator.validator_index))
-    #     validator.data.last_slot_proposed = validator.data.slot
-    #     return None # Skip proposing a block
 
     state_root = hash_tree_root(processed_state)
     beacon_block.state_root = state_root
@@ -849,10 +849,12 @@ def slashable_propose(validator, known_items):
         List[SignedBeaconBlock, SignedBeaconBlock]: A list of two different blocks, one honest and one invalid.
     """
 
-    print(validator.validator_index, "propsing slashable blocks for slot", validator.data.slot)
+    print(validator.validator_index, "proposing slashable blocks for slot", validator.data.slot)
+    
+    # Mark this validator as slashed (not 100% correct logically, but works)
+    validator.data.is_slashed = True
 
-    # TODO: Refactor by using honest_propose() to create an honest blokc and then just alter the parent_root manually.
-
+    # TODO: Refactor by using honest_propose() to create an honest block and then just alter the parent_root manually.
     # Create an honest block
     slot = validator.data.slot
     head = validator.data.head_root
@@ -917,11 +919,9 @@ def randao_propose(validator, known_items, scenario="honest"):
         SignedBeaconBlock: The honest proposed block.
     """
     # Check if selected proposer has been slashed previously. If yes, skip proposing a block!
-    current_state = validator.store.block_states[validator.data.head_root]
-    is_slashed = current_state.validators[validator.validator_index].slashed
-
-    if is_slashed == True:
-        print("* {} tried proposing but is slashed; shut up!".format(validator.validator_index))
+    # Check if selected proposer has been slashed previously. If yes, skip proposing a block!
+    if validator.data.is_slashed == True:
+        print("* {} slashed already; is shutting up!".format(validator.validator_index))
         validator.data.last_slot_proposed = validator.data.slot
         return None
 
