@@ -908,7 +908,7 @@ def slashable_propose(validator, known_items):
 
 def randao_propose(validator, known_items, scenario="honest"):
     """
-    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations, except when it's the last slot.
+    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations, except when it's the second-last slot.
     In the last slot the RANDAOValidator proposes a block dependent on the scenario: Either "honest", "skip" or "slashable" blocks are proposed (or skipped).
 
     Args:
