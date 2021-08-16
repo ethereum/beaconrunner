@@ -337,10 +337,13 @@ class BRValidator:
         current_epoch = get_current_epoch(current_state)
 
         # When is the validator scheduled to attest in `epoch`?
-        (committee, committee_index, attest_slot) = get_committee_assignment(
-            current_state,
-            epoch,
-            self.validator_index)
+        try:
+            (committee, committee_index, attest_slot) = get_committee_assignment(
+                current_state,
+                epoch,
+                self.validator_index)
+        except TypeError:
+            (committee, committee_index, attest_slot) = (None, None, None)
         if epoch == current_epoch:
             self.data.current_attest_slot = attest_slot
             self.data.current_committee_index = committee_index
@@ -918,7 +921,8 @@ def randao_propose(validator, known_items, scenario="honest"):
     Returns:
         SignedBeaconBlock: The honest proposed block.
     """
-    # Check if selected proposer has been slashed previously. If yes, skip proposing a block!
+    # Check if selected proposer has been slashed previously. If yes, skip proposing a block, since it will be considered invalid by honest validatory anyway!
+    # Why? In process_block_header() it is checked that a proposer is not slashed with: `assert not proposer.slashed`
     if validator.data.is_slashed == True:
         print("* {} slashed already; is shutting up!".format(validator.validator_index))
         validator.data.last_slot_proposed = validator.data.slot
