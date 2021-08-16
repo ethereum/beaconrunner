@@ -903,7 +903,7 @@ def slashable_propose(validator, known_items):
     return [signed_block, slashable_signed_block]
 
 #############################
-#############################
+# Main new function handling different scenarios to inspect randao: randao_propose
 #############################
 
 def randao_propose(validator, known_items, scenario="honest"):
@@ -918,7 +918,6 @@ def randao_propose(validator, known_items, scenario="honest"):
     Returns:
         SignedBeaconBlock: The honest proposed block.
     """
-    # Check if selected proposer has been slashed previously. If yes, skip proposing a block!
     # Check if selected proposer has been slashed previously. If yes, skip proposing a block!
     if validator.data.is_slashed == True:
         print("* {} slashed already; is shutting up!".format(validator.validator_index))
