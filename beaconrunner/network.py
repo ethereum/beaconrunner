@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from .specs import (
     VALIDATOR_REGISTRY_LIMIT,
     ValidatorIndex, Slot,
-    BeaconState, Attestation, SignedBeaconBlock
+    BeaconState, Attestation, SignedBeaconBlock,
 )
 from .validatorlib import (
     BRValidator, SyncCommitteeBundle

@@ -1,18 +1,16 @@
 from typing import Optional
 
-from ..specs import (
+from model.specs import (
     Attestation, SignedBeaconBlock,
-    SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
 )
-from ..validatorlib import (
-    BRValidator,
-    honest_attest, honest_propose
+from model.validatorlib import (
+    BRValidator
 )
 
-class PrudentValidator(BRValidator):
-    # I believe in you
+class OfflineValidator(BRValidator):
+    # 404 not found
 
-    validator_behaviour = "prudent"
+    validator_behaviour = "offline"
 
     def attest(self, known_items) -> Optional[Attestation]:
         """
@@ -29,22 +27,8 @@ class PrudentValidator(BRValidator):
             otherwise an honest `Attestation`
         """
 
-        # Not the moment to attest
-        if self.data.current_attest_slot != self.data.slot:
-            return None
-
-        time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
-
-        # Too early in the slot / didn't receive block
-        if not self.data.received_block and time_in_slot < 8:
-            return None
-
-        # Already attested for this slot
-        if self.data.last_slot_attested == self.data.slot:
-            return None
-
-        # honest attest
-        return honest_attest(self, known_items)
+        # Never attest
+        return None
 
     def propose(self, known_items) -> Optional[SignedBeaconBlock]:
         """
@@ -61,13 +45,5 @@ class PrudentValidator(BRValidator):
             otherwise a `SignedBeaconBlock` containing attestations
         """
 
-        # Not supposed to propose for current slot
-        if not self.data.current_proposer_duties[self.data.slot % SLOTS_PER_EPOCH]:
-            return None
-
-        # Already proposed for this slot
-        if self.data.last_slot_proposed == self.data.slot:
-            return None
-
-        # honest propose
-        return honest_propose(self, known_items)
+        # Never propose
+        return None

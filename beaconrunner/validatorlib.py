@@ -8,12 +8,13 @@ from .specs import (
     BeaconState, BeaconBlock, BeaconBlockBody, SignedBeaconBlock,
     Attestation, AttestationData, Checkpoint, BLSSignature, Eth1Data,
     SyncCommitteeMessage, SyncCommitteeContribution, SyncAggregate,
+    BeaconBlockHeader, ProposerSlashing,
     MAX_VALIDATORS_PER_COMMITTEE, VALIDATOR_REGISTRY_LIMIT,
     SLOTS_PER_EPOCH, DOMAIN_RANDAO, DOMAIN_BEACON_PROPOSER,
     DOMAIN_BEACON_ATTESTER, DOMAIN_SYNC_COMMITTEE,
     SYNC_COMMITTEE_SUBNET_COUNT, SYNC_COMMITTEE_SIZE,
     get_forkchoice_store, get_current_slot, compute_epoch_at_slot,
-    get_head, process_slots, on_tick, get_current_epoch,
+    get_head, get_ancestor, process_slots, on_tick, get_current_epoch,
     get_committee_assignment, compute_start_slot_at_epoch,
     get_block_root, process_block, process_attestation,
     get_block_root_at_slot, get_beacon_proposer_index,
@@ -131,6 +132,11 @@ class ValidatorData:
     Has the validator received a block for `self.slot`?
     """
 
+    is_slashed: bool
+    """
+    Has the validator been slashed?
+    """
+
 class HashableSpecStore(Container):
     """ We cache a map from current state of the `Store` to `head`, since `get_head`
     is computationally intensive. But `Store` is not hashable right off the bat.
@@ -217,6 +223,7 @@ class BRValidator:
         self.data.slot = get_current_slot(self.store)
         self.data.current_epoch = compute_epoch_at_slot(self.data.slot)
         self.data.head_root = self.get_head()
+        self.data.is_slashed = False
 
         current_state = state.copy()
         if current_state.slot < self.data.slot:
@@ -353,10 +360,14 @@ class BRValidator:
         current_epoch = get_current_epoch(current_state)
 
         # When is the validator scheduled to attest in `epoch`?
-        (committee, committee_index, attest_slot) = get_committee_assignment(
-            current_state,
-            epoch,
-            self.validator_index)
+        try:
+            (committee, committee_index, attest_slot) = get_committee_assignment(
+                current_state,
+                epoch,
+                self.validator_index)
+        except TypeError:
+            (committee, committee_index, attest_slot) = (None, None, None)
+
         if epoch == current_epoch:
             self.data.current_attest_slot = attest_slot
             self.data.current_committee_index = committee_index
@@ -870,6 +881,11 @@ def get_block_signature(state: BeaconState, block: BeaconBlock, privkey: int) ->
     signing_root = compute_signing_root(block, domain)
     return bls.Sign(privkey, signing_root)
 
+def get_header_signature(state: BeaconState, header: BeaconBlockHeader, privkey: int) -> BLSSignature:
+    domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_at_slot(header.slot))
+    signing_root = compute_signing_root(header, domain)
+    return bls.Sign(privkey, signing_root)
+
 def get_epoch_signature(state: BeaconState, block: BeaconBlock, privkey: int) -> BLSSignature:
     domain = get_domain(state, DOMAIN_RANDAO, compute_epoch_at_slot(block.slot))
     signing_root = compute_signing_root(compute_epoch_at_slot(block.slot), domain)
@@ -881,6 +897,41 @@ def should_process_attestation(state: BeaconState, attestation: Attestation) -> 
         return True
     except:
         return False
+
+def get_proposer_slashing(validator, known_items):
+    """
+    Returns a list of ProposerSlashings, if there were any, otherwise it returns an empty list.
+
+    Args:
+        validator (BRValidator): The proposing validator
+        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+    Returns:
+        List[ProposerSlashing]: List of PropserSlashing.
+    """
+
+    # Check history of blocktree for slashable proposals
+    proposer_slashing = []
+    if len(known_items["blocks"])>= 2: # If there are less than 2 blocks there is no slashable proposal possible!
+        length_blocktree = len(known_items["blocks"])
+        last_signed_block = known_items["blocks"][length_blocktree - 1].item
+        secondlast_signed_block = known_items["blocks"][length_blocktree - 2].item
+        last_block = last_signed_block.message # last_block is of type BeaconBlock
+        secondlast_block = secondlast_signed_block.message # secondlast_block is of type BeaconBlock
+
+
+        # Check if last proposed blocks are slashable (same proposer published different blocks in same slot)
+        if last_block.slot == secondlast_block.slot and last_block.proposer_index == secondlast_block.proposer_index and last_block.parent_root != secondlast_block.parent_root:
+            print("   -- ", validator.validator_index, " detected a slashable incident in slot ", last_block.slot, " by validator ", last_block.proposer_index)
+
+            # Form ProposerSlashing (to be included in block proposal)
+            proposer_slashing.append(
+                ProposerSlashing(
+                    signed_header_1=last_signed_block, # last_block_header
+                    signed_header_2=secondlast_signed_block #secondlast_block_header
+                )
+            )
+    return proposer_slashing
 
 def honest_propose(validator, known_items):
     """
@@ -896,6 +947,8 @@ def honest_propose(validator, known_items):
 
     print(validator.validator_index, "proposing block for slot", validator.data.slot)
 
+    # Get slashable proposal. If there was a slashable proposal a list with ProposerSlashing items is returned. Else list is empty.
+    proposer_slashing = get_proposer_slashing(validator, known_items)
     slot = validator.data.slot
     head = validator.data.head_root
 
@@ -908,8 +961,7 @@ def honest_propose(validator, known_items):
     # Include sync committees
     sc_bundles = [sc_bundle for sc_bundle in known_items["sync_committees"]]
     sc_contributions = aggregate_sync_committees(
-        [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot]
-    )
+        [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot])
 
     beacon_block = BeaconBlock(
         slot=slot,
@@ -921,7 +973,8 @@ def honest_propose(validator, known_items):
         attestations=attestations,
         eth1_data = Eth1Data(
             deposit_count = len(processed_state.validators)
-        )
+        ),
+        proposer_slashings=proposer_slashing, # If there was no slashing an empty list is passed
     )
     epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
     beacon_block_body.randao_reveal = epoch_signature
@@ -932,6 +985,7 @@ def honest_propose(validator, known_items):
         process_sync_committee_contributions(beacon_block, sc_contributions)
 
     process_block(processed_state, beacon_block)
+
     state_root = hash_tree_root(processed_state)
     beacon_block.state_root = state_root
 
@@ -939,3 +993,107 @@ def honest_propose(validator, known_items):
     signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
 
     return signed_block
+
+def slashable_propose(validator, known_items):
+    """
+    Returns two blocks: an honest block like in honest_propose() and a block that is identical except that it is using a random parent_root instead. This is slashable!
+
+    Args:
+        validator (BRValidator): The proposing validator
+        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+    Returns:
+        List[SignedBeaconBlock, SignedBeaconBlock]: A list of two different blocks, one honest and one invalid.
+    """
+
+    print(validator.validator_index, "proposing slashable blocks for slot", validator.data.slot)
+
+    # Mark this validator as slashed (not 100% correct logically, but works)
+    validator.data.is_slashed = True
+
+    # TODO: Refactor by using honest_propose() to create an honest block and then just alter the parent_root manually.
+    # Create an honest block
+    slot = validator.data.slot
+    head = validator.data.head_root
+
+    processed_state = validator.process_to_slot(head, slot)
+
+    attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
+    attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
+
+    beacon_block = BeaconBlock(
+        slot=slot,
+        parent_root=head,
+        proposer_index = validator.validator_index,
+    )
+
+    beacon_block_body = BeaconBlockBody(
+        attestations=attestations
+    )
+    epoch_signature = get_epoch_signature(processed_state, beacon_block, validator.privkey)
+    beacon_block_body.randao_reveal = epoch_signature
+
+    beacon_block.body = beacon_block_body
+
+    process_block(processed_state, beacon_block)
+    state_root = hash_tree_root(processed_state)
+    beacon_block.state_root = state_root
+
+    block_signature = get_block_signature(processed_state, beacon_block, validator.privkey)
+    signed_block = SignedBeaconBlock(message=beacon_block, signature=block_signature)
+
+    # Create a different block using above block as baseline -> Proposing two different blocks in one slot is slashable!
+    slashable_beacon_block = beacon_block.copy()
+    slashable_parent_root = get_ancestor(validator.store, head, slot-2)
+    slashable_beacon_block.parent_root = slashable_parent_root
+    slashable_beacon_block_body = BeaconBlockBody(
+        attestations=attestations
+    )
+    slashable_epoch_signature = get_epoch_signature(processed_state, slashable_beacon_block, validator.privkey)
+    slashable_beacon_block_body.randao_reveal = slashable_epoch_signature
+    slashable_beacon_block.body = slashable_beacon_block_body
+    # process_block(processed_state, slashable_beacon_block)
+    slashable_beacon_block.state_root = state_root
+    slashable_block_signature = get_block_signature(processed_state, slashable_beacon_block, validator.privkey)
+    slashable_signed_block = SignedBeaconBlock(message=slashable_beacon_block, signature=slashable_block_signature)
+
+    return [signed_block, slashable_signed_block]
+
+#############################
+# Main new function handling different scenarios to inspect randao: randao_propose
+#############################
+
+def randao_propose(validator, known_items, scenario="honest"):
+    """
+    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations, except when it's the second-last slot.
+    In the last slot the RANDAOValidator proposes a block dependent on the scenario: Either "honest", "skip" or "slashable" blocks are proposed (or skipped).
+
+    Args:
+        validator (BRValidator): The proposing validator
+        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+    Returns:
+        SignedBeaconBlock: The honest proposed block.
+    """
+    # Check if selected proposer has been slashed previously. If yes, skip proposing a block, since it will be considered invalid by honest validatory anyway!
+    # Why? In process_block_header() it is checked that a proposer is not slashed with: `assert not proposer.slashed`
+    if validator.data.is_slashed == True:
+        print("* {} slashed already; is shutting up!".format(validator.validator_index))
+        validator.data.last_slot_proposed = validator.data.slot
+        return None
+
+    # Check if current slot is epoch's last slot
+    is_secondlast_slot = True if (validator.data.slot + 2) % SLOTS_PER_EPOCH == 0 else False
+
+    if is_secondlast_slot == False or scenario == "honest":
+        return honest_propose(validator, known_items)
+
+    elif scenario == "skip": # Skip block at epoch's last slot
+        print(validator.validator_index, "skipping block for slot", validator.data.slot)
+        # TODO: Ensure that validators knows it has already proposed something at this slot (actively proposed nothing). We get all the print statements when running the simulation, because every time the validator is pinged and then thinks "oh i need to propose and then goes on to propose nothing (again and again...)"
+        # QUESTION: below line works to the extent that print statement is only repeated twice now. But why twice?!
+        validator.data.last_slot_proposed = validator.data.slot
+        return None # Skip proposing a block
+
+    else: # scenario "C": "slashable" proposing event at final slot
+        return slashable_propose(validator, known_items)

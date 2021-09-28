@@ -1,7 +1,8 @@
 import time
 import logging
 from functools import wraps
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('cadCAD')
+logger.setLevel(logging.DEBUG)
 from pprint import pp
 
 def print_time(f):
@@ -13,7 +14,7 @@ def print_time(f):
       f_out = f(*args, **kwargs)
       t2 = time()
       text = f"|{f.__name__} output (exec time: {t2 - t1:.2f}s)"
-      logging.debug(text)
+      logger.debug(text)
       return f_out
   return wrapper
 

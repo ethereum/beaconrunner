@@ -170,9 +170,15 @@ def propose_policy(params, step, sL, s):
 
     for validator_index, validator in enumerate(network.validators):
         known_items = knowledge_set(network, validator_index)
-        block = validator.propose(known_items)
-        if block is not None:
-            produced_blocks.append(block)
+        blocks = validator.propose(known_items, scenario=scenario) # Check, if supposed to propose and if yes, propose!
+
+        if isinstance(blocks, list): # There is more than one block proposed...
+            for block in blocks:
+                produced_blocks.append(block)
+        else: # There is not more than one block proposed
+            if blocks is not None: # Check if any block at all has been proposed
+                block = blocks
+                produced_blocks.append(block)
 
     return ({ 'blocks': produced_blocks })
 
