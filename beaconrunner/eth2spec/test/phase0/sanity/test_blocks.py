@@ -24,17 +24,14 @@ from eth2spec.test.helpers.multi_operations import (
     run_slash_and_exit,
     run_test_full_random_operations,
 )
-from eth2spec.test.helpers.sync_committee import (
-    compute_committee_indices,
-    compute_sync_committee_participant_reward_and_penalty,
-)
-from eth2spec.test.helpers.constants import PHASE0, MINIMAL
+
 from eth2spec.test.context import (
+    PHASE0, MINIMAL,
     spec_test, spec_state_test, dump_skipping_message,
     with_phases, with_all_phases, single_phase,
     expect_assertion_error, always_bls,
     disable_process_reveal_deadlines,
-    with_presets,
+    with_configs,
     with_custom_state,
     large_validator_set,
     is_post_altair,
@@ -102,10 +99,10 @@ def test_empty_block_transition(spec, state):
 
 
 @with_all_phases
-@with_presets([MINIMAL],
+@with_configs([MINIMAL],
               reason="mainnet config leads to larger validator set than limit of public/private keys pre-generated")
 @spec_test
-@with_custom_state(balances_fn=large_validator_set, threshold_fn=lambda spec: spec.config.EJECTION_BALANCE)
+@with_custom_state(balances_fn=large_validator_set, threshold_fn=lambda spec: spec.EJECTION_BALANCE)
 @single_phase
 def test_empty_block_transition_large_validator_set(spec, state):
     pre_slot = state.slot
@@ -330,10 +327,10 @@ def test_empty_epoch_transition(spec, state):
 
 
 @with_all_phases
-@with_presets([MINIMAL],
+@with_configs([MINIMAL],
               reason="mainnet config leads to larger validator set than limit of public/private keys pre-generated")
 @spec_test
-@with_custom_state(balances_fn=large_validator_set, threshold_fn=lambda spec: spec.config.EJECTION_BALANCE)
+@with_custom_state(balances_fn=large_validator_set, threshold_fn=lambda spec: spec.EJECTION_BALANCE)
 @single_phase
 def test_empty_epoch_transition_large_validator_set(spec, state):
     pre_slot = state.slot
@@ -420,7 +417,7 @@ def test_proposer_slashing(spec, state):
     yield 'blocks', [signed_block]
     yield 'post', state
 
-    check_proposer_slashing_effect(spec, pre_state, state, slashed_index, block)
+    check_proposer_slashing_effect(spec, pre_state, state, slashed_index)
 
 
 @with_all_phases
@@ -495,7 +492,7 @@ def test_multiple_different_proposer_slashings_same_block(spec, state):
 
     for proposer_slashing in proposer_slashings:
         slashed_index = proposer_slashing.signed_header_1.message.proposer_index
-        check_proposer_slashing_effect(spec, pre_state, state, slashed_index, block)
+        check_proposer_slashing_effect(spec, pre_state, state, slashed_index)
 
 
 def check_attester_slashing_effect(spec, pre_state, state, slashed_indices):
@@ -747,8 +744,7 @@ def test_deposit_top_up(spec, state):
     initial_balances_len = len(state.balances)
     validator_pre_balance = get_balance(state, validator_index)
 
-    pre_state = state.copy()
-    yield 'pre', pre_state
+    yield 'pre', state
 
     block = build_empty_block_for_next_slot(spec, state)
     block.body.deposits.append(deposit)
@@ -760,23 +756,7 @@ def test_deposit_top_up(spec, state):
 
     assert len(state.validators) == initial_registry_len
     assert len(state.balances) == initial_balances_len
-
-    # Altair introduces sync committee (sm) reward and penalty
-    sync_committee_reward = sync_committee_penalty = 0
-    if is_post_altair(spec):
-        committee_indices = compute_committee_indices(spec, state, state.current_sync_committee)
-        committee_bits = block.body.sync_aggregate.sync_committee_bits
-        sync_committee_reward, sync_committee_penalty = compute_sync_committee_participant_reward_and_penalty(
-            spec,
-            pre_state,
-            validator_index,
-            committee_indices,
-            committee_bits,
-        )
-
-    assert get_balance(state, validator_index) == (
-        validator_pre_balance + amount + sync_committee_reward - sync_committee_penalty
-    )
+    assert get_balance(state, validator_index) == validator_pre_balance + amount
 
 
 @with_all_phases
@@ -792,7 +772,7 @@ def test_attestation(spec, state):
     # if spec.fork == SHARDING:
     #     TODO add shard data to block to vote on
 
-    attestation = get_valid_attestation(spec, state, index=index, signed=True)
+    attestation = get_valid_attestation(spec, state, index=index, signed=True, on_time=True)
 
     if not is_post_altair(spec):
         pre_current_attestations_len = len(state.current_epoch_attestations)
@@ -835,7 +815,7 @@ def test_voluntary_exit(spec, state):
     validator_index = spec.get_active_validator_indices(state, spec.get_current_epoch(state))[-1]
 
     # move state forward SHARD_COMMITTEE_PERIOD epochs to allow for exit
-    state.slot += spec.config.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
+    state.slot += spec.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
 
     signed_exits = prepare_signed_exits(spec, state, [validator_index])
     yield 'pre', state
@@ -863,7 +843,7 @@ def test_double_validator_exit_same_block(spec, state):
     validator_index = spec.get_active_validator_indices(state, spec.get_current_epoch(state))[-1]
 
     # move state forward SHARD_COMMITTEE_PERIOD epochs to allow for exit
-    state.slot += spec.config.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
+    state.slot += spec.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
 
     # Same index tries to exit twice, but should only be able to do so once.
     signed_exits = prepare_signed_exits(spec, state, [validator_index, validator_index])
@@ -887,7 +867,7 @@ def test_multiple_different_validator_exits_same_block(spec, state):
         for i in range(3)
     ]
     # move state forward SHARD_COMMITTEE_PERIOD epochs to allow for exit
-    state.slot += spec.config.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
+    state.slot += spec.SHARD_COMMITTEE_PERIOD * spec.SLOTS_PER_EPOCH
 
     signed_exits = prepare_signed_exits(spec, state, validator_indices)
     yield 'pre', state
@@ -937,7 +917,7 @@ def test_balance_driven_status_transitions(spec, state):
     assert state.validators[validator_index].exit_epoch == spec.FAR_FUTURE_EPOCH
 
     # set validator balance to below ejection threshold
-    state.validators[validator_index].effective_balance = spec.config.EJECTION_BALANCE
+    state.validators[validator_index].effective_balance = spec.EJECTION_BALANCE
 
     yield 'pre', state
 
@@ -951,11 +931,8 @@ def test_balance_driven_status_transitions(spec, state):
     assert state.validators[validator_index].exit_epoch < spec.FAR_FUTURE_EPOCH
 
 
-# Requires always_bls because historical root period and sync committee period is same length
-# so this epoch transition also computes new sync committees which requires aggregation
 @with_all_phases
 @spec_state_test
-@always_bls
 def test_historical_batch(spec, state):
     state.slot += spec.SLOTS_PER_HISTORICAL_ROOT - (state.slot % spec.SLOTS_PER_HISTORICAL_ROOT) - 1
     pre_historical_roots_len = len(state.historical_roots)

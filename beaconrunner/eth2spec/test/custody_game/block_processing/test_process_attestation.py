@@ -1,13 +1,14 @@
 from eth2spec.test.context import (
+    CUSTODY_GAME,
     with_phases,
     spec_state_test,
     always_bls,
 )
-from eth2spec.test.helpers.constants import CUSTODY_GAME
 from eth2spec.test.helpers.state import transition_to
 from eth2spec.test.helpers.attestations import (
     run_attestation_processing,
-    get_valid_attestation,
+    get_valid_late_attestation,
+    get_valid_on_time_attestation,
 )
 
 
@@ -15,7 +16,7 @@ from eth2spec.test.helpers.attestations import (
 @spec_state_test
 @always_bls
 def test_on_time_success(spec, state):
-    attestation = get_valid_attestation(spec, state, signed=True)
+    attestation = get_valid_on_time_attestation(spec, state, signed=True)
 
     transition_to(spec, state, state.slot + spec.MIN_ATTESTATION_INCLUSION_DELAY)
 
@@ -26,7 +27,7 @@ def test_on_time_success(spec, state):
 @spec_state_test
 @always_bls
 def test_late_success(spec, state):
-    attestation = get_valid_attestation(spec, state, signed=True)
+    attestation = get_valid_late_attestation(spec, state, signed=True)
 
     transition_to(spec, state, state.slot + spec.MIN_ATTESTATION_INCLUSION_DELAY + 1)
 

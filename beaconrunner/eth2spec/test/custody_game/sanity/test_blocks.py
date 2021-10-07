@@ -1,16 +1,14 @@
 from typing import Dict, Sequence
 
 from eth2spec.test.context import (
-    with_phases,
-    spec_state_test,
-    with_presets,
-)
-from eth2spec.test.helpers.attestations import get_valid_attestation
-from eth2spec.test.helpers.block import build_empty_block
-from eth2spec.test.helpers.constants import (
     CUSTODY_GAME,
     MINIMAL,
+    with_phases,
+    spec_state_test,
+    with_configs,
 )
+from eth2spec.test.helpers.attestations import get_valid_on_time_attestation
+from eth2spec.test.helpers.block import build_empty_block
 from eth2spec.test.helpers.custody import (
     get_custody_slashable_test_vector,
     get_valid_chunk_challenge,
@@ -60,7 +58,7 @@ def test_with_shard_transition_with_custody_challenge_and_response(spec, state):
     shard_block = build_shard_block(spec, state, shard, body=body, slot=state.slot, signed=True)
     shard_block_dict: Dict[spec.Shard, Sequence[spec.SignedShardBlock]] = {shard: [shard_block]}
     shard_transitions = get_shard_transitions(spec, state, shard_block_dict)
-    attestation = get_valid_attestation(
+    attestation = get_valid_on_time_attestation(
         spec, state, index=committee_index,
         shard_transition=shard_transitions[shard], signed=True,
     )
@@ -83,7 +81,7 @@ def test_with_shard_transition_with_custody_challenge_and_response(spec, state):
 
 @with_phases([CUSTODY_GAME])
 @spec_state_test
-@with_presets([MINIMAL])
+@with_configs([MINIMAL])
 def test_custody_key_reveal(spec, state):
     transition_to_valid_shard_slot(spec, state)
     transition_to(spec, state, state.slot + spec.EPOCHS_PER_CUSTODY_PERIOD * spec.SLOTS_PER_EPOCH)
@@ -127,7 +125,7 @@ def test_custody_slashing(spec, state):
     shard_block_dict: Dict[spec.Shard, Sequence[spec.SignedShardBlock]] = {shard: [shard_block]}
     shard_transitions = get_shard_transitions(spec, state, shard_block_dict)
 
-    attestation = get_valid_attestation(
+    attestation = get_valid_on_time_attestation(
         spec, state, index=committee_index,
         shard_transition=shard_transitions[shard], signed=True,
     )

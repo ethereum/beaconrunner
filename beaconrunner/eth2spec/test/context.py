@@ -1,38 +1,56 @@
 import pytest
-from copy import deepcopy
-from eth2spec.phase0 import mainnet as spec_phase0_mainnet, minimal as spec_phase0_minimal
-from eth2spec.altair import mainnet as spec_altair_mainnet, minimal as spec_altair_minimal
-from eth2spec.merge import mainnet as spec_merge_mainnet, minimal as spec_merge_minimal
+
+from eth2spec.phase0 import spec as spec_phase0
+from eth2spec.altair import spec as spec_altair
 from eth2spec.utils import bls
 
 from .exceptions import SkippedTest
-from .helpers.constants import (
-    SpecForkName, PresetBaseName,
-    PHASE0, ALTAIR, MERGE, MINIMAL, MAINNET,
-    ALL_PHASES, FORKS_BEFORE_ALTAIR, FORKS_BEFORE_MERGE,
-)
 from .helpers.genesis import create_genesis_state
-from .utils import vector_test, with_meta_tags, build_transition_test
+from .utils import vector_test, with_meta_tags
 
 from random import Random
-from typing import Any, Callable, Sequence, TypedDict, Protocol, Dict
+from typing import Any, Callable, NewType, Sequence, TypedDict, Protocol
 
 from lru import LRU
 
-# Without pytest CLI arg or pyspec-test-generator 'preset' argument, this will be the config to apply.
-DEFAULT_TEST_PRESET = MINIMAL
+from importlib import reload
 
+
+def reload_specs():
+    reload(spec_phase0)
+    reload(spec_altair)
+
+
+# Some of the Spec module functionality is exposed here to deal with phase-specific changes.
+
+SpecForkName = NewType("SpecForkName", str)
+ConfigName = NewType("ConfigName", str)
+
+PHASE0 = SpecForkName('phase0')
+ALTAIR = SpecForkName('altair')
+
+# Experimental phases (not included in default "ALL_PHASES"):
+MERGE = SpecForkName('merge')
+SHARDING = SpecForkName('sharding')
+CUSTODY_GAME = SpecForkName('custody_game')
+DAS = SpecForkName('das')
+
+ALL_PHASES = (PHASE0, ALTAIR)
+
+MAINNET = ConfigName('mainnet')
+MINIMAL = ConfigName('minimal')
+
+ALL_CONFIGS = (MINIMAL, MAINNET)
+
+# The forks that output to the test vectors.
+TESTGEN_FORKS = (PHASE0, ALTAIR)
 
 # TODO: currently phases are defined as python modules.
 # It would be better if they would be more well-defined interfaces for stronger typing.
 
-class Configuration(Protocol):
-    PRESET_BASE: str
-
 
 class Spec(Protocol):
-    fork: str
-    config: Configuration
+    version: str
 
 
 class SpecPhase0(Spec):
@@ -43,37 +61,24 @@ class SpecAltair(Spec):
     ...
 
 
-class SpecMerge(Spec):
-    ...
-
-
-spec_targets: Dict[PresetBaseName, Dict[SpecForkName, Spec]] = {
-    MINIMAL: {
-        PHASE0: spec_phase0_minimal,
-        ALTAIR: spec_altair_minimal,
-        MERGE: spec_merge_minimal,
-    },
-    MAINNET: {
-        PHASE0: spec_phase0_mainnet,
-        ALTAIR: spec_altair_mainnet,
-        MERGE: spec_merge_mainnet,
-    },
-}
-
-
 class SpecForks(TypedDict, total=False):
     PHASE0: SpecPhase0
     ALTAIR: SpecAltair
-    MERGE: SpecMerge
 
 
 def _prepare_state(balances_fn: Callable[[Any], Sequence[int]], threshold_fn: Callable[[Any], int],
                    spec: Spec, phases: SpecForks):
-    phase = phases[spec.fork]
-    balances = balances_fn(phase)
-    activation_threshold = threshold_fn(phase)
-    state = create_genesis_state(spec=phase, validator_balances=balances,
+
+    p0 = phases[PHASE0]
+    balances = balances_fn(p0)
+    activation_threshold = threshold_fn(p0)
+
+    state = create_genesis_state(spec=p0, validator_balances=balances,
                                  activation_threshold=activation_threshold)
+    # TODO: upgrade to merge spec, and later sharding.
+    if spec.fork == ALTAIR:
+        state = phases[ALTAIR].upgrade_to_altair(state)
+
     return state
 
 
@@ -85,8 +90,8 @@ def with_custom_state(balances_fn: Callable[[Any], Sequence[int]],
     def deco(fn):
 
         def entry(*args, spec: Spec, phases: SpecForks, **kw):
-            # make a key for the state, unique to the fork + config (incl preset choice) and balances/activations
-            key = (spec.fork, spec.config.__hash__(), spec.__file__, balances_fn, threshold_fn)
+            # make a key for the state
+            key = (spec.fork, spec.CONFIG_NAME, spec.__file__, balances_fn, threshold_fn)
             global _custom_state_cache_dict
             if key not in _custom_state_cache_dict:
                 state = _prepare_state(balances_fn, threshold_fn, spec, phases)
@@ -218,14 +223,6 @@ def spec_state_test(fn):
     return spec_test(with_state(single_phase(fn)))
 
 
-def spec_configured_state_test(conf):
-    overrides = with_config_overrides(conf)
-
-    def decorator(fn):
-        return spec_test(overrides(with_state(single_phase(fn))))
-    return decorator
-
-
 def expect_assertion_error(fn):
     bad = False
     try:
@@ -334,18 +331,13 @@ def with_phases(phases, other_phases=None):
                     return None
                 run_phases = [phase]
 
-            if PHASE0 not in run_phases and ALTAIR not in run_phases and MERGE not in run_phases:
+            if PHASE0 not in run_phases and ALTAIR not in run_phases:
                 dump_skipping_message("none of the recognized phases are executable, skipping test.")
                 return None
 
             available_phases = set(run_phases)
             if other_phases is not None:
                 available_phases |= set(other_phases)
-
-            preset_name = DEFAULT_TEST_PRESET
-            if 'preset' in kw:
-                preset_name = kw.pop('preset')
-            targets = spec_targets[preset_name]
 
             # TODO: test state is dependent on phase0 but is immediately transitioned to later phases.
             #  A new state-creation helper for later phases may be in place, and then tests can run without phase0
@@ -354,20 +346,16 @@ def with_phases(phases, other_phases=None):
             # Populate all phases for multi-phase tests
             phase_dir = {}
             if PHASE0 in available_phases:
-                phase_dir[PHASE0] = targets[PHASE0]
+                phase_dir[PHASE0] = spec_phase0
             if ALTAIR in available_phases:
-                phase_dir[ALTAIR] = targets[ALTAIR]
-            if MERGE in available_phases:
-                phase_dir[MERGE] = targets[MERGE]
+                phase_dir[ALTAIR] = spec_altair
 
             # return is ignored whenever multiple phases are ran.
             # This return is for test generators to emit python generators (yielding test vector outputs)
             if PHASE0 in run_phases:
-                ret = fn(spec=targets[PHASE0], phases=phase_dir, *args, **kw)
+                ret = fn(spec=spec_phase0, phases=phase_dir, *args, **kw)
             if ALTAIR in run_phases:
-                ret = fn(spec=targets[ALTAIR], phases=phase_dir, *args, **kw)
-            if MERGE in run_phases:
-                ret = fn(spec=targets[MERGE], phases=phase_dir, *args, **kw)
+                ret = fn(spec=spec_altair, phases=phase_dir, *args, **kw)
 
             # TODO: merge, sharding, custody_game and das are not executable yet.
             #  Tests that specify these features will not run, and get ignored for these specific phases.
@@ -376,13 +364,12 @@ def with_phases(phases, other_phases=None):
     return decorator
 
 
-def with_presets(preset_bases, reason=None):
-    available_presets = set(preset_bases)
-
+def with_configs(configs, reason=None):
     def decorator(fn):
         def wrapper(*args, spec: Spec, **kw):
-            if spec.config.PRESET_BASE not in available_presets:
-                message = f"doesn't support this preset base: {spec.config.PRESET_BASE}."
+            available_configs = set(configs)
+            if spec.CONFIG_NAME not in available_configs:
+                message = f"doesn't support this config: {spec.CONFIG_NAME}."
                 if reason is not None:
                     message = f"{message} Reason: {reason}"
                 dump_skipping_message(message)
@@ -393,95 +380,9 @@ def with_presets(preset_bases, reason=None):
     return decorator
 
 
-def with_config_overrides(config_overrides):
-    """
-    WARNING: the spec_test decorator must wrap this, to ensure the decorated test actually runs.
-    This decorator forces the test to yield, and pytest doesn't run generator tests, and instead silently passes it.
-    Use 'spec_configured_state_test' instead of 'spec_state_test' if you are unsure.
-
-    This is a decorator that applies a dict of config value overrides to the spec during execution.
-    """
-    def decorator(fn):
-        def wrapper(*args, spec: Spec, **kw):
-            # remember the old config
-            old_config = spec.config
-
-            # apply our overrides to a copy of it, and apply it to the spec
-            tmp_config = deepcopy(old_config._asdict())  # not a private method, there are multiple
-            tmp_config.update(config_overrides)
-            config_types = spec.Configuration.__annotations__
-            # Retain types of all config values
-            test_config = {k: config_types[k](v) for k, v in tmp_config.items()}
-
-            # Output the config for test vectors  (TODO: check config YAML encoding)
-            yield 'config', 'data', test_config
-
-            spec.config = spec.Configuration(**test_config)
-
-            # Run the function
-            out = fn(*args, spec=spec, **kw)
-            # If it's not returning None like a normal test function,
-            # it's generating things, and we need to complete it before setting back the config.
-            if out is not None:
-                yield from out
-
-            # Restore the old config and apply it
-            spec.config = old_config
-
-        return wrapper
-    return decorator
-
-
 def is_post_altair(spec):
-    if spec.fork == MERGE:  # TODO: remove parallel Altair-Merge condition after rebase.
-        return False
-    if spec.fork in FORKS_BEFORE_ALTAIR:
-        return False
-    return True
-
-
-def is_post_merge(spec):
-    if spec.fork == ALTAIR:  # TODO: remove parallel Altair-Merge condition after rebase.
-        return False
-    if spec.fork in FORKS_BEFORE_MERGE:
+    # TODO: everything runs in parallel to Altair.
+    #  After features are rebased on the Altair fork, this can be reduced to just PHASE0.
+    if spec.fork in [PHASE0, MERGE, SHARDING, CUSTODY_GAME, DAS]:
         return False
     return True
-
-
-with_altair_and_later = with_phases([ALTAIR])  # TODO: include Merge, but not until Merge work is rebased.
-with_merge_and_later = with_phases([MERGE])
-
-
-def fork_transition_test(pre_fork_name, post_fork_name, fork_epoch=None):
-    """
-    A decorator to construct a "transition" test from one fork of the eth2 spec
-    to another.
-
-    Decorator assumes a transition from the `pre_fork_name` fork to the
-    `post_fork_name` fork. The user can supply a `fork_epoch` at which the
-    fork occurs or they must compute one (yielding to the generator) during the test
-    if more custom behavior is desired.
-
-    A test using this decorator should expect to receive as parameters:
-    `state`: the default state constructed for the `pre_fork_name` fork
-        according to the `with_state` decorator.
-    `fork_epoch`: the `fork_epoch` provided to this decorator, if given.
-    `spec`: the version of the eth2 spec corresponding to `pre_fork_name`.
-    `post_spec`: the version of the eth2 spec corresponding to `post_fork_name`.
-    `pre_tag`: a function to tag data as belonging to `pre_fork_name` fork.
-        Used to discriminate data during consumption of the generated spec tests.
-    `post_tag`: a function to tag data as belonging to `post_fork_name` fork.
-        Used to discriminate data during consumption of the generated spec tests.
-    """
-    def _wrapper(fn):
-        @with_phases([pre_fork_name], other_phases=[post_fork_name])
-        @spec_test
-        @with_state
-        def _adapter(*args, **kwargs):
-            wrapped = build_transition_test(fn,
-                                            pre_fork_name,
-                                            post_fork_name,
-                                            fork_epoch=fork_epoch)
-            return wrapped(*args, **kwargs)
-        return _adapter
-    return _wrapper

@@ -1,5 +1,7 @@
 from eth_utils import encode_hex
 
+from eth2spec.phase0 import spec as phase0_spec
+
 
 def get_anchor_root(spec, state):
     anchor_block_header = state.latest_block_header.copy()
@@ -10,7 +12,7 @@ def get_anchor_root(spec, state):
 
 def add_block_to_store(spec, store, signed_block):
     pre_state = store.block_states[signed_block.message.parent_root]
-    block_time = pre_state.genesis_time + signed_block.message.slot * spec.config.SECONDS_PER_SLOT
+    block_time = pre_state.genesis_time + signed_block.message.slot * spec.SECONDS_PER_SLOT
 
     if store.time < block_time:
         spec.on_tick(store, block_time)
@@ -23,7 +25,7 @@ def tick_and_run_on_block(spec, store, signed_block, test_steps=None):
         test_steps = []
 
     pre_state = store.block_states[signed_block.message.parent_root]
-    block_time = pre_state.genesis_time + signed_block.message.slot * spec.config.SECONDS_PER_SLOT
+    block_time = pre_state.genesis_time + signed_block.message.slot * spec.SECONDS_PER_SLOT
 
     if store.time < block_time:
         on_tick_and_append_step(spec, store, block_time, test_steps)
@@ -37,8 +39,8 @@ def tick_and_run_on_attestation(spec, store, attestation, test_steps=None):
 
     parent_block = store.blocks[attestation.data.beacon_block_root]
     pre_state = store.block_states[spec.hash_tree_root(parent_block)]
-    block_time = pre_state.genesis_time + parent_block.slot * spec.config.SECONDS_PER_SLOT
-    next_epoch_time = block_time + spec.SLOTS_PER_EPOCH * spec.config.SECONDS_PER_SLOT
+    block_time = pre_state.genesis_time + parent_block.slot * spec.SECONDS_PER_SLOT
+    next_epoch_time = block_time + spec.SLOTS_PER_EPOCH * spec.SECONDS_PER_SLOT
 
     if store.time < next_epoch_time:
         spec.on_tick(store, next_epoch_time)
@@ -56,7 +58,8 @@ def get_genesis_forkchoice_store(spec, genesis_state):
 
 def get_genesis_forkchoice_store_and_block(spec, genesis_state):
     assert genesis_state.slot == spec.GENESIS_SLOT
-    genesis_block = spec.BeaconBlock(state_root=genesis_state.hash_tree_root())
+    # The genesis block must be a Phase 0 `BeaconBlock`
+    genesis_block = phase0_spec.BeaconBlock(state_root=genesis_state.hash_tree_root())
     return spec.get_forkchoice_store(genesis_state, genesis_block), genesis_block
 
 

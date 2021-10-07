@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>RANDAO manipulations</title>
+  
+  
+  
+  
+  <meta property="og:title" content="RANDAO manipulations" />
+  <meta property="og:url" content="https://ethereum.github.io/beaconrunner/notebooks/experiments/randao.html" />
+  <meta property="og:image" content="https://ethereum.github.io/rig/static/rig.png" />
+  <meta property="og:description" content="Can someone manipulate the proposer selection algorithm of PoS Ethereum?" />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="RANDAO manipulations">
+  <meta name="twitter:description" content="Can someone manipulate the proposer selection algorithm of PoS Ethereum?">
+  <meta name="twitter:image" content="https://ethereum.github.io/rig/static/rig.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js" type="text/javascript"></script>
+  <script src="https://ethereum.github.io/rig/static/react.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/react-dom.development.js"></script>
+  <script src="https://ethereum.github.io/rig/static/component-library.js"></script>
+  <script src="https://ethereum.github.io/rig/static/header.js"></script>
+  <script src="https://ethereum.github.io/rig/static/footer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+
+
+
+
+
+<style type="text/css">
+    pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: var(--jp-cell-editor-active-background) }
+.highlight { background: var(--jp-cell-editor-background); color: var(--jp-mirror-editor-variable-color) }
+.highlight .c { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment */
+.highlight .err { color: var(--jp-mirror-editor-error-color) } /* Error */
+.highlight .k { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword */
+.highlight .o { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator */
+.highlight .p { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation */
+.highlight .ch { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Preproc */
+.highlight .cpf { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Single */
+.highlight .cs { color: var(--jp-mirror-editor-comment-color); font-style: italic } /* Comment.Special */
+.highlight .kc { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Pseudo */
+.highlight .kr { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: var(--jp-mirror-editor-keyword-color); font-weight: bold } /* Keyword.Type */
+.highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
+.highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
+.highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
+.highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
+.highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
+.highlight .mh { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Hex */
+.highlight .mi { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer */
+.highlight .mo { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Oct */
+.highlight .sa { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Affix */
+.highlight .sb { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Backtick */
+.highlight .sc { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Char */
+.highlight .dl { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Delimiter */
+.highlight .sd { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Doc */
+.highlight .s2 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Double */
+.highlight .se { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Escape */
+.highlight .sh { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Heredoc */
+.highlight .si { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Interpol */
+.highlight .sx { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Other */
+.highlight .sr { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Regex */
+.highlight .s1 { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Single */
+.highlight .ss { color: var(--jp-mirror-editor-string-color) } /* Literal.String.Symbol */
+.highlight .il { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Integer.Long */
+  </style>
+
+
+
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/jupyter.css"/>
+<link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/theme-light.css"/>
+<style type="text/css">
+a.anchor-link {
+   display: none;
+}
+.highlight  {
+    margin: 0.4em;
+}
+
+/* Input area styling */
+.jp-InputArea {
+    overflow: hidden;
+}
+
+.jp-InputArea-editor {
+    overflow: hidden;
+}
+
+@media print {
+  body {
+    margin: 0;
+  }
+}
+</style>
+<!-- Load mathjax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML-full,Safe"> </script>
+    <!-- MathJax configuration -->
+    <script type="text/x-mathjax-config">
+    init_mathjax = function() {
+        if (window.MathJax) {
+        // MathJax loaded
+            MathJax.Hub.Config({
+                TeX: {
+                    equationNumbers: {
+                    autoNumber: "AMS",
+                    useLabelIds: true
+                    }
+                },
+                tex2jax: {
+                    inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                    displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                displayAlign: 'center',
+                CommonHTML: {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                },
+                "HTML-CSS": {
+                    linebreaks: { 
+                    automatic: true 
+                    }
+                }
+            });
+        
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        }
+    }
+    init_mathjax();
+    </script>
+    <!-- End of mathjax configuration -->
+  <link rel="stylesheet" type="text/css" href="https://ethereum.github.io/rig/static/index.css"/>
+</head>
+<body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
+
+  <div id="header"></div>
+  <script>
+    ReactDOM.render(
+      e(Header, null),
+      document.querySelector("#header")
+    );
+    const hamburger = document.querySelector(".hamburger");
+    const navMenu = document.querySelector(".nav-menu");
+
+    function mobileMenu() {
+        hamburger.classList.toggle("active");
+        navMenu.classList.toggle("active");
+    }
+
+    function closeMenu() {
+        hamburger.classList.remove("active");
+        navMenu.classList.remove("active");
+    }
+
+    hamburger.addEventListener("click", mobileMenu);
+
+    const navLink = document.querySelectorAll(".nav-link");
+
+    navLink.forEach(n => n.addEventListener("click", closeMenu));
+  </script>
+  <div class="article-container">
+    <div class="document-container">
+      <div class="title-container">
+        <div class="title">
+          Exploring the RANDAO game in PoS Ethereum
+        </div>
+
+        <div class="sub-title">
+          
+        </div>
+      </div>
+
+      <div id="toc-author-block">
+        <div id="authors"></div>
+        <div id="toc"></div>
+      </div>
+      
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="Housekeeping">Housekeeping<a class="anchor-link" href="#Housekeeping">&#182;</a></h2><p>Let's first set up our environment.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="c1"># sys.path.insert(1, os.path.realpath(os.path.pardir) + &quot;/notebooks/randao/beaconrunner&quot;)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;../..&quot;</span><span class="p">)</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;../../..&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">from</span> <span class="nn">eth2spec.utils.ssz.ssz_impl</span> <span class="kn">import</span> <span class="n">hash_tree_root</span>
+
+<span class="kn">from</span> <span class="nn">cadCAD_tools.profiling.visualizations</span> <span class="kn">import</span> <span class="n">visualize_substep_impact</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+<span class="kn">import</span> <span class="nn">plotly.io</span> <span class="k">as</span> <span class="nn">pio</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">backend</span> <span class="o">=</span> <span class="s2">&quot;plotly&quot;</span>
+<span class="n">pio</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="s2">&quot;plotly_mimetype+notebook_connected&quot;</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+
+<span class="kn">from</span> <span class="nn">experiments.utils</span> <span class="kn">import</span> <span class="n">display_code</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>Let's import some of the beaconrunner logic</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="How-does-the-RANDAO-game-work?">How does the RANDAO game work?<a class="anchor-link" href="#How-does-the-RANDAO-game-work?">&#182;</a></h2>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">model.validators.LazyValidator</span> <span class="kn">import</span> <span class="n">LazyValidator</span>
+<span class="kn">import</span> <span class="nn">model.simulator</span> <span class="k">as</span> <span class="nn">simulator</span>
+<span class="kn">import</span> <span class="nn">model.network</span> <span class="k">as</span> <span class="nn">network</span>
+<span class="kn">import</span> <span class="nn">model.specs</span> <span class="k">as</span> <span class="nn">specs</span>
+
+<span class="n">num_validators</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">validators</span> <span class="o">=</span> <span class="p">[</span><span class="n">LazyValidator</span><span class="p">(</span><span class="n">validator_index</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)]</span>
+
+<span class="c1"># Create a genesis state</span>
+<span class="p">(</span><span class="n">genesis_state</span><span class="p">,</span> <span class="n">genesis_block</span><span class="p">)</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">get_genesis_state_block</span><span class="p">(</span><span class="n">validators</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="s2">&quot;let&#39;s play randao&quot;</span><span class="p">)</span>
+
+<span class="c1"># Validators load the state</span>
+<span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">genesis_block</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span>
+
+<span class="c1"># We skip the genesis block</span>
+<span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>For simplicity let's just assume a fully connected network, meaning that all validators are connected with each other.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">set_a</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)))</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">Network</span><span class="p">(</span><span class="n">validators</span> <span class="o">=</span> <span class="n">validators</span><span class="p">,</span> <span class="n">sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">]))</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Genesis time =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">genesis_time</span><span class="p">,</span> <span class="s2">&quot;seconds&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Store time =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="s2">&quot;seconds&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Current slot =&quot;</span><span class="p">,</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Genesis time = 1607428800 seconds
+Store time = 1607428812 seconds
+Current slot = 1
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">get_current_epoch_proposers</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_next_epoch_proposers</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_epoch_proposers</span><span class="p">(</span><span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">net</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">current_slot</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_slot</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+
+    <span class="n">current_head_root</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">get_head</span><span class="p">()</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">current_head_root</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">start_slot</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">current_epoch</span><span class="p">)</span>
+    <span class="n">start_state</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">start_slot</span> <span class="o">==</span> <span class="n">current_state</span><span class="o">.</span><span class="n">slot</span> <span class="k">else</span> \
+        <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">br</span><span class="o">.</span><span class="n">specs</span><span class="o">.</span><span class="n">get_block_root</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="n">current_epoch_proposers</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs_ahead</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span> <span class="o">+</span> <span class="n">start_slot</span><span class="p">,</span> <span class="n">start_slot</span> <span class="o">+</span> <span class="p">(</span><span class="n">epochs_ahead</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">slot</span> <span class="o">&lt;</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="n">specs</span><span class="o">.</span><span class="n">process_slots</span><span class="p">(</span><span class="n">start_state</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+        <span class="n">current_epoch_proposers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">specs</span><span class="o">.</span><span class="n">get_beacon_proposer_index</span><span class="p">(</span><span class="n">start_state</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">current_epoch_proposers</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">genesis_proposer_expectation</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">genesis_proposer_expectation</span> <span class="o">+=</span> <span class="s2">&quot;Proposer indices for epoch </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">epochs_ahead</span><span class="o">=</span><span class="n">i</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">genesis_proposer_expectation</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Proposer indices for epoch 0: [5, 7, 15, 4] 
+Proposer indices for epoch 1: [6, 0, 5, 9] 
+Proposer indices for epoch 2: [15, 2, 15, 6] 
+Proposer indices for epoch 3: [4, 12, 2, 12] 
+Proposer indices for epoch 4: [2, 15, 14, 4] 
+Proposer indices for epoch 5: [15, 2, 7, 9] 
+Proposer indices for epoch 6: [1, 14, 2, 1] 
+Proposer indices for epoch 7: [3, 11, 5, 12] 
+Proposer indices for epoch 8: [12, 15, 9, 1] 
+Proposer indices for epoch 9: [11, 14, 9, 3] 
+
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We now have a schedule for who is expected to propose when. But hold on, what about the parameters <code>MIN_SEED_LOOKAHEAD=1</code> and <code>MAX_SEED_LOOKAHEAD=4</code>?!? Good catch!</p>
+<p>The <code>MAX_SEED_LOOKAHEAD</code> is actually the minimum delay on validator activations and exits; it basically means that validators strategically activating and exiting can only affect the seed 4 epochs into the future, leaving a space of 3 epochs within which proposers can mix-in unknown info to scramble the seed and hence make stake grinding via activating or exiting validators non-viable.</p>
+<p>A random seed is used to select all the committees and proposers for an epoch. Every epoch, the beacon chain accumulates randomness from proposers via the RANDAO and stores it. The seed for the current epoch is based on the RANDAO output from the epoch <code>MIN_SEED_LOOKUP + 1</code> ago. With <code>MIN_SEED_LOOKAHEAD</code> set to one, the effect is that we can know the seed for the current epoch and the next epoch, but not beyond (since the next-but-one epoch depends on randomness from the current epoch that hasn't been accumulated yet).</p>
+<p>Let's see if this is true, i.e. "Don't trust, but verify!"</p>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Simulations">Simulations<a class="anchor-link" href="#Simulations">&#182;</a></h3><p>Let's first create some observer functions that extract relevant data at each timestep for us</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">experiments.templates.randao.observers</span> <span class="k">as</span> <span class="nn">honest_randao_observers</span>
+<span class="n">display_code</span><span class="p">(</span><span class="n">honest_randao_observers</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #408080; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #BC7A00 } /* Comment.Preproc */
+.highlight .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #408080; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #FF0000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #00A000 } /* Generic.Inserted */
+.highlight .go { color: #888888 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #7D9029 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #A0A000 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #BB6688 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */</style>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.output_html .hll { background-color: #ffffcc }
+.output_html { background: #f8f8f8; }
+.output_html .c { color: #408080; font-style: italic } /* Comment */
+.output_html .err { border: 1px solid #FF0000 } /* Error */
+.output_html .k { color: #008000; font-weight: bold } /* Keyword */
+.output_html .o { color: #666666 } /* Operator */
+.output_html .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.output_html .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.output_html .cp { color: #BC7A00 } /* Comment.Preproc */
+.output_html .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.output_html .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.output_html .cs { color: #408080; font-style: italic } /* Comment.Special */
+.output_html .gd { color: #A00000 } /* Generic.Deleted */
+.output_html .ge { font-style: italic } /* Generic.Emph */
+.output_html .gr { color: #FF0000 } /* Generic.Error */
+.output_html .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.output_html .gi { color: #00A000 } /* Generic.Inserted */
+.output_html .go { color: #888888 } /* Generic.Output */
+.output_html .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.output_html .gs { font-weight: bold } /* Generic.Strong */
+.output_html .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.output_html .gt { color: #0044DD } /* Generic.Traceback */
+.output_html .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.output_html .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.output_html .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.output_html .kp { color: #008000 } /* Keyword.Pseudo */
+.output_html .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.output_html .kt { color: #B00040 } /* Keyword.Type */
+.output_html .m { color: #666666 } /* Literal.Number */
+.output_html .s { color: #BA2121 } /* Literal.String */
+.output_html .na { color: #7D9029 } /* Name.Attribute */
+.output_html .nb { color: #008000 } /* Name.Builtin */
+.output_html .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.output_html .no { color: #880000 } /* Name.Constant */
+.output_html .nd { color: #AA22FF } /* Name.Decorator */
+.output_html .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.output_html .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.output_html .nf { color: #0000FF } /* Name.Function */
+.output_html .nl { color: #A0A000 } /* Name.Label */
+.output_html .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.output_html .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.output_html .nv { color: #19177C } /* Name.Variable */
+.output_html .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.output_html .w { color: #bbbbbb } /* Text.Whitespace */
+.output_html .mb { color: #666666 } /* Literal.Number.Bin */
+.output_html .mf { color: #666666 } /* Literal.Number.Float */
+.output_html .mh { color: #666666 } /* Literal.Number.Hex */
+.output_html .mi { color: #666666 } /* Literal.Number.Integer */
+.output_html .mo { color: #666666 } /* Literal.Number.Oct */
+.output_html .sa { color: #BA2121 } /* Literal.String.Affix */
+.output_html .sb { color: #BA2121 } /* Literal.String.Backtick */
+.output_html .sc { color: #BA2121 } /* Literal.String.Char */
+.output_html .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.output_html .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.output_html .s2 { color: #BA2121 } /* Literal.String.Double */
+.output_html .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.output_html .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.output_html .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.output_html .sx { color: #008000 } /* Literal.String.Other */
+.output_html .sr { color: #BB6688 } /* Literal.String.Regex */
+.output_html .s1 { color: #BA2121 } /* Literal.String.Single */
+.output_html .ss { color: #19177C } /* Literal.String.Symbol */
+.output_html .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.output_html .fm { color: #0000FF } /* Name.Function.Magic */
+.output_html .vc { color: #19177C } /* Name.Variable.Class */
+.output_html .vg { color: #19177C } /* Name.Variable.Global */
+.output_html .vi { color: #19177C } /* Name.Variable.Instance */
+.output_html .vm { color: #19177C } /* Name.Variable.Magic */
+.output_html .il { color: #666666 } /* Literal.Number.Integer.Long */</style><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">model.specs</span> <span class="k">as</span> <span class="nn">specs</span>
+<span class="kn">import</span> <span class="nn">model.eth2</span> <span class="k">as</span> <span class="nn">eth2</span>
+
+<span class="c1"># Common observers</span>
+
+<span class="k">def</span> <span class="nf">current_slot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">slot</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">current_epoch</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_epoch&quot;</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_epoch_proposers</span><span class="p">(</span><span class="n">validator</span><span class="p">,</span> <span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">current_slot</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_slot</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_head_root</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">get_head</span><span class="p">()</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">current_head_root</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">start_slot</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">compute_start_slot_at_epoch</span><span class="p">(</span><span class="n">current_epoch</span><span class="p">)</span>
+    <span class="n">start_state</span> <span class="o">=</span> <span class="n">current_state</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">start_slot</span> <span class="o">==</span> <span class="n">current_state</span><span class="o">.</span><span class="n">slot</span> <span class="k">else</span> \
+        <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">specs</span><span class="o">.</span><span class="n">get_block_root</span><span class="p">(</span><span class="n">current_state</span><span class="p">,</span> <span class="n">current_epoch</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">epoch_proposers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">slot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs_ahead</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span> <span class="o">+</span> <span class="n">start_slot</span><span class="p">,</span> <span class="n">start_slot</span> <span class="o">+</span> <span class="p">(</span><span class="n">epochs_ahead</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">specs</span><span class="o">.</span><span class="n">SLOTS_PER_EPOCH</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">slot</span> <span class="o">&lt;</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">start_state</span><span class="o">.</span><span class="n">slot</span> <span class="o">&lt;</span> <span class="n">slot</span><span class="p">:</span>
+            <span class="n">specs</span><span class="o">.</span><span class="n">process_slots</span><span class="p">(</span><span class="n">start_state</span><span class="p">,</span> <span class="n">slot</span><span class="p">)</span>
+        <span class="n">epoch_proposers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">specs</span><span class="o">.</span><span class="n">get_beacon_proposer_index</span><span class="p">(</span><span class="n">start_state</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">epoch_proposers</span>
+
+<span class="k">def</span> <span class="nf">get_current_proposer_indices</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="n">current_epoch_proposers</span> <span class="o">=</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">validator</span><span class="o">=</span><span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;current_indices&quot;</span><span class="p">,</span> <span class="n">current_epoch_proposers</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_next_proposer_indices</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="n">next_epoch_proposers</span> <span class="o">=</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">validator</span><span class="o">=</span><span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;next_indices&quot;</span><span class="p">,</span> <span class="n">next_epoch_proposers</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_plus_2_epoch_proposer_indices</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="n">plus_2_epoch_proposers</span> <span class="o">=</span> <span class="n">get_epoch_proposers</span><span class="p">(</span><span class="n">validator</span><span class="o">=</span><span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">epochs_ahead</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;plus_2_indices&quot;</span><span class="p">,</span> <span class="n">plus_2_epoch_proposers</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">balances</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">substep</span><span class="p">,</span> <span class="n">state_history</span><span class="p">,</span> <span class="n">previous_state</span><span class="p">,</span> <span class="n">policy_input</span><span class="p">):</span>
+    <span class="n">validators</span> <span class="o">=</span> <span class="n">previous_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">validators</span>
+    <span class="n">validator</span> <span class="o">=</span> <span class="n">validators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_head</span><span class="p">(</span><span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">validator</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">block_states</span><span class="p">[</span><span class="n">head</span><span class="p">]</span>
+    <span class="n">current_epoch</span> <span class="o">=</span> <span class="n">specs</span><span class="o">.</span><span class="n">get_current_epoch</span><span class="p">(</span><span class="n">current_state</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">validators</span><span class="p">)]</span>
+    <span class="n">balances</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">current_state</span><span class="o">.</span><span class="n">balances</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;balances&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">eth2</span><span class="o">.</span><span class="n">gwei_to_eth</span><span class="p">(</span><span class="n">balance</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span> <span class="k">for</span> <span class="n">balance</span> <span class="ow">in</span> <span class="n">balances</span><span class="p">])</span>
+</pre></div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <p>We then run the following experiments, composed with three simulations, one per scenario we are interested to check.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">experiments.run</span> <span class="kn">import</span> <span class="n">run</span>
+<span class="kn">import</span> <span class="nn">experiments.templates.randao.experiment</span> <span class="k">as</span> <span class="nn">randao_experiment</span>
+
+<span class="n">display_code</span><span class="p">(</span><span class="n">randao_experiment</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
+<style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #408080; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #BC7A00 } /* Comment.Preproc */
+.highlight .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #408080; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .gr { color: #FF0000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #00A000 } /* Generic.Inserted */
+.highlight .go { color: #888888 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #7D9029 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #A0A000 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #BB6688 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */</style>
+</div>
+
+</div>
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<style>pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.output_html .hll { background-color: #ffffcc }
+.output_html { background: #f8f8f8; }
+.output_html .c { color: #408080; font-style: italic } /* Comment */
+.output_html .err { border: 1px solid #FF0000 } /* Error */
+.output_html .k { color: #008000; font-weight: bold } /* Keyword */
+.output_html .o { color: #666666 } /* Operator */
+.output_html .ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.output_html .cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.output_html .cp { color: #BC7A00 } /* Comment.Preproc */
+.output_html .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.output_html .c1 { color: #408080; font-style: italic } /* Comment.Single */
+.output_html .cs { color: #408080; font-style: italic } /* Comment.Special */
+.output_html .gd { color: #A00000 } /* Generic.Deleted */
+.output_html .ge { font-style: italic } /* Generic.Emph */
+.output_html .gr { color: #FF0000 } /* Generic.Error */
+.output_html .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.output_html .gi { color: #00A000 } /* Generic.Inserted */
+.output_html .go { color: #888888 } /* Generic.Output */
+.output_html .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.output_html .gs { font-weight: bold } /* Generic.Strong */
+.output_html .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.output_html .gt { color: #0044DD } /* Generic.Traceback */
+.output_html .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.output_html .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.output_html .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.output_html .kp { color: #008000 } /* Keyword.Pseudo */
+.output_html .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.output_html .kt { color: #B00040 } /* Keyword.Type */
+.output_html .m { color: #666666 } /* Literal.Number */
+.output_html .s { color: #BA2121 } /* Literal.String */
+.output_html .na { color: #7D9029 } /* Name.Attribute */
+.output_html .nb { color: #008000 } /* Name.Builtin */
+.output_html .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.output_html .no { color: #880000 } /* Name.Constant */
+.output_html .nd { color: #AA22FF } /* Name.Decorator */
+.output_html .ni { color: #999999; font-weight: bold } /* Name.Entity */
+.output_html .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.output_html .nf { color: #0000FF } /* Name.Function */
+.output_html .nl { color: #A0A000 } /* Name.Label */
+.output_html .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.output_html .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.output_html .nv { color: #19177C } /* Name.Variable */
+.output_html .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.output_html .w { color: #bbbbbb } /* Text.Whitespace */
+.output_html .mb { color: #666666 } /* Literal.Number.Bin */
+.output_html .mf { color: #666666 } /* Literal.Number.Float */
+.output_html .mh { color: #666666 } /* Literal.Number.Hex */
+.output_html .mi { color: #666666 } /* Literal.Number.Integer */
+.output_html .mo { color: #666666 } /* Literal.Number.Oct */
+.output_html .sa { color: #BA2121 } /* Literal.String.Affix */
+.output_html .sb { color: #BA2121 } /* Literal.String.Backtick */
+.output_html .sc { color: #BA2121 } /* Literal.String.Char */
+.output_html .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.output_html .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.output_html .s2 { color: #BA2121 } /* Literal.String.Double */
+.output_html .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.output_html .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.output_html .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.output_html .sx { color: #008000 } /* Literal.String.Other */
+.output_html .sr { color: #BB6688 } /* Literal.String.Regex */
+.output_html .s1 { color: #BA2121 } /* Literal.String.Single */
+.output_html .ss { color: #19177C } /* Literal.String.Symbol */
+.output_html .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.output_html .fm { color: #0000FF } /* Name.Function.Magic */
+.output_html .vc { color: #19177C } /* Name.Variable.Class */
+.output_html .vg { color: #19177C } /* Name.Variable.Global */
+.output_html .vi { color: #19177C } /* Name.Variable.Instance */
+.output_html .vm { color: #19177C } /* Name.Variable.Magic */
+.output_html .il { color: #666666 } /* Literal.Number.Integer.Long */</style><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">experiments.default_experiment</span> <span class="kn">import</span> <span class="n">experiment</span>
+
+<span class="kn">import</span> <span class="nn">model.parts.observers</span> <span class="k">as</span> <span class="nn">observers</span>
+<span class="kn">import</span> <span class="nn">experiments.templates.randao.observers</span> <span class="k">as</span> <span class="nn">randao_observers</span>
+
+<span class="kn">import</span> <span class="nn">model.simulator</span> <span class="k">as</span> <span class="nn">simulator</span>
+<span class="kn">from</span> <span class="nn">model.network</span> <span class="kn">import</span> <span class="n">Network</span><span class="p">,</span> <span class="n">NetworkSet</span>
+<span class="kn">from</span> <span class="nn">model.validators.RANDAOValidator</span> <span class="kn">import</span> <span class="n">RANDAOValidator</span>
+
+<span class="c1"># Make a copy of the default experiment to avoid mutation</span>
+<span class="n">experiment</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
+
+<span class="n">scenarios</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;honest&quot;</span><span class="p">,</span> <span class="s2">&quot;skip&quot;</span><span class="p">,</span> <span class="s2">&quot;slashable&quot;</span><span class="p">]</span>
+<span class="c1"># scenarios = [&quot;slashable&quot;]</span>
+
+<span class="n">randao_observers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;current_epoch&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">current_epoch</span><span class="p">,</span>
+    <span class="s2">&quot;current_slot&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">current_slot</span><span class="p">,</span>
+    <span class="s2">&quot;current_indices&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">get_current_proposer_indices</span><span class="p">,</span>
+    <span class="s2">&quot;next_indices&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">get_next_proposer_indices</span><span class="p">,</span>
+    <span class="s2">&quot;plus_2_indices&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">get_plus_2_epoch_proposer_indices</span><span class="p">,</span>
+    <span class="s2">&quot;balances&quot;</span><span class="p">:</span> <span class="n">randao_observers</span><span class="o">.</span><span class="n">balances</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">create_initial_network</span><span class="p">(</span><span class="n">scenario</span><span class="p">):</span>
+    <span class="n">num_validators</span> <span class="o">=</span> <span class="mi">12</span>
+
+    <span class="n">set_a</span> <span class="o">=</span> <span class="n">NetworkSet</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)))</span>
+    <span class="n">network_sets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">set_a</span><span class="p">])</span>
+
+    <span class="n">validators</span> <span class="o">=</span> <span class="p">[</span><span class="n">RANDAOValidator</span><span class="p">(</span><span class="n">validator_index</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="n">scenario</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_validators</span><span class="p">)]</span>
+
+    <span class="c1"># Create a genesis state</span>
+    <span class="p">(</span><span class="n">genesis_state</span><span class="p">,</span> <span class="n">genesis_block</span><span class="p">)</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">get_genesis_state_block</span><span class="p">(</span><span class="n">validators</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="s2">&quot;let&#39;s play randao&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Validators load the state</span>
+    <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">genesis_state</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">genesis_block</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">validators</span><span class="p">]</span>
+
+    <span class="c1"># We skip the genesis block</span>
+    <span class="n">simulator</span><span class="o">.</span><span class="n">skip_genesis_block</span><span class="p">(</span><span class="n">validators</span><span class="p">)</span>
+
+    <span class="n">network</span> <span class="o">=</span> <span class="n">Network</span><span class="p">(</span><span class="n">validators</span><span class="o">=</span><span class="n">validators</span><span class="p">,</span> <span class="n">sets</span><span class="o">=</span><span class="n">network_sets</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">network</span>
+
+<span class="k">def</span> <span class="nf">create_scenario_model</span><span class="p">(</span><span class="n">scenario</span><span class="p">):</span>
+    <span class="n">new_model</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">simulations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">new_model</span><span class="o">.</span><span class="n">initial_state</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">create_initial_network</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="n">parameter_overrides</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;num_epochs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="n">new_model</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">parameter_overrides</span><span class="p">)</span>
+
+    <span class="p">(</span><span class="n">observed_ic</span><span class="p">,</span> <span class="n">observed_psubs</span><span class="p">)</span> <span class="o">=</span> <span class="n">observers</span><span class="o">.</span><span class="n">add_observers</span><span class="p">(</span>
+        <span class="n">new_model</span><span class="o">.</span><span class="n">initial_state</span><span class="p">,</span>
+        <span class="n">new_model</span><span class="o">.</span><span class="n">state_update_blocks</span><span class="p">,</span>
+        <span class="n">randao_observers</span>
+    <span class="p">)</span>
+
+    <span class="n">new_model</span><span class="o">.</span><span class="n">initial_state</span> <span class="o">=</span> <span class="n">observed_ic</span>
+    <span class="n">new_model</span><span class="o">.</span><span class="n">state_update_blocks</span> <span class="o">=</span> <span class="n">observed_psubs</span>
+
+    <span class="k">return</span> <span class="n">new_model</span>
+
+<span class="k">def</span> <span class="nf">create_simulation</span><span class="p">(</span><span class="n">scenario</span><span class="p">):</span>
+    <span class="n">new_simulation</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">experiment</span><span class="o">.</span><span class="n">simulations</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">new_simulation</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">create_scenario_model</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span>
+    <span class="n">new_simulation</span><span class="o">.</span><span class="n">timesteps</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">get_timesteps</span><span class="p">(</span><span class="n">new_simulation</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">new_simulation</span>
+
+<span class="n">experiment</span><span class="o">.</span><span class="n">simulations</span> <span class="o">=</span> <span class="p">[</span><span class="n">create_simulation</span><span class="p">(</span><span class="n">scenario</span><span class="p">)</span> <span class="k">for</span> <span class="n">scenario</span> <span class="ow">in</span> <span class="n">scenarios</span><span class="p">]</span>
+</pre></div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Experiment execution</span>
+<span class="n">df</span><span class="p">,</span> <span class="n">exceptions</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span><span class="n">randao_experiment</span><span class="o">.</span><span class="n">experiment</span><span class="p">)</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>2021-10-07 15:22:03,302 - root - INFO - Running experiment
+2021-10-07 15:22:03,533 - root - INFO - Starting simulation 0 / run 0 / subset 0
+11 proposing block for slot 1
+4 proposing block for slot 2
+2 proposing block for slot 3
+10 proposing block for slot 4
+3 proposing block for slot 5
+0 proposing block for slot 6
+5 proposing block for slot 7
+0 proposing block for slot 8
+9 proposing block for slot 9
+timestep 100 of run 1
+8 proposing block for slot 10
+8 proposing block for slot 11
+6 proposing block for slot 12
+7 proposing block for slot 13
+6 proposing block for slot 14
+10 proposing block for slot 15
+8 proposing block for slot 16
+5 proposing block for slot 17
+timestep 200 of run 1
+11 proposing block for slot 18
+2 proposing block for slot 19
+7 proposing block for slot 20
+2021-10-07 15:26:13,035 - root - INFO - Starting simulation 1 / run 0 / subset 0
+11 proposing block for slot 1
+4 skipping block for slot 2
+4 skipping block for slot 2
+2 proposing block for slot 3
+10 proposing block for slot 4
+3 proposing block for slot 5
+0 skipping block for slot 6
+0 skipping block for slot 6
+5 proposing block for slot 7
+3 proposing block for slot 8
+10 proposing block for slot 9
+timestep 100 of run 1
+9 skipping block for slot 10
+9 skipping block for slot 10
+10 proposing block for slot 11
+8 proposing block for slot 12
+2 proposing block for slot 13
+8 skipping block for slot 14
+8 skipping block for slot 14
+8 proposing block for slot 15
+9 proposing block for slot 16
+1 proposing block for slot 17
+timestep 200 of run 1
+7 skipping block for slot 18
+7 skipping block for slot 18
+0 proposing block for slot 19
+8 proposing block for slot 20
+2021-10-07 15:30:03,873 - root - INFO - Starting simulation 2 / run 0 / subset 0
+11 proposing block for slot 1
+4 proposing slashable blocks for slot 2
+2 proposing block for slot 3
+   --  2  detected a slashable incident in slot  2  by validator  4
+10 proposing block for slot 4
+3 proposing block for slot 5
+0 proposing slashable blocks for slot 6
+5 proposing block for slot 7
+   --  5  detected a slashable incident in slot  6  by validator  0
+* 0 slashed already; is shutting up!
+* 0 slashed already; is shutting up!
+9 proposing block for slot 9
+timestep 100 of run 1
+8 proposing slashable blocks for slot 10
+* 8 slashed already; is shutting up!
+* 8 slashed already; is shutting up!
+6 proposing block for slot 12
+   --  6  detected a slashable incident in slot  10  by validator  8
+7 proposing block for slot 13
+6 proposing slashable blocks for slot 14
+10 proposing block for slot 15
+   --  10  detected a slashable incident in slot  14  by validator  6
+3 proposing block for slot 16
+2 proposing block for slot 17
+timestep 200 of run 1
+3 proposing slashable blocks for slot 18
+* 3 slashed already; is shutting up!
+* 3 slashed already; is shutting up!
+11 proposing block for slot 20
+   --  11  detected a slashable incident in slot  18  by validator  3
+2021-10-07 15:34:26,971 - root - INFO - Experiment complete in 743.6681742668152 seconds
+2021-10-07 15:34:26,971 - root - INFO - Post-processing results
+2021-10-07 15:34:26,984 - root - INFO - Post-processing complete in 0.013464689254760742 seconds
+</pre>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Experiment-A">Experiment A<a class="anchor-link" href="#Experiment-A">&#182;</a></h3><p>In slot 31 of epoch 0, a block was proposed for slot 31, then forward the state to slot 0 of epoch 1, record the proposer.</p>
+<p>We are using "fast" specs (<code>SLOTS_PER_EPOCH = 4</code>). So propose a block in slot <code>3</code> as per usual and then forward state to next epoch.</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">simulation</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">3</span><span class="p">))][</span>
+    <span class="p">[</span><span class="s2">&quot;current_epoch&quot;</span><span class="p">,</span> <span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="s2">&quot;current_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;next_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;plus_2_indices&quot;</span><span class="p">]]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>current_epoch</th>
+      <th>current_slot</th>
+      <th>current_indices</th>
+      <th>next_indices</th>
+      <th>plus_2_indices</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>13</th>
+      <td>0</td>
+      <td>2</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>0</td>
+      <td>3</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>61</th>
+      <td>1</td>
+      <td>6</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[10, 3, 2, 3]</td>
+    </tr>
+    <tr>
+      <th>73</th>
+      <td>1</td>
+      <td>7</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[10, 3, 2, 3]</td>
+    </tr>
+    <tr>
+      <th>109</th>
+      <td>2</td>
+      <td>10</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[0, 8, 11, 0]</td>
+    </tr>
+    <tr>
+      <th>121</th>
+      <td>2</td>
+      <td>11</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[0, 8, 11, 0]</td>
+    </tr>
+    <tr>
+      <th>157</th>
+      <td>3</td>
+      <td>14</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[8, 5, 11, 2]</td>
+      <td>[5, 8, 11, 2]</td>
+    </tr>
+    <tr>
+      <th>169</th>
+      <td>3</td>
+      <td>15</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[8, 5, 11, 2]</td>
+      <td>[5, 8, 11, 2]</td>
+    </tr>
+    <tr>
+      <th>205</th>
+      <td>4</td>
+      <td>18</td>
+      <td>[8, 5, 11, 2]</td>
+      <td>[7, 9, 7, 2]</td>
+      <td>[9, 0, 0, 11]</td>
+    </tr>
+    <tr>
+      <th>217</th>
+      <td>4</td>
+      <td>19</td>
+      <td>[8, 5, 11, 2]</td>
+      <td>[7, 9, 7, 2]</td>
+      <td>[9, 0, 0, 11]</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> 
+<span class="kn">from</span> <span class="nn">experiments.visualizations.plot_chain</span> <span class="kn">import</span> <span class="n">plot_chain_tree</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_chain_tree</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">217</span><span class="p">][</span><span class="s2">&quot;network&quot;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedImage jp-OutputArea-output ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Experiment-B">Experiment B<a class="anchor-link" href="#Experiment-B">&#182;</a></h3><p>In slot 31 let the proposer skip her duties, then forward state to slot 0 of epoch 1, record the proposer.</p>
+<p>We are using "fast" specs (<code>SLOTS_PER_EPOCH = 4</code>). So skip block proposal for slot <code>3</code>, otherwise proceed as usual.</p>
+<p>Are the proposers different between experiments A and B?</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">simulation</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">3</span><span class="p">))][</span>
+    <span class="p">[</span><span class="s2">&quot;current_epoch&quot;</span><span class="p">,</span> <span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="s2">&quot;current_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;next_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;plus_2_indices&quot;</span><span class="p">]]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>current_epoch</th>
+      <th>current_slot</th>
+      <th>current_indices</th>
+      <th>next_indices</th>
+      <th>plus_2_indices</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>254</th>
+      <td>0</td>
+      <td>2</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>266</th>
+      <td>0</td>
+      <td>3</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>302</th>
+      <td>1</td>
+      <td>6</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[3, 10, 9, 10]</td>
+      <td>[2, 4, 4, 4]</td>
+    </tr>
+    <tr>
+      <th>314</th>
+      <td>1</td>
+      <td>7</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[3, 10, 9, 10]</td>
+      <td>[2, 4, 4, 4]</td>
+    </tr>
+    <tr>
+      <th>350</th>
+      <td>2</td>
+      <td>10</td>
+      <td>[3, 10, 9, 10]</td>
+      <td>[8, 2, 8, 8]</td>
+      <td>[9, 1, 7, 0]</td>
+    </tr>
+    <tr>
+      <th>362</th>
+      <td>2</td>
+      <td>11</td>
+      <td>[3, 10, 9, 10]</td>
+      <td>[8, 2, 8, 8]</td>
+      <td>[9, 1, 7, 0]</td>
+    </tr>
+    <tr>
+      <th>398</th>
+      <td>3</td>
+      <td>14</td>
+      <td>[8, 2, 8, 8]</td>
+      <td>[9, 1, 7, 0]</td>
+      <td>[9, 7, 3, 4]</td>
+    </tr>
+    <tr>
+      <th>410</th>
+      <td>3</td>
+      <td>15</td>
+      <td>[8, 2, 8, 8]</td>
+      <td>[9, 1, 7, 0]</td>
+      <td>[9, 7, 3, 4]</td>
+    </tr>
+    <tr>
+      <th>446</th>
+      <td>4</td>
+      <td>18</td>
+      <td>[9, 1, 7, 0]</td>
+      <td>[8, 2, 2, 1]</td>
+      <td>[1, 10, 8, 2]</td>
+    </tr>
+    <tr>
+      <th>458</th>
+      <td>4</td>
+      <td>19</td>
+      <td>[9, 1, 7, 0]</td>
+      <td>[8, 2, 2, 1]</td>
+      <td>[1, 10, 8, 2]</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">plot_chain_tree</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">458</span><span class="p">][</span><span class="s2">&quot;network&quot;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedImage jp-OutputArea-output ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h3 id="Experiment-C">Experiment C<a class="anchor-link" href="#Experiment-C">&#182;</a></h3><p>The block at slot 31 of epoch 0 has a slashing event. Forward the state to slot 0 of epoch 1. Is it still the same proposer?</p>
+<p>We are using "fast" specs (<code>SLOTS_PER_EPOCH = 4</code>). Create a slashable event for block proposer of slot <code>3</code>. Then forward state to next epoch and record proposers.</p>
+<p>Can we confirm the intuition that the proposer in experiment C is different than in experiment A&amp;B?</p>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">simulation</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">timestep</span> <span class="o">%</span> <span class="mi">12</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">current_slot</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">3</span><span class="p">))][</span>
+    <span class="p">[</span><span class="s2">&quot;current_epoch&quot;</span><span class="p">,</span> <span class="s2">&quot;current_slot&quot;</span><span class="p">,</span> <span class="s2">&quot;current_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;next_indices&quot;</span><span class="p">,</span> <span class="s2">&quot;plus_2_indices&quot;</span><span class="p">]]</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>current_epoch</th>
+      <th>current_slot</th>
+      <th>current_indices</th>
+      <th>next_indices</th>
+      <th>plus_2_indices</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>495</th>
+      <td>0</td>
+      <td>2</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>507</th>
+      <td>0</td>
+      <td>3</td>
+      <td>[5, 11, 4, 2]</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[7, 9, 4, 8]</td>
+    </tr>
+    <tr>
+      <th>543</th>
+      <td>1</td>
+      <td>6</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[10, 3, 2, 3]</td>
+    </tr>
+    <tr>
+      <th>555</th>
+      <td>1</td>
+      <td>7</td>
+      <td>[10, 3, 0, 5]</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[10, 3, 2, 3]</td>
+    </tr>
+    <tr>
+      <th>591</th>
+      <td>2</td>
+      <td>10</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[0, 8, 5, 11]</td>
+    </tr>
+    <tr>
+      <th>603</th>
+      <td>2</td>
+      <td>11</td>
+      <td>[0, 9, 8, 8]</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[0, 8, 5, 11]</td>
+    </tr>
+    <tr>
+      <th>639</th>
+      <td>3</td>
+      <td>14</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[3, 2, 3, 3]</td>
+      <td>[2, 6, 0, 6]</td>
+    </tr>
+    <tr>
+      <th>651</th>
+      <td>3</td>
+      <td>15</td>
+      <td>[6, 7, 6, 10]</td>
+      <td>[3, 2, 3, 3]</td>
+      <td>[2, 6, 0, 6]</td>
+    </tr>
+    <tr>
+      <th>687</th>
+      <td>4</td>
+      <td>18</td>
+      <td>[3, 2, 3, 3]</td>
+      <td>[11, 11, 1, 1]</td>
+      <td>[2, 6, 7, 2]</td>
+    </tr>
+    <tr>
+      <th>699</th>
+      <td>4</td>
+      <td>19</td>
+      <td>[3, 2, 3, 3]</td>
+      <td>[11, 11, 1, 1]</td>
+      <td>[2, 6, 7, 2]</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<details>
+    <summary>Open code input</summary>
+    <div class="jp-Cell-inputWrapper">
+<div class="jp-InputArea jp-Cell-inputArea">
+<div></div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">plot_chain_tree</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">699</span><span class="p">][</span><span class="s2">&quot;network&quot;</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+  </details>
+
+<div class="jp-Cell-outputWrapper">
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+  <div></div>
+
+
+
+
+<div class="jp-RenderedImage jp-OutputArea-output ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+  <h2 id="What-is-going-on?">What is going on?<a class="anchor-link" href="#What-is-going-on?">&#182;</a></h2><h3 id="Specs-dive">Specs dive<a class="anchor-link" href="#Specs-dive">&#182;</a></h3><p>To understand what is going on here, we need to dive into the consensus layer specifications, in particular the <a href="https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_proposer_index">compute_proposer_index</a> function which we reproduce here:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_proposer_index</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">BeaconState</span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ValidatorIndex</span><span class="p">],</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Bytes32</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidatorIndex</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return from ``indices`` a random index sampled by effective balance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">MAX_RANDOM_BYTE</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">8</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">total</span> <span class="o">=</span> <span class="n">uint64</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">))</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">candidate_index</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">compute_shuffled_index</span><span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">total</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">seed</span><span class="p">)]</span>
+        <span class="n">random_byte</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">seed</span> <span class="o">+</span> <span class="n">uint_to_bytes</span><span class="p">(</span><span class="n">uint64</span><span class="p">(</span><span class="n">i</span> <span class="o">//</span> <span class="mi">32</span><span class="p">)))[</span><span class="n">i</span> <span class="o">%</span> <span class="mi">32</span><span class="p">]</span>
+        <span class="n">effective_balance</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="n">candidate_index</span><span class="p">]</span><span class="o">.</span><span class="n">effective_balance</span>
+        <span class="k">if</span> <span class="n">effective_balance</span> <span class="o">*</span> <span class="n">MAX_RANDOM_BYTE</span> <span class="o">&gt;=</span> <span class="n">MAX_EFFECTIVE_BALANCE</span> <span class="o">*</span> <span class="n">random_byte</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">candidate_index</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+<p>The <code>seed</code> argument is obtained from a combination of inputs: the "state seed" for the epoch in which the proposal takes place, determined with the <code>MIN_SEED_LOOKAHEAD</code>; a flag indicating that we care about randomness for the proposer selection; and the slot the proposer is meant to be selected for.</p>
+<div class="highlight"><pre><span></span><span class="n">seed</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">(</span><span class="n">get_seed</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">DOMAIN_BEACON_PROPOSER</span><span class="p">)</span> <span class="o">+</span> <span class="n">uint_to_bytes</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">slot</span><span class="p">))</span>
+</pre></div>
+<p>Effectively, this seed is determined once the state seed for the epoch in which the proposal takes place is determined, i.e., if the proposal is for a slot at epoch <code>N</code>, the state seed is known at the beginning of epoch <code>N-1</code>.</p>
+<p>The seed is not the only input to proposer selection however. Notice the lines:</p>
+<div class="highlight"><pre><span></span><span class="n">effective_balance</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">validators</span><span class="p">[</span><span class="n">candidate_index</span><span class="p">]</span><span class="o">.</span><span class="n">effective_balance</span>
+<span class="k">if</span> <span class="n">effective_balance</span> <span class="o">*</span> <span class="n">MAX_RANDOM_BYTE</span> <span class="o">&gt;=</span> <span class="n">MAX_EFFECTIVE_BALANCE</span> <span class="o">*</span> <span class="n">random_byte</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">candidate_index</span>
+</pre></div>
+<h3 id="Proposers-and-coin-flips">Proposers and coin flips<a class="anchor-link" href="#Proposers-and-coin-flips">&#182;</a></h3><p>What is happening in these lines? We sample at random from the whole active validator set a <code>candidate_index</code>. The <code>effective_balance</code> of this candidate is an ETH unit above 16 (the ejection threshold) and below 32 (the maximum effective balance), so an integer between 16 and 32, both inclusive. When all active validators have the same effective balance, say, 32 ETH, we sample uniformly at random between all of them. However, we want to reduce the likelihood that a validator with a lower effective balance is selected. If 1000 validators have effective balance 32 and our candidate has effective balance 31, they should be selected with probability $\frac{31}{31 + 1000 \times 32}$.</p>
+<p>How can we simulate this randomness? The following works:</p>
+<ol>
+<li>Pick a candidate uniformly at random (probability to be selected $\frac{32}{32 \times N}$, where $N$ is the number of active validators)</li>
+<li>Read the effective balance $b$ of the validator</li>
+<li>Flip a coin with probability of Heads equal to $\frac{b}{32}$.<ul>
+<li>If Heads obtained, candidate is the proposer!</li>
+<li>If Tails obtained, we drop the candidate and try another time from step 1.</li>
+</ul>
+</li>
+</ol>
+<p>Note that whenever $b = 32$, the coin always lands Heads! A proposer with effective balance 32 is either selected immediately if they are the first candidate, or selected second if the first candidate lands Tails (only possible if the first candidate has effective balance less than 32), or selected third if the first two candidates land Tails etc. You don't have to trust me, but this process works out to the probability $\frac{b}{\sum_i b_i}$ of becoming the proposer for a slot, for a validator with effective balance $b$ and $\sum_i b_i$ the sum of all validators' effective balances.</p>
+<p>The line <code>if effective_balance * MAX_RANDOM_BYTE &gt;= MAX_EFFECTIVE_BALANCE * random_byte:</code> is the coin flip: we basically draw a random number between 1 and 32 and when the number is below $b$, it's Heads. When $b = 32$, it's always Heads then.</p>
+<p>What is the TL;DR here? Proposer selection relies on two inputs:</p>
+<ol>
+<li>The state seed, determined at the beginning of the previous epoch.</li>
+<li>Effective balances, liable to <em>change</em> between the previous epoch and the current epoch with the proposal.</li>
+</ol>
+<h3 id="Messing-with-balances">Messing with balances<a class="anchor-link" href="#Messing-with-balances">&#182;</a></h3><p>We cannot mess with the seed, so can we mess with the effective balances in a way that we get to pick which slot we are proposing in? It's possible, but tough. We assume as the attacker cannot reduce a non-attacker's balance_. Consider the following. We place ourselves at epoch <code>N-1</code>. The state seed for epoch <code>N</code> is already determined then. Our only hope to impact the selection of proposers in epoch <code>N</code> is by changing the balances of some active validators. We can produce the following disjunction:</p>
+<ul>
+<li>The attacker does not control the proposer selected at slot $i$, and that proposer is also the first candidate proposer. Unless the balance of that proposer is modified in the transition from epoch <code>N-1</code> to epoch <code>N</code>, <code>compute_proposer_index</code> will return the same proposer regardless of any other balance changes.</li>
+<li>The attacker does not control the proposer selected at slot $i$, that proposer is the $k$-th candidate proposer. In other words, the coin flip returned $k-1$ Tails before returning Heads for the $k$-th candidate proposer.<ul>
+<li>Either the attacker does not control any of the $k-1$ candidate proposers, in which case they cannot change the outcomes of any coin flip.</li>
+<li>Or the attacker controls at least one of the $k-1$ candidate proposers, call that candidate $C$. To become the selected proposer, they must change the outcome of the coin flip from Tails to Heads. Again two cases may occur:<ul>
+<li>Either the attacker manages to increase the effective balance of $C$ from $b$ to $b'$, $b &lt; b'$. The coin flip becomes successful if the random number $r$ drawn is less than or equal to $b'$. Since the attacker $C$ wasn't selected despite being a candidate proposer, we know $r &gt; b$. For instance, if the effective balance of $C$ was $b = 30$, and $r = 31$, if the validator manages to increase their effective balance to $b' = 31$, then they would be selected.</li>
+<li>Or the attacker manages to decrease the effective balance of $C$ from $b$ to $b'$, $b' &lt; b$. In that case, they would not change the outcome of the coin flip.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The attacker controls the proposer selected at slot $i$. At best, the attacker can preserve their proposer spot. At worst, e.g., if their effective balance decreases, they may lose the coin flip. In that case, a later candidate controlled by the attacker may become the proposer, or a candidate not controlled by the attacker could also become the proposer. No point trying out anything here.</li>
+</ul>
+<h3 id="So-can-an-attacker-perturb-the-random-proposer-selection?">So can an attacker perturb the random proposer selection?<a class="anchor-link" href="#So-can-an-attacker-perturb-the-random-proposer-selection?">&#182;</a></h3><p>Again, what is the TL;DR? An attacker can only change a non-attacker proposer to a proposer they control if:</p>
+<ol>
+<li>The first candidate proposer is not selected.</li>
+<li>The attacker controls one of the candidate proposers.</li>
+<li>They are able to increase the effective balance of that proposer.</li>
+<li>The balance increase makes the coin flip favourable to them.</li>
+</ol>
+<p>These are many conditions! First, for 1. to be true, the first candidate must have effective balance lower than 32 ETH, which is <a href="https://beaconcha.in/charts/balance_distribution">quite rare</a>. Then, for 2. to be true, one of the attacker's validators must be selected, the likelihood of which increases with the stake of the attacker. 3. may be possible if the validator's <em>state</em> balance is so close to the <a href="https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#effective-balances-updates">threshold moving the effective balance by 1 ETH</a> that the rewards obtained in the transition from <code>N-1</code> to <code>N</code> is enough to push them over that threshold. At most, by increasing their effective balance by 1 ETH, they increase their odds in the coin flip by 1/32 at most, which is not a lot, though it can be computed in advance whether the coin flip will be favourable given the increase of the effective balance.</p>
+
+</div>
+
+
+
+
+    </div>
+  </div>
+  <script>
+  // References + footnotes
+
+// Authors
+let authorData = ["caspar", "barnabe"];
+  </script>
+
+  
+</body>
+
+  <div id="footer"></div>
+    <script>
+    ReactDOM.render(
+      e(
+        Footer, {
+          acknowledgements: '',
+        }
+      ),
+      document.querySelector("#footer")
+    )
+
+    const copyToClipboard = str => {
+      const el = document.createElement("textarea") // Create a <textarea> element
+      el.value = str // Set its value to the string that you want copied
+      el.setAttribute("readonly", "") // Make it readonly to be tamper-proof
+      el.style.position = "absolute"
+      el.style.left = "-9999px" // Move outside the screen to make it invisible
+      document.body.appendChild(el) // Append the <textarea> element to the HTML document
+      const selected =
+        document.getSelection().rangeCount > 0 // Check if there is any content selected previously
+          ? document.getSelection().getRangeAt(0) // Store selection if found
+          : false // Mark as false to know no selection existed before
+      el.select() // Select the <textarea> content
+      document.execCommand("copy") // Copy - only works as a result of a user action (e.g. click events)
+      document.body.removeChild(el) // Remove the <textarea> element
+      if (selected) {
+        // If a selection existed before copying
+        document.getSelection().removeAllRanges() // Unselect everything on the HTML document
+        document.getSelection().addRange(selected) // Restore the original selection
+      }
+    }
+    function handleCopyClick(evt) {
+      // get the children of the parent element
+      const { children } = evt.target.parentElement
+      // grab the first element (we append the copy button on afterwards, so the first will be the code element)
+      // destructure the innerText from the code block
+      const { innerText } = Array.from(children)[0]
+      // copy all of the code to the clipboard
+      copyToClipboard(innerText)
+    }
+
+    const highlights = document.querySelectorAll(".jp-InputArea-editor .highlight")
+
+    highlights.forEach(div => {
+      // create the copy button
+      const copy = document.createElement("button")
+      copy.innerHTML = "Copy"
+      // add the event listener to each click
+      copy.addEventListener("click", handleCopyClick)
+      // append the copy button to each code block
+      div.append(copy)
+    })
+    </script>
+  </div>
+  <script src="https://ethereum.github.io/rig/static/authorFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/sectionFormatting.js"></script>
+  <script src="https://ethereum.github.io/rig/static/referencesFormatting.js"></script>
+
+
+
+
+
+
+
+</html>

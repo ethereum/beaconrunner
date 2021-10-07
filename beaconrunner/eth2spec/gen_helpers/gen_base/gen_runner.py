@@ -34,6 +34,18 @@ def validate_output_dir(path_str):
     return path
 
 
+def validate_configs_dir(path_str):
+    path = Path(path_str)
+
+    if not path.exists():
+        raise argparse.ArgumentTypeError("Configs directory must exist")
+
+    if not path.is_dir():
+        raise argparse.ArgumentTypeError("Config path must lead to a directory")
+
+    return path
+
+
 def run_generator(generator_name, test_providers: Iterable[TestProvider]):
     """
     Implementation for a general test generator.
@@ -65,13 +77,21 @@ def run_generator(generator_name, test_providers: Iterable[TestProvider]):
         help="if set re-generate and overwrite test files if they already exist",
     )
     parser.add_argument(
+        "-c",
+        "--configs-path",
+        dest="configs_path",
+        required=True,
+        type=validate_configs_dir,
+        help="specify the path of the configs directory",
+    )
+    parser.add_argument(
         "-l",
-        "--preset-list",
-        dest="preset_list",
+        "--config-list",
+        dest="config_list",
         nargs='*',
         type=str,
         required=False,
-        help="specify presets to run with. Allows all if no preset names are specified.",
+        help="specify configs to run with. Allows all if no config names are specified.",
     )
 
     args = parser.parse_args()
@@ -87,22 +107,27 @@ def run_generator(generator_name, test_providers: Iterable[TestProvider]):
     log_file = Path(output_dir) / 'testgen_error_log.txt'
 
     print(f"Generating tests into {output_dir}")
+    print(f"Reading configs from {args.configs_path}")
     print(f'Error log file: {log_file}')
 
-    presets = args.preset_list
-    if presets is None:
-        presets = []
+    configs = args.config_list
+    if configs is None:
+        configs = []
 
-    if len(presets) != 0:
-        print(f"Filtering test-generator runs to only include presets: {', '.join(presets)}")
+    if len(configs) != 0:
+        print(f"Filtering test-generator runs to only include configs: {', '.join(configs)}")
 
     for tprov in test_providers:
-        # runs anything that we don't want to repeat for every test case.
-        tprov.prepare()
+        # loads configuration etc.
+        config_name = tprov.prepare(args.configs_path)
+        if len(configs) != 0 and config_name not in configs:
+            print(f"skipping tests with config '{config_name}' since it is filtered out")
+            continue
 
+        print(f"generating tests with config '{config_name}' ...")
         for test_case in tprov.make_cases():
             case_dir = (
-                Path(output_dir) / Path(test_case.preset_name) / Path(test_case.fork_name)
+                Path(output_dir) / Path(config_name) / Path(test_case.fork_name)
                 / Path(test_case.runner_name) / Path(test_case.handler_name)
                 / Path(test_case.suite_name) / Path(test_case.case_name)
             )

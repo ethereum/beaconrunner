@@ -3,7 +3,7 @@ from py_ecc.bls.g2_primatives import signature_to_G2 as _signature_to_G2
 import milagro_bls_binding as milagro_bls  # noqa: F401 for BLS switching option
 
 # Flag to make BLS active or not. Used for testing, do not ignore BLS in production unless you know what you are doing.
-bls_active = False
+bls_active = True
 
 # To change bls implementation, default to PyECC for correctness. Milagro is a good faster alternative.
 bls = milagro_bls

@@ -12,14 +12,14 @@ from eth2spec.test.helpers.sync_committee import (
     compute_aggregate_sync_committee_signature,
 )
 from eth2spec.test.context import (
-    with_altair_and_later,
+    PHASE0,
+    with_all_phases_except,
     spec_state_test,
 )
 
 
 def run_sync_committee_sanity_test(spec, state, fraction_full=1.0):
-    all_pubkeys = [v.pubkey for v in state.validators]
-    committee = [all_pubkeys.index(pubkey) for pubkey in state.current_sync_committee.pubkeys]
+    committee = spec.get_sync_committee_indices(state, spec.get_current_epoch(state))
     participants = random.sample(committee, int(len(committee) * fraction_full))
 
     yield 'pre', state
@@ -40,46 +40,46 @@ def run_sync_committee_sanity_test(spec, state, fraction_full=1.0):
     yield 'post', state
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_full_sync_committee_committee(spec, state):
     next_epoch(spec, state)
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=1.0)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_half_sync_committee_committee(spec, state):
     next_epoch(spec, state)
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=0.5)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_empty_sync_committee_committee(spec, state):
     next_epoch(spec, state)
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=0.0)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_full_sync_committee_committee_genesis(spec, state):
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=1.0)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_half_sync_committee_committee_genesis(spec, state):
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=0.5)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_empty_sync_committee_committee_genesis(spec, state):
     yield from run_sync_committee_sanity_test(spec, state, fraction_full=0.0)
 
 
-@with_altair_and_later
+@with_all_phases_except([PHASE0])
 @spec_state_test
 def test_inactivity_scores(spec, state):
     for _ in range(spec.MIN_EPOCHS_TO_INACTIVITY_PENALTY + 2):
@@ -98,4 +98,4 @@ def test_inactivity_scores(spec, state):
     yield 'post', state
 
     for pre, post in zip(previous_inactivity_scores, state.inactivity_scores):
-        assert post == pre + spec.config.INACTIVITY_SCORE_BIAS
+        assert post == pre + spec.INACTIVITY_SCORE_BIAS

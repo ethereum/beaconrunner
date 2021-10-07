@@ -19,7 +19,6 @@ TestCasePart = NewType("TestCasePart", Tuple[str, str, Any])
 @dataclass
 class TestCase(object):
     fork_name: str
-    preset_name: str
     runner_name: str
     handler_name: str
     suite_name: str
@@ -29,7 +28,8 @@ class TestCase(object):
 
 @dataclass
 class TestProvider(object):
-    # Prepares the context for the provider as a whole, as opposed to per-test-case changes.
-    prepare: Callable[[], None]
+    # Prepares the context with a configuration, loaded from the given config path.
+    # fn(config path) => chosen config name
+    prepare: Callable[[str], str]
     # Retrieves an iterable of cases, called after prepare()
     make_cases: Callable[[], Iterable[TestCase]]
