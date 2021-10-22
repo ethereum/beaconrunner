@@ -5,10 +5,49 @@ from model.specs import (
 )
 
 from model.validatorlib import (
-    randao_propose,
+    honest_propose, slashable_propose
 )
 
 from model.validators.ASAPValidator import ASAPValidator
+
+#############################
+# Main new function handling different scenarios to inspect randao: randao_propose
+#############################
+
+def randao_propose(validator, known_items, scenario="honest"):
+    """
+    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations, except when it's the second-last slot.
+    In the last slot the RANDAOValidator proposes a block dependent on the scenario: Either "honest", "skip" or "slashable" blocks are proposed (or skipped).
+
+    Args:
+        validator (BRValidator): The proposing validator
+        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
+
+    Returns:
+        SignedBeaconBlock: The honest proposed block.
+    """
+    # Check if selected proposer has been slashed previously. If yes, skip proposing a block, since it will be considered invalid by honest validatory anyway!
+    # Why? In process_block_header() it is checked that a proposer is not slashed with: `assert not proposer.slashed`
+    if validator.data.is_slashed == True:
+        print("* {} slashed already; is shutting up!".format(validator.validator_index))
+        validator.data.last_slot_proposed = validator.data.slot
+        return None
+
+    # Check if current slot is epoch's last slot
+    is_secondlast_slot = True if (validator.data.slot + 2) % SLOTS_PER_EPOCH == 0 else False
+
+    if is_secondlast_slot == False or scenario == "honest":
+        return honest_propose(validator, known_items)
+
+    elif scenario == "skip": # Skip block at epoch's last slot
+        print(validator.validator_index, "skipping block for slot", validator.data.slot)
+        # TODO: Ensure that validators knows it has already proposed something at this slot (actively proposed nothing). We get all the print statements when running the simulation, because every time the validator is pinged and then thinks "oh i need to propose and then goes on to propose nothing (again and again...)"
+        # QUESTION: below line works to the extent that print statement is only repeated twice now. But why twice?!
+        validator.data.last_slot_proposed = validator.data.slot
+        return None # Skip proposing a block
+
+    else: # scenario "C": "slashable" proposing event at final slot
+        return slashable_propose(validator, known_items)
 
 class RANDAOValidator(ASAPValidator):
     # ytfsitfsiwetwvmhtruhihafqhnxs
