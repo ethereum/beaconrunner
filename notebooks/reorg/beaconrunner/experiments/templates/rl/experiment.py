@@ -27,6 +27,26 @@ class BeaconEnv(gym.Env):
     def __init__(self):
         super(BeaconEnv, self).__init__()
 
+        network = create_default_initial_network(validators=validators)
+        self.model = Model(
+            params=parameters,
+            initial_state={
+                "network": network
+            },
+            state_update_blocks=state_update_blocks,
+        )
+        self.model.params.update({
+            "num_epochs": [4],
+            "rl_actions": [[]]
+        })
+        self.model._deepcopy = False
+
+        self.length = simulator.get_timesteps(Simulation(model=self.model)) / 12
+
+        self.action_space = spaces.Box(low=np.array([0]), high=np.array([12]))
+        self.observation_space = spaces.Box(low=np.array([0]), high=np.array([12]))
+        self.balance = 32e9 # Used to keep track of balance differentials
+
     def reset(self):
         # Reset to initial conditions
         network = create_default_initial_network(validators=validators)
@@ -48,8 +68,8 @@ class BeaconEnv(gym.Env):
         self.action_space = spaces.Box(low=np.array([0]), high=np.array([12]))
         self.observation_space = spaces.Box(low=np.array([0]), high=np.array([12]))
         self.balance = 32e9 # Used to keep track of balance differentials
-
-        return 0
+        
+        return np.array([0])
 
     def step(self, action):
         # Execute one time step within the environment
@@ -70,7 +90,7 @@ class BeaconEnv(gym.Env):
         reward = current_balance - self.balance
         self.balance = current_balance
         
-        obs = action[0]
+        obs = np.array([action[0]])
         info = {}
 
         self.length -= 1
