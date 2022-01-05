@@ -43,8 +43,8 @@ class BeaconEnv(gym.Env):
 
         self.length = simulator.get_timesteps(Simulation(model=self.model)) / 12
 
-        self.action_space = spaces.Box(low=np.array([0]), high=np.array([12]))
-        self.observation_space = spaces.Box(low=np.array([0]), high=np.array([12]))
+        self.action_space = spaces.Box(low=np.array([0,0]), high=np.array([12,1]))
+        self.observation_space = spaces.Box(low=np.array([0,0]), high=np.array([12,1]))
         self.balance = 32e9 # Used to keep track of balance differentials
 
     def reset(self):
@@ -65,17 +65,17 @@ class BeaconEnv(gym.Env):
 
         self.length = simulator.get_timesteps(Simulation(model=self.model)) / 12
 
-        self.action_space = spaces.Box(low=np.array([0]), high=np.array([12]))
-        self.observation_space = spaces.Box(low=np.array([0]), high=np.array([12]))
+        self.action_space = spaces.Box(low=np.array([0,0]), high=np.array([18,1]))
+        self.observation_space = spaces.Box(low=np.array([0,0]), high=np.array([18,1]))
         self.balance = 32e9 # Used to keep track of balance differentials
         
-        return np.array([0])
+        return np.array([0,0])
 
     def step(self, action):
         # Execute one time step within the environment
-        self.model.params.update({
-            "rl_actions": [self.model.params["rl_actions"][0] + [action[0]]]
-        })
+        self.model.params.update({ 
+            "rl_actions": [self.model.params["rl_actions"][0] + [(action[0], action[1])]] 
+        })                
         model_generator = iter(self.model)
         for i in range(specs.config.SECONDS_PER_SLOT):
             self.model = next(model_generator)
@@ -90,7 +90,7 @@ class BeaconEnv(gym.Env):
         reward = current_balance - self.balance
         self.balance = current_balance
         
-        obs = np.array([action[0]])
+        obs = np.array([action[0], action[1]])
         info = {}
 
         self.length -= 1
