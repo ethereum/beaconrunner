@@ -25,7 +25,7 @@ eth-typing==2.2.2
 eth-utils==1.10.0
 fn==0.4.3
 funcy==1.16
-gym==0.21.0
+gym==0.17
 idna==2.10
 ipykernel==5.5.5
 ipython==7.24.1
@@ -76,7 +76,6 @@ ptyprocess==0.7.0
 py-ecc==5.2.0
 pycparser==2.20
 Pygments==2.9.0
-pygraphviz==1.7
 pyparsing==2.4.7
 pyrsistent==0.17.3
 python-dateutil==2.8.1
