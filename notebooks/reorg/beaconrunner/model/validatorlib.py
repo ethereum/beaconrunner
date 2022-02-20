@@ -1,5 +1,4 @@
 import time
-import numpy as np
 
 from typing import Set, Optional, Sequence, Tuple, Dict, Text
 from dataclasses import dataclass, field
@@ -1008,46 +1007,7 @@ def honest_propose(validator, known_items):
 
     # Include proposer slashings (if any)
     proposer_slashings = get_proposer_slashings(validator, known_items)
-    
-    return make_block(slot, head, validator, processed_state, attestations, sc_contributions, proposer_slashings=proposer_slashings)
 
-def RL_agent_propose(validator, known_items, second_action):
-    """
-    Returns an honest block, using the current LMD-GHOST head and all known, aggregated, attestations.
-
-    Args:
-        validator (BRValidator): The proposing validator
-        known_items (Dict): Known blocks and attestations received over-the-wire (but perhaps not included yet in `validator.store`)
-
-    Returns:
-        SignedBeaconBlock: The honest proposed block.
-    """
-
-    print(validator.validator_index, "proposing block for slot", validator.data.slot)
-
-    slot = validator.data.slot
-
-    if second_action >= 0.5:
-        head = validator.data.head_root
-    else:
-        head = get_ancestor(validator.store, validator.data.head_root, slot-2)
-
-    
-    processed_state = validator.process_to_slot(head, slot)
-
-    # Include attestations
-    attestations = [att for att in known_items["attestations"] if should_process_attestation(processed_state, att.item)]
-    attestations = aggregate_attestations([att.item for att in attestations if slot <= att.item.data.slot + SLOTS_PER_EPOCH])
-
-    # Include sync committees
-    sc_bundles = [sc_bundle for sc_bundle in known_items["sync_committees"]]
-    sc_contributions = aggregate_sync_committees(
-        [sc_bundle.item for sc_bundle in sc_bundles if sc_bundle.item.sync_committee_signature.slot + 1 == slot]
-    )
-
-    # Include proposer slashings (if any)
-    proposer_slashings = get_proposer_slashings(validator, known_items)
-    
     return make_block(slot, head, validator, processed_state, attestations, sc_contributions, proposer_slashings=proposer_slashings)
 
 def slashable_propose(validator, known_items):

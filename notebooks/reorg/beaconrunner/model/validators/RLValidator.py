@@ -8,7 +8,7 @@ SECONDS_PER_SLOT = config.SECONDS_PER_SLOT
 
 from model.validatorlib import (
     BRValidator, SyncCommitteeBundle,
-    honest_attest, honest_sync_committee, honest_propose, RL_agent_propose
+    honest_attest, honest_sync_committee, honest_propose
 )
 
 class RLValidator(BRValidator):
@@ -111,8 +111,8 @@ class RLValidator(BRValidator):
             return None
 
         time_in_slot = (self.store.time - self.store.genesis_time) % SECONDS_PER_SLOT
-        if time_in_slot <= params["rl_actions"][-1][0]:
+        if time_in_slot <= params["rl_actions"][-1]:
             return None
 
         # honest propose
-        return RL_agent_propose(self, known_items, params["rl_actions"][-1][1])
+        return honest_propose(self, known_items)
