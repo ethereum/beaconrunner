@@ -10,7 +10,7 @@ cached-property==1.5.2
 cadCAD==0.4.23
 cadCAD-tools==0.0.1.4
 cadCAD-tweaked==0.4.23.0.1
-certifi==2021.5.30
+certifi==2022.12.7
 cffi==1.14.5
 chardet==4.0.0
 cloudpickle==2.0.0
